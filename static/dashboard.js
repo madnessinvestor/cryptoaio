@@ -652,7 +652,6 @@ function toggleWalletCard(address) {
   body.style.display = opening ? "" : "none";
   if (chev) chev.textContent = opening ? "▼" : "▶";
   if (opening) dashExpanded.add(address); else dashExpanded.delete(address);
-  _updateToggleAllBtn();
 }
 
 function toggleWalletList() {
