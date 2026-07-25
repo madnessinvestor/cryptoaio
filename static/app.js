@@ -230,6 +230,7 @@ function cardHTML(a) {
 
   return `<div class="asset-card" data-sym="${a.symbol}" onclick="handleCardClick(this,event)">
     <div class="card-top">
+      <span class="drag-handle" title="Reordenar">⠿</span>
       <div class="asset-left">
         <div class="asset-icon" data-sym="${a.symbol}">
           <img class="icon-img" alt="" />
@@ -245,7 +246,6 @@ function cardHTML(a) {
         <div class="asset-price">${hasPrice ? formatPrice(a.price, skip) : "—"}</div>
         ${changeHTML(a.change24h)}
       </div>
-      <span class="drag-handle" title="Reordenar">⠿</span>
     </div>
   </div>`;
 }
