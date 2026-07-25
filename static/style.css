@@ -2390,14 +2390,14 @@ section.hidden { display: none; }
 .donate-modal {
   position: fixed; inset: 0; z-index: 900;
   background: rgba(0,0,0,0.55);
-  display: flex; align-items: flex-end; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
 .donate-modal.hidden { display: none; }
 .donate-box {
   background: var(--card);
-  border-radius: 20px 20px 0 0;
-  padding: 24px 20px 36px;
-  width: 100%; max-width: 480px;
+  border-radius: 20px;
+  padding: 24px 20px 28px;
+  width: calc(100% - 32px); max-width: 440px;
   display: flex; flex-direction: column; gap: 18px;
 }
 .donate-header {
