@@ -202,7 +202,7 @@ function renderDashboard() {
       ${t("dash_wallets_title")}
       <span class="dash-section-chev" id="dash-wallets-chev">${walletListVisible ? "▼" : "▶"}</span>
     </span>
-    ${totalWalletUsd > 0 ? `<span class="dash-section-sum">${fmtDashUsd(totalWalletUsd)}</span>` : ""}
+    <span class="dash-section-sum">${totalWalletUsd > 0 ? fmtDashUsd(totalWalletUsd) : (typeof currSym === "function" ? currSym() : "$") + "0.00"}</span>
   </div>`;
 
   if (dashWallets.length === 0) {
@@ -227,7 +227,7 @@ function renderDashboard() {
       ${t("dash_manual_title")}
       <span class="dash-section-chev" id="dash-manual-chev">${_manualListOpen ? "▼" : "▶"}</span>
     </span>
-    ${totalManualUsd > 0 ? `<span class="dash-section-sum">${fmtDashUsd(totalManualUsd)}</span>` : ""}
+    <span class="dash-section-sum">${totalManualUsd > 0 ? fmtDashUsd(totalManualUsd) : (typeof currSym === "function" ? currSym() : "$") + "0.00"}</span>
   </div>`;
 
   if (dashManual.length === 0) {
