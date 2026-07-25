@@ -2386,6 +2386,65 @@ section.hidden { display: none; }
   gap: 8px;
 }
 .dash-section-title--clickable:hover { opacity: 0.8; }
+/* ─── Donate Modal ───────────────────────────────────────────────────────── */
+.donate-modal {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.donate-modal.hidden { display: none; }
+.donate-box {
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px 36px;
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.donate-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.donate-title {
+  font-size: 1.05rem; font-weight: 800; color: var(--text);
+}
+.donate-close {
+  background: none; border: none; color: var(--muted2);
+  font-size: 1rem; cursor: pointer; padding: 4px;
+}
+.donate-sub {
+  font-size: 0.82rem; color: var(--muted2); margin-top: -10px;
+}
+.donate-network {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--bg); border-radius: 12px; padding: 14px;
+}
+.donate-network-label {
+  display: flex; align-items: center; gap: 8px;
+}
+.donate-badge {
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em;
+  padding: 2px 8px; border-radius: 999px;
+}
+.donate-badge.evm { background: rgba(98,126,234,0.18); color: #627eea; }
+.donate-badge.sol { background: rgba(153,69,255,0.18); color: #9945ff; }
+.donate-network-name { font-size: 0.78rem; color: var(--muted2); }
+.donate-addr-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.donate-addr {
+  font-size: 0.72rem; font-family: monospace;
+  color: var(--text); word-break: break-all; flex: 1;
+  line-height: 1.4;
+}
+.donate-copy-btn {
+  flex-shrink: 0;
+  background: none; border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px; cursor: pointer;
+  color: var(--accent); display: flex; align-items: center;
+  transition: background 0.15s;
+}
+.donate-copy-btn:hover { background: rgba(0,230,118,0.08); }
+.donate-copy-btn.copied { color: var(--accent); border-color: var(--accent); }
+
 .dash-section-sum {
   font-size: 0.82rem;
   font-weight: 700;

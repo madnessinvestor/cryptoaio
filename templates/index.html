@@ -369,6 +369,50 @@
         </div>
       </div>
 
+      <div class="settings-row">
+        <span class="settings-row-label">Donate</span>
+        <div class="settings-toggle-group">
+          <button class="settings-toggle-btn" onclick="openDonateModal()">❤️ Donate</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Donate modal -->
+  <div id="donate-modal" class="donate-modal hidden" onclick="if(event.target===this)closeDonateModal()">
+    <div class="donate-box">
+      <div class="donate-header">
+        <span class="donate-title">❤️ Donate</span>
+        <button class="donate-close" onclick="closeDonateModal()">✕</button>
+      </div>
+      <p class="donate-sub">Se o CryptoAIO te ajuda, considere apoiar o projeto!</p>
+
+      <div class="donate-network">
+        <div class="donate-network-label">
+          <span class="donate-badge evm">EVM</span>
+          <span class="donate-network-name">Ethereum · BNB · Polygon · Arbitrum…</span>
+        </div>
+        <div class="donate-addr-row">
+          <span class="donate-addr" id="donate-evm-addr">0x0B2812ecDa6ED953Ff85DB3c594eFE42DfBdB84a</span>
+          <button class="donate-copy-btn" onclick="donateCopy('donate-evm-addr', this)" title="Copiar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="donate-network">
+        <div class="donate-network-label">
+          <span class="donate-badge sol">SOL</span>
+          <span class="donate-network-name">Solana</span>
+        </div>
+        <div class="donate-addr-row">
+          <span class="donate-addr" id="donate-sol-addr">9rVsyAdb17jSDFoWD7Ptyf7seFt4KnP1NXUMFnPZcbnE</span>
+          <button class="donate-copy-btn" onclick="donateCopy('donate-sol-addr', this)" title="Copiar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
