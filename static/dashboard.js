@@ -202,7 +202,6 @@ function renderDashboard() {
       ${t("dash_wallets_title")}
       <span class="dash-section-chev" id="dash-wallets-chev">${walletListVisible ? "▼" : "▶"}</span>
     </span>
-    <button class="dash-add-btn" onclick="openDashWalletModal()">${t("dash_add_wallet")}</button>
   </div>`;
 
   if (dashWallets.length === 0) {
@@ -227,7 +226,6 @@ function renderDashboard() {
       ${t("dash_manual_title")}
       <span class="dash-section-chev" id="dash-manual-chev">${_manualListOpen ? "▼" : "▶"}</span>
     </span>
-    <button class="dash-add-btn" onclick="openDashManualModal()">${t("dash_add_manual")}</button>
   </div>`;
 
   if (dashManual.length === 0) {
