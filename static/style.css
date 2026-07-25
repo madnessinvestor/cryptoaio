@@ -486,12 +486,14 @@ h1 {
 
 @keyframes logo-breathe {
   0%, 100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 3px rgba(0,255,80,0.55));
+    filter:
+      drop-shadow(0 0 2px rgba(57,255,80,0.45))
+      drop-shadow(0 0 6px rgba(57,255,80,0.25));
   }
   50% {
-    opacity: 0.97;
-    filter: drop-shadow(0 0 5px rgba(0,255,80,0.75));
+    filter:
+      drop-shadow(0 0 4px rgba(57,255,80,0.65))
+      drop-shadow(0 0 10px rgba(57,255,80,0.35));
   }
 }
 
