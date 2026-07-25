@@ -1,6 +1,6 @@
 # 🟢 CryptoAIO
 
-**CryptoAIO** is a *privacy-first* asset tracker for **Cryptocurrencies, Brazilian Stocks (B3), US Stocks, and Forex Pairs**, built with **Flask + Vanilla JavaScript** as a **Progressive Web App (PWA)**.
+**CryptoAIO** is a All In One and a *privacy-first* asset tracker for **Cryptocurrencies, Brazilian Stocks (B3), US Stocks, and Forex Pairs**, built with **Flask + Vanilla JavaScript** as a **Progressive Web App (PWA)**.
 
 Monitor your favourite assets quickly and lightly — no account, no subscription, no tracking.
 
