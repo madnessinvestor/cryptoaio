@@ -2386,6 +2386,13 @@ section.hidden { display: none; }
   gap: 8px;
 }
 .dash-section-title--clickable:hover { opacity: 0.8; }
+.dash-section-sum {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
 .dash-section-chev {
   font-size: 0.65rem;
   color: var(--muted2);
