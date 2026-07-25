@@ -191,6 +191,7 @@ function renderDashboard() {
   }
 
   // ── Wallets section ────────────────────────────────────────────────────────
+  const allExpanded = dashWallets.length > 0 && dashWallets.every(w => dashExpanded.has(w.address));
   html += `<div class="dash-section-header">
     <span class="dash-section-title">
       <span class="dash-section-icon">
@@ -198,7 +199,12 @@ function renderDashboard() {
       </span>
       ${t("dash_wallets_title")}
     </span>
-    <button class="dash-add-btn" onclick="openDashWalletModal()">${t("dash_add_wallet")}</button>
+    <div class="dash-section-actions">
+      <button class="dash-collapse-btn" id="btn-toggle-all-wallets" onclick="toggleAllWallets()" title="${allExpanded ? 'Recolher todas' : 'Expandir todas'}">
+        ${allExpanded ? '⬆ Recolher' : '⬇ Expandir'}
+      </button>
+      <button class="dash-add-btn" onclick="openDashWalletModal()">${t("dash_add_wallet")}</button>
+    </div>
   </div>`;
 
   if (dashWallets.length === 0) {
@@ -649,6 +655,30 @@ function toggleWalletCard(address) {
   body.style.display = opening ? "" : "none";
   if (chev) chev.textContent = opening ? "▼" : "▶";
   if (opening) dashExpanded.add(address); else dashExpanded.delete(address);
+  _updateToggleAllBtn();
+}
+
+function toggleAllWallets() {
+  if (dashWallets.length === 0) return;
+  const allExpanded = dashWallets.every(w => dashExpanded.has(w.address));
+  const opening = !allExpanded;
+  for (const w of dashWallets) {
+    const body = document.getElementById(`dwc-body-${w.address}`);
+    const chev = document.getElementById(`dwc-chev-${w.address}`);
+    if (!body) continue;
+    body.style.display = opening ? "" : "none";
+    if (chev) chev.textContent = opening ? "▼" : "▶";
+    if (opening) dashExpanded.add(w.address); else dashExpanded.delete(w.address);
+  }
+  _updateToggleAllBtn();
+}
+
+function _updateToggleAllBtn() {
+  const btn = document.getElementById("btn-toggle-all-wallets");
+  if (!btn) return;
+  const allExpanded = dashWallets.length > 0 && dashWallets.every(w => dashExpanded.has(w.address));
+  btn.textContent = allExpanded ? "⬆ Recolher" : "⬇ Expandir";
+  btn.title       = allExpanded ? "Recolher todas" : "Expandir todas";
 }
 
 // Prevent drag handle from triggering card toggle
