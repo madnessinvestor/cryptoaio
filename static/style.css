@@ -2311,25 +2311,16 @@ section.hidden { display: none; }
 .dash-add-btn:hover { background: rgba(0,230,118,0.08); }
 .dash-add-btn:active { opacity: 0.7; }
 
-.dash-section-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.dash-collapse-btn {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--muted2);
-  font-size: 0.73rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 999px;
+.dash-section-title--clickable {
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
+  user-select: none;
+  gap: 8px;
 }
-.dash-collapse-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
-.dash-collapse-btn:active { opacity: 0.7; }
+.dash-section-title--clickable:hover { opacity: 0.8; }
+.dash-section-chev {
+  font-size: 0.65rem;
+  color: var(--muted2);
+}
 
 .dash-empty {
   text-align: center;

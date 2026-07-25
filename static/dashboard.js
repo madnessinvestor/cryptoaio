@@ -3,6 +3,7 @@
 let dashWallets      = [];
 let dashManual       = [];
 let dashLoaded       = false;
+let _walletListOpen  = true;
 const dashExpanded      = new Set();
 const dashManualExpanded = new Set();
 const dashActiveTab  = {};
@@ -191,20 +192,16 @@ function renderDashboard() {
   }
 
   // ── Wallets section ────────────────────────────────────────────────────────
-  const allExpanded = dashWallets.length > 0 && dashWallets.every(w => dashExpanded.has(w.address));
+  const walletListVisible = _walletListOpen;
   html += `<div class="dash-section-header">
-    <span class="dash-section-title">
+    <span class="dash-section-title dash-section-title--clickable" onclick="toggleWalletList()">
       <span class="dash-section-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
       </span>
       ${t("dash_wallets_title")}
+      <span class="dash-section-chev" id="dash-wallets-chev">${walletListVisible ? "▼" : "▶"}</span>
     </span>
-    <div class="dash-section-actions">
-      <button class="dash-collapse-btn" id="btn-toggle-all-wallets" onclick="toggleAllWallets()" title="${allExpanded ? 'Recolher todas' : 'Expandir todas'}">
-        ${allExpanded ? '⬆ Recolher' : '⬇ Expandir'}
-      </button>
-      <button class="dash-add-btn" onclick="openDashWalletModal()">${t("dash_add_wallet")}</button>
-    </div>
+    <button class="dash-add-btn" onclick="openDashWalletModal()">${t("dash_add_wallet")}</button>
   </div>`;
 
   if (dashWallets.length === 0) {
@@ -213,7 +210,7 @@ function renderDashboard() {
       <p>${t("dash_wallet_empty")}</p>
     </div>`;
   } else {
-    html += `<div id="dash-wallets-list">`;
+    html += `<div id="dash-wallets-list" style="${_walletListOpen ? '' : 'display:none'}">`;
     for (const w of dashWallets) {
       html += walletCardHtml(w);
     }
@@ -658,27 +655,12 @@ function toggleWalletCard(address) {
   _updateToggleAllBtn();
 }
 
-function toggleAllWallets() {
-  if (dashWallets.length === 0) return;
-  const allExpanded = dashWallets.every(w => dashExpanded.has(w.address));
-  const opening = !allExpanded;
-  for (const w of dashWallets) {
-    const body = document.getElementById(`dwc-body-${w.address}`);
-    const chev = document.getElementById(`dwc-chev-${w.address}`);
-    if (!body) continue;
-    body.style.display = opening ? "" : "none";
-    if (chev) chev.textContent = opening ? "▼" : "▶";
-    if (opening) dashExpanded.add(w.address); else dashExpanded.delete(w.address);
-  }
-  _updateToggleAllBtn();
-}
-
-function _updateToggleAllBtn() {
-  const btn = document.getElementById("btn-toggle-all-wallets");
-  if (!btn) return;
-  const allExpanded = dashWallets.length > 0 && dashWallets.every(w => dashExpanded.has(w.address));
-  btn.textContent = allExpanded ? "⬆ Recolher" : "⬇ Expandir";
-  btn.title       = allExpanded ? "Recolher todas" : "Expandir todas";
+function toggleWalletList() {
+  _walletListOpen = !_walletListOpen;
+  const list = document.getElementById("dash-wallets-list");
+  const chev = document.getElementById("dash-wallets-chev");
+  if (list) list.style.display = _walletListOpen ? "" : "none";
+  if (chev) chev.textContent = _walletListOpen ? "▼" : "▶";
 }
 
 // Prevent drag handle from triggering card toggle
