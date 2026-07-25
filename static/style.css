@@ -1213,16 +1213,8 @@ section.hidden { display: none; }
   letter-spacing: -0.3px;
 }
 
-/* ─── Portfolio card (wallet style) ─────────────────────────────────────────── */
-.portfolio-card {
-  border-radius: 0 !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: 1px solid var(--border) !important;
-  box-shadow: none !important;
-}
-.portfolio-card:last-child { border-bottom: none !important; }
+/* ─── Portfolio card (watchlist style) ───────────────────────────────────────── */
+/* inherits rounded style from .asset-card */
 
 /* ─── Portfolio card details (expanded) ──────────────────────────────────────── */
 .portfolio-details {
