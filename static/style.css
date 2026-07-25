@@ -558,6 +558,9 @@ h1 {
   line-height: 1;
   margin-top: -2px;
 }
+.btn-fab-dash-1 { bottom: 110px; }
+.btn-fab-dash-2 { bottom: 178px; }
+
 .btn-refresh-main {
   font-size: 1.15rem;
   line-height: 1;

@@ -358,6 +358,8 @@ function switchTab(tab) {
 
   document.getElementById("btn-add-tracker").classList.toggle("hidden", !isTracker);
   document.getElementById("btn-add-trade").classList.toggle("hidden",    !isTrade);
+  document.getElementById("btn-add-dash-manual")?.classList.toggle("hidden", !isDashboard);
+  document.getElementById("btn-add-dash-wallet")?.classList.toggle("hidden", !isDashboard);
   document.getElementById("btn-export-trades")?.classList.toggle("hidden",    !isTrade);
   document.getElementById("btn-export-dashboard")?.classList.toggle("hidden", !isDashboard);
 

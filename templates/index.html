@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>CryptoAIO</title>
   <link rel="manifest" href="/static/manifest.json" />
-  <link rel="stylesheet" href="/static/style.css?v=6" />
+  <link rel="stylesheet" href="/static/style.css?v=7" />
 </head>
 <body>
   <header>
@@ -382,6 +382,12 @@
     </svg>
   </button>
   <button id="btn-add-trade" class="btn-fab hidden" onclick="openTradeModal()" aria-label="Registrar trade">
+    <span class="btn-fab-plus">+</span>
+  </button>
+  <button id="btn-add-dash-manual" class="btn-fab btn-fab-dash-1 hidden" onclick="openDashManualModal()" aria-label="Adicionar ativo manual">
+    <span class="btn-fab-plus">+</span>
+  </button>
+  <button id="btn-add-dash-wallet" class="btn-fab btn-fab-dash-2 hidden" onclick="openDashWalletModal()" aria-label="Adicionar carteira on-chain">
     <span class="btn-fab-plus">+</span>
   </button>
 
@@ -805,7 +811,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="/static/i18n.js?v=4"></script>
   <script src="/static/app.js?v=4"></script>
-  <script src="/static/trade.js?v=5"></script>
+  <script src="/static/trade.js?v=6"></script>
   <script src="/static/alerts.js?v=3"></script>
   <script src="/static/madai.js?v=6"></script>
   <script src="/static/dashboard.js?v=11"></script>
