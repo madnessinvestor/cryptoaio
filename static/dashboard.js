@@ -218,7 +218,7 @@ function renderDashboard() {
   }
 
   // ── Manual assets section ──────────────────────────────────────────────────
-  html += `<div class="dash-section-header" style="margin-top:18px">
+  html += `<div class="dash-section-header" style="margin-top:28px">
     <span class="dash-section-title dash-section-title--clickable" onclick="toggleManualList()">
       <span class="dash-section-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
@@ -358,7 +358,7 @@ function _diversificationChartHtml(grandTotal) {
     </div>`;
   });
 
-  return `<div class="dash-section-header" style="margin-top:18px">
+  return `<div class="dash-section-header" style="margin-top:28px">
     <span class="dash-section-title dash-section-title--clickable" onclick="toggleDivChart()">
       <span class="dash-section-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
