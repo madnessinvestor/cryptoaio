@@ -4,6 +4,7 @@ let dashWallets      = [];
 let dashManual       = [];
 let dashLoaded       = false;
 let _walletListOpen  = true;
+let _manualListOpen  = true;
 const dashExpanded      = new Set();
 const dashManualExpanded = new Set();
 const dashActiveTab  = {};
@@ -219,11 +220,12 @@ function renderDashboard() {
 
   // ── Manual assets section ──────────────────────────────────────────────────
   html += `<div class="dash-section-header" style="margin-top:18px">
-    <span class="dash-section-title">
+    <span class="dash-section-title dash-section-title--clickable" onclick="toggleManualList()">
       <span class="dash-section-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
       </span>
       ${t("dash_manual_title")}
+      <span class="dash-section-chev" id="dash-manual-chev">${_manualListOpen ? "▼" : "▶"}</span>
     </span>
     <button class="dash-add-btn" onclick="openDashManualModal()">${t("dash_add_manual")}</button>
   </div>`;
@@ -234,7 +236,7 @@ function renderDashboard() {
       <p>${t("dash_manual_empty")}</p>
     </div>`;
   } else {
-    html += `<div id="dash-manual-list">`;
+    html += `<div id="dash-manual-list" style="${_manualListOpen ? '' : 'display:none'}">`;
     for (const a of dashManual) html += manualCardHtml(a);
     html += `</div>`;
   }
@@ -660,6 +662,14 @@ function toggleWalletList() {
   const chev = document.getElementById("dash-wallets-chev");
   if (list) list.style.display = _walletListOpen ? "" : "none";
   if (chev) chev.textContent = _walletListOpen ? "▼" : "▶";
+}
+
+function toggleManualList() {
+  _manualListOpen = !_manualListOpen;
+  const list = document.getElementById("dash-manual-list");
+  const chev = document.getElementById("dash-manual-chev");
+  if (list) list.style.display = _manualListOpen ? "" : "none";
+  if (chev) chev.textContent = _manualListOpen ? "▼" : "▶";
 }
 
 // Prevent drag handle from triggering card toggle
