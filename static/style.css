@@ -484,6 +484,24 @@ h1 {
   filter: drop-shadow(0 0 4px var(--accent));
 }
 
+@keyframes logo-breathe {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 3px rgba(0,255,80,0.55));
+  }
+  50% {
+    opacity: 0.97;
+    filter: drop-shadow(0 0 5px rgba(0,255,80,0.75));
+  }
+}
+
+.app-logo {
+  height: 1.65rem;
+  width: auto;
+  display: block;
+  animation: logo-breathe 4s ease-in-out infinite;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
