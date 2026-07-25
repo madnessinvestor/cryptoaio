@@ -575,6 +575,10 @@ h1 {
   position: fixed;
   inset: 0;
   z-index: -1;
+  pointer-events: none;
+}
+.dash-fab-wrap.open .dash-fab-backdrop {
+  pointer-events: auto;
 }
 .dash-fab-options {
   display: flex;
