@@ -65,10 +65,11 @@ Add and remove assets with automatic persistence — no login required.
 
 ---
 
-### 🏦 Wallet Dashboard
-- Track on-chain wallet balances
-- Group by network and asset type
-- Manual assets for off-chain positions
+### 🏦 Dashboard (On-Chain + Manual Assets)
+- Track on-chain wallet balances grouped by network and asset
+- Manual assets for off-chain or custom positions
+- Portfolio diversification chart
+- Add wallets and manual assets via the **speed-dial FAB button** (＋)
 
 ---
 
@@ -140,7 +141,7 @@ cryptoaio/
 │   ├── app.js              # Core logic (watchlist, prices, currency)
 │   ├── madai.js            # Mad AI — chat, voice input, TTS
 │   ├── trade.js            # Trade tab / portfolio
-│   ├── dashboard.js        # Wallet dashboard
+│   ├── dashboard.js        # Wallet dashboard & manual assets
 │   ├── alerts.js           # Price alerts
 │   ├── widget.js           # Configurable SPA widget
 │   ├── i18n.js             # Internationalisation (pt / en)
@@ -172,6 +173,10 @@ python app.py
 
 Open in your browser: `http://localhost:5000`
 
+### Running on Replit
+
+Dependencies are installed automatically. Just press **Run**.
+
 ### Environment Variables (optional — required for Mad AI)
 
 | Variable | Description |
@@ -189,6 +194,8 @@ Open in your browser: `http://localhost:5000`
 - [x] Multi-asset watchlist
 - [x] Portfolio with P&L
 - [x] On-chain wallet dashboard
+- [x] Manual assets dashboard
+- [x] Portfolio diversification chart
 - [x] Price alerts
 - [x] Multi-currency (BRL / USD / EUR)
 - [x] Mad AI — AI assistant with portfolio analysis
