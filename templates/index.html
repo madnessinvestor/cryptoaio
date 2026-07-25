@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>CryptoAIO</title>
   <link rel="manifest" href="/static/manifest.json" />
-  <link rel="stylesheet" href="/static/style.css?v=7" />
+  <link rel="stylesheet" href="/static/style.css?v=8" />
 </head>
 <body>
   <header>
@@ -384,12 +384,27 @@
   <button id="btn-add-trade" class="btn-fab hidden" onclick="openTradeModal()" aria-label="Registrar trade">
     <span class="btn-fab-plus">+</span>
   </button>
-  <button id="btn-add-dash-manual" class="btn-fab btn-fab-dash-1 hidden" onclick="openDashManualModal()" aria-label="Adicionar ativo manual">
-    <span class="btn-fab-plus">+</span>
-  </button>
-  <button id="btn-add-dash-wallet" class="btn-fab btn-fab-dash-2 hidden" onclick="openDashWalletModal()" aria-label="Adicionar carteira on-chain">
-    <span class="btn-fab-plus">+</span>
-  </button>
+  <!-- Dashboard speed-dial FAB -->
+  <div id="dash-fab-wrap" class="dash-fab-wrap hidden">
+    <div id="dash-fab-backdrop" class="dash-fab-backdrop" onclick="closeDashFab()"></div>
+    <div class="dash-fab-options" id="dash-fab-options">
+      <button class="dash-fab-option" onclick="closeDashFab();openDashWalletModal()" aria-label="On-Chain Wallet">
+        <span class="dash-fab-option-label">On-Chain Wallet</span>
+        <span class="dash-fab-option-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </span>
+      </button>
+      <button class="dash-fab-option" onclick="closeDashFab();openDashManualModal()" aria-label="Manual Asset">
+        <span class="dash-fab-option-label">Manual Asset</span>
+        <span class="dash-fab-option-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </span>
+      </button>
+    </div>
+    <button class="btn-fab dash-fab-main" id="btn-add-dash" onclick="toggleDashFab()" aria-label="Adicionar">
+      <span class="btn-fab-plus dash-fab-icon">+</span>
+    </button>
+  </div>
 
   <!-- Bottom nav -->
   <nav class="bottom-nav">
@@ -811,10 +826,10 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="/static/i18n.js?v=4"></script>
   <script src="/static/app.js?v=4"></script>
-  <script src="/static/trade.js?v=6"></script>
+  <script src="/static/trade.js?v=7"></script>
   <script src="/static/alerts.js?v=3"></script>
   <script src="/static/madai.js?v=6"></script>
-  <script src="/static/dashboard.js?v=11"></script>
+  <script src="/static/dashboard.js?v=12"></script>
   <script src="/static/widget.js?v=6"></script>
 </body>
 </html>

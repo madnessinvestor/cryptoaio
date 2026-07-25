@@ -256,6 +256,15 @@ const _PIE_COLORS = [
 
 let _divChartOpen = localStorage.getItem("dashDivOpen") === "true";
 
+function toggleDashFab() {
+  const wrap = document.getElementById("dash-fab-wrap");
+  if (wrap) wrap.classList.toggle("open");
+}
+function closeDashFab() {
+  const wrap = document.getElementById("dash-fab-wrap");
+  if (wrap) wrap.classList.remove("open");
+}
+
 function toggleDivChart() {
   _divChartOpen = !_divChartOpen;
   localStorage.setItem("dashDivOpen", _divChartOpen);
