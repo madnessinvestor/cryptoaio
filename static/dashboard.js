@@ -262,7 +262,7 @@ function toggleDivChart() {
   const body = document.getElementById("dash-div-body");
   const chev = document.getElementById("dash-div-chev");
   if (body) body.style.display = _divChartOpen ? "" : "none";
-  if (chev) chev.classList.toggle("open", _divChartOpen);
+  if (chev) chev.textContent = _divChartOpen ? "▼" : "▶";
 }
 
 function _pieHover(idx, on) {
@@ -351,21 +351,18 @@ function _diversificationChartHtml(grandTotal) {
     </div>`;
   });
 
-  const chevClass = _divChartOpen ? " open" : "";
-  return `<div class="dash-div-card">
-    <div class="dash-div-header" onclick="toggleDivChart()">
-      <div class="dash-div-header-left">
-        <span class="dash-div-icon">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
-          </svg>
-        </span>
-        <span class="dash-div-title">${t("rpt_div_title")}</span>
-        <span class="dash-div-count">${items.length} ${t("rpt_div_assets")}</span>
-      </div>
-      <span class="dash-div-chev${chevClass}" id="dash-div-chev">›</span>
-    </div>
-    <div class="dash-div-body" id="dash-div-body" style="${_divChartOpen ? "" : "display:none"}">
+  return `<div class="dash-section-header" style="margin-top:18px">
+    <span class="dash-section-title dash-section-title--clickable" onclick="toggleDivChart()">
+      <span class="dash-section-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+        </svg>
+      </span>
+      ${t("rpt_div_title")}
+      <span class="dash-section-chev" id="dash-div-chev">${_divChartOpen ? "▼" : "▶"}</span>
+    </span>
+  </div>
+  <div class="dash-div-body" id="dash-div-body" style="${_divChartOpen ? "" : "display:none"}">
       <div class="dash-div-inner">
         <svg class="dash-pie-svg" viewBox="-110 -110 220 220" xmlns="http://www.w3.org/2000/svg">
           ${svgPaths}
@@ -374,8 +371,7 @@ function _diversificationChartHtml(grandTotal) {
         </svg>
         <div class="dash-pie-legend">${legend}</div>
       </div>
-    </div>
-  </div>`;
+    </div>`;
 }
 
 // ── Drag-and-drop reorder ──────────────────────────────────────────────────────
