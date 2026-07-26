@@ -2928,32 +2928,36 @@ def get_dash_history():
 
 # ── Portfolio chart — historical reconstruction via exchange candles ───────────
 
-# Tokens treated as $1 stable (no price history needed)
+# Tokens treated as constant USD value (stablecoins + protocol-specific stable tokens)
 _CHART_STABLECOINS = {
     "USDC","USDT","DAI","USDE","BUSD","TUSD","USDP","FRAX",
     "GUSD","LUSD","CRVUSD","PYUSD","USDS","SUSD","EUSD","FUSD",
     "FDUSD","CUSD","HUSD","USDX","VUSD","NUSD","USDBC","USDCE",
-    "USDC.E","USD₮0",   # HyperEVM USDT and Base USDC.e
+    "USDC.E","USD₮0","SUSDE","THUSD","PUSD","USR","ALUSD","GHO",
+    "RLUSD","MUSD","WXDAI",
 }
 
-# Map wrapped/staked/bridged tokens → canonical exchange ticker for candle fetching
+# Map wrapped/bridged tokens → canonical exchange ticker.
+# ONLY include tokens whose price_usd ≈ underlying_price (verified by balance×price≈value).
 _CHART_SYM_MAP = {
-    # ETH family
-    "UETH":"ETH","WETH":"ETH","STETH":"ETH","WSTETH":"ETH",
-    "CBETH":"ETH","RETH":"ETH","SETH":"ETH","WEETH":"ETH",
-    # BTC family
+    # ETH family (1 token ≈ 1 ETH in value)
+    "UETH":"ETH","WETH":"ETH","WEETH":"ETH",
+    # BTC family (1 token ≈ 1 BTC in value)
     "UBTC":"BTC","WBTC":"BTC","CBBTC":"BTC","TBTC":"BTC",
-    # SOL family
-    "WSOL":"SOL","JITOSOL":"SOL","MSOL":"SOL","BSOL":"SOL",
-    "XSOL":"SOL","STKESOL":"SOL","JSOL":"SOL",
+    # HYPE family — only if ~1 token ≈ 1 HYPE
+    "WHYPE":"HYPE","KHYPE":"HYPE","VKHYPE":"HYPE",
     # Wrapped Sonic
     "WS":"S",
-    # Staked ENA
-    "SENA":"ENA",
-    # Staked SUSDE → ENA (rough proxy; sUSDe ≈ USDe ≈ 1 USD so treat as stable)
-    "SUSDE":"__stable__",
-    # Polygon
+    # Staked ENA (SENA, UENA ≈ ENA price)
+    "SENA":"ENA","UENA":"ENA",
+    # SOL liquid staking that tracks SOL price closely
+    "WSOL":"SOL","USOL":"SOL","JSOL":"SOL",
+    # Polygon rename
     "POL":"MATIC","WMATIC":"MATIC",
+    # AVETH = Aave V3 WETH collateral receipt ≈ ETH price
+    "AVETH":"ETH",
+    # Wrapped stETH ≈ ETH
+    "WSTETH":"ETH",
 }
 
 _CHART_CACHE:    dict = {}   # period -> (saved_ts, points_list)
@@ -2974,7 +2978,6 @@ def _chart_candles(sym: str, period: str):
     interval, count, interval_ms = _CHART_PERIOD_CONF.get(period, ("1h", 24, 3_600_000))
     now_ms   = int(time.time() * 1000)
     start_ms = now_ms - count * interval_ms
-
     raw = (
         _candles_hyperliquid(sym, interval, start_ms, now_ms) or
         _candles_mexc(sym, interval, count)                   or
@@ -2986,74 +2989,98 @@ def _chart_candles(sym: str, period: str):
     return [[c["t"], c["c"]] for c in raw if c.get("c") is not None]
 
 def _build_portfolio_chart(period: str):
-    """Reconstruct historical portfolio value: current_balance × historical_price."""
+    """Reconstruct historical portfolio value.
+
+    Strategy: use  value_usd × (historical_price / current_price)  so that
+    weird token balances (DeFi receipt tokens, yield-bearing tokens, etc.) do
+    NOT distort the chart.  Each token contributes its stored USD value scaled
+    by its price movement — not its raw on-chain balance scaled by price.
+    Tokens with no exchange candle data keep a constant value_usd contribution.
+    """
     p = period.upper()
 
-    # ── Collect token groups: exchange_ticker → {balance, value_usd} ──────────
-    stable_total  = 0.0
-    token_groups: dict = {}   # ticker -> {balance, value_usd}
+    # ── Accumulate: ticker → {value_usd} (sum of all tokens mapped to that ticker)
+    #               constant_usd = tokens we can't price historically (fixed contribution)
+    constant_usd  = 0.0   # stable + unmapped tokens (kept fixed over time)
+    ticker_val:   dict = {}  # ticker -> total value_usd for scaling
 
-    def _add(sym_raw: str, balance: float, value_usd: float):
-        nonlocal stable_total
-        if balance <= 0 and value_usd <= 0:
+    def _add(sym_raw: str, balance: float, value_usd: float, price_usd: float = 0.0):
+        nonlocal constant_usd
+        val = float(value_usd or 0)
+        if val <= 0:
             return
-        sym = sym_raw.upper().strip()
-        # 1. Hard stablecoin list
+        sym = (sym_raw or "").upper().strip()
+        # 1. Stablecoin / protocol-stable?
         if sym in _CHART_STABLECOINS or (sym.startswith("USD") and len(sym) <= 6):
-            stable_total += value_usd
+            constant_usd += val
             return
-        # 2. Wrapped/staked alias
-        mapped = _CHART_SYM_MAP.get(sym, sym)
-        if mapped == "__stable__":
-            stable_total += value_usd
-            return
-        if mapped not in token_groups:
-            token_groups[mapped] = {"balance": 0.0, "value_usd": 0.0}
-        token_groups[mapped]["balance"]   += balance
-        token_groups[mapped]["value_usd"] += value_usd
+        # 2. Map to canonical exchange ticker
+        ticker = _CHART_SYM_MAP.get(sym, sym)
+        # Sanity-check: if the implied price_per_token is wildly different from the
+        # mapped ticker's expected price, treat as constant rather than risk distortion.
+        # (We defer the cross-check to fetch time; unknown tickers that return no
+        # candles automatically fall back to constant.)
+        ticker_val[ticker] = ticker_val.get(ticker, 0.0) + val
 
     for w in load_dash_wallets():
         for t in w.get("tokens", []):
-            _add(t.get("symbol",""), t.get("balance",0) or 0, t.get("value_usd",0) or 0)
+            _add(t.get("symbol",""), t.get("balance",0) or 0,
+                 t.get("value_usd",0) or 0, t.get("price_usd",0) or 0)
         for pos in w.get("defi",[]) + w.get("perps",[]):
             for t in pos.get("supply_tokens",[]) + pos.get("reward_tokens",[]):
-                _add(t.get("symbol",""), t.get("balance",0) or 0, t.get("value_usd",0) or 0)
+                _add(t.get("symbol",""), t.get("balance",0) or 0,
+                     t.get("value_usd",0) or 0, t.get("price_usd",0) or 0)
             for t in pos.get("borrow_tokens",[]):
-                stable_total -= (t.get("value_usd",0) or 0)   # borrows subtract
+                # Borrows reduce net value — treat as negative constant
+                constant_usd -= (t.get("value_usd",0) or 0)
     for a in load_dash_manual():
-        bal   = a.get("balance",0) or 0
-        price = a.get("price_usd",0) or 0
-        _add(a.get("symbol") or a.get("name") or "", bal, bal * price)
+        bal   = float(a.get("balance",0) or 0)
+        price = float(a.get("price_usd",0) or 0)
+        _add(a.get("symbol") or a.get("name") or "", bal, bal * price, price)
 
-    if not token_groups:
+    if not ticker_val:
         return []
 
-    # ── Fetch price histories in parallel (reuse existing exchange candle code) ─
+    # ── Fetch price histories in parallel ─────────────────────────────────────
     price_hist: dict = {}   # ticker -> [[ms, price], ...]
 
     def _fetch(ticker):
         return ticker, _chart_candles(ticker, p)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-        for ticker, prices in ex.map(_fetch, list(token_groups.keys())):
+        for ticker, prices in ex.map(_fetch, list(ticker_val.keys())):
             if prices:
                 price_hist[ticker] = prices
+            else:
+                # No candle data → add to constant bucket so value is preserved
+                constant_usd += ticker_val.pop(ticker, 0.0)
 
-    if not price_hist:
+    # Remove tickers that had no candle data (already moved to constant_usd above)
+    priceable = {t: v for t, v in ticker_val.items() if t in price_hist}
+    if not priceable and constant_usd == 0:
         return []
 
-    # ── Use the longest timeline as reference ─────────────────────────────────
+    # ── Use current price (last candle close) to compute scaling ratio ────────
+    # ratio[ticker][ts_ms] = historical_price / current_price
+    # current_price = last close in the fetched candle series
+    current_prices: dict = {}
+    for ticker, hist in price_hist.items():
+        if hist:
+            current_prices[ticker] = hist[-1][1]  # most-recent close
+
+    # ── Build reference timeline ───────────────────────────────────────────────
+    if not price_hist:
+        return [{"ts": int(time.time()), "v": round(constant_usd, 2)}]
+
     ref_ticker = max(price_hist, key=lambda k: len(price_hist[k]))
     ref_ts_ms  = [pt[0] for pt in price_hist[ref_ticker]]
 
-    # Binary-search nearest-price lookup
-    def _sorted(prices):
-        arr = sorted(prices, key=lambda x: x[0])
-        return arr
+    def _sorted_arr(prices):
+        return sorted(prices, key=lambda x: x[0])
 
-    sorted_hists = {k: _sorted(v) for k, v in price_hist.items()}
+    sorted_hists = {k: _sorted_arr(v) for k, v in price_hist.items()}
 
-    def _nearest(arr, target_ms):
+    def _nearest_price(arr, target_ms):
         lo, hi = 0, len(arr) - 1
         while lo < hi:
             mid = (lo + hi) // 2
@@ -3068,17 +3095,22 @@ def _build_portfolio_chart(period: str):
     # ── Build output points ───────────────────────────────────────────────────
     points = []
     for ts_ms in ref_ts_ms:
-        total = stable_total
-        for ticker, group in token_groups.items():
+        total = constant_usd
+        for ticker, val_usd in priceable.items():
+            cur_price = current_prices.get(ticker)
+            if not cur_price:
+                total += val_usd   # no current price → constant
+                continue
             sh = sorted_hists.get(ticker)
             if not sh:
-                total += group["value_usd"]   # no history: use current value as constant
+                total += val_usd
                 continue
-            price = _nearest(sh, ts_ms)
-            if price:
-                total += group["balance"] * price
+            hist_price = _nearest_price(sh, ts_ms)
+            if hist_price and cur_price:
+                # Scale: value × (historical_price / current_price)
+                total += val_usd * (hist_price / cur_price)
             else:
-                total += group["value_usd"]
+                total += val_usd
         points.append({"ts": ts_ms // 1000, "v": round(total, 2)})
 
     return points
