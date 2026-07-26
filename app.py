@@ -1724,6 +1724,7 @@ _WRAPPED_NATIVE = {"WETH","WBNB","WMATIC","WAVAX","WFTM","WONE","WHYPE","WCORE",
 _WRAPPED_TO_NATIVE = {
     "WETH": "ETH", "WBNB": "BNB", "WMATIC": "MATIC", "WAVAX": "AVAX",
     "WFTM": "FTM", "WONE": "ONE", "WHYPE": "HYPE", "WCORE": "CORE", "WGLMR": "GLMR",
+    "WS":   "S",   # wrapped Sonic → Sonic native
 }
 
 def _price_symbol_for(sym):
@@ -3198,7 +3199,7 @@ def _collect_live_prices(symbols):
 
     def _fetch_one(sym):
         try:
-            r = fetch_price(sym)
+            r = fetch_price(_price_symbol_for(sym))  # resolves WS→S, WHYPE→HYPE, etc.
             if r and r.get("price"):
                 with lock:
                     results[sym] = float(r["price"])
