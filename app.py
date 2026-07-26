@@ -398,6 +398,86 @@ def api_brapi(sym):
                 "source": "brapi.dev"
             }
 
+# ── Yahoo Finance fallback (last resort — needs crumb+cookie like StockTicker) ─
+_yf_session = {"crumb": None, "cookies": None, "ts": 0}
+_yf_session_lock = threading.Lock()
+_YF_CRUMB_TTL = 3600  # refresh crumb/cookie every hour
+_YF_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/125.0.0.0 Safari/537.36"
+)
+
+def _yf_get_session():
+    """Return (crumb, cookie_str) for Yahoo Finance, cached up to _YF_CRUMB_TTL seconds."""
+    import http.cookiejar as _cj
+    with _yf_session_lock:
+        s = _yf_session
+        if s["crumb"] and time.time() - s["ts"] < _YF_CRUMB_TTL:
+            return s["crumb"], s["cookies"]
+        try:
+            jar = _cj.CookieJar()
+            # Step 1: consent / cookie seed
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+            opener.addheaders = [("User-Agent", _YF_UA), ("Accept", "*/*")]
+            try:
+                opener.open("https://fc.yahoo.com/", timeout=6)
+            except Exception:
+                pass
+            # Step 2: get crumb
+            req_crumb = urllib.request.Request(
+                "https://query1.finance.yahoo.com/v1/test/getcrumb",
+                headers={"User-Agent": _YF_UA, "Accept": "*/*"}
+            )
+            opener2 = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+            opener2.addheaders = [("User-Agent", _YF_UA)]
+            with opener2.open(req_crumb, timeout=6) as r:
+                crumb = r.read().decode().strip()
+            if crumb and crumb != "null" and len(crumb) < 64:
+                cookie_str = "; ".join(f"{c.name}={c.value}" for c in jar)
+                s.update({"crumb": crumb, "cookies": cookie_str, "ts": time.time()})
+                return crumb, cookie_str
+        except Exception:
+            pass
+        return None, None
+
+def api_yahoo_finance(sym):
+    """Yahoo Finance v7 quote — last-resort fallback for stocks, ETFs, futures, forex."""
+    crumb, cookies = _yf_get_session()
+    if not crumb:
+        return None
+    s = sym.upper()
+    url = (
+        f"https://query1.finance.yahoo.com/v7/finance/quote"
+        f"?symbols={urllib.parse.quote(s)}&crumb={urllib.parse.quote(crumb)}"
+    )
+    try:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": _YF_UA,
+            "Cookie": cookies or "",
+            "Accept": "application/json",
+        })
+        with urllib.request.urlopen(req, timeout=8) as r:
+            d = json.loads(r.read().decode())
+        result = (d.get("quoteResponse") or {}).get("result") or []
+        if not result:
+            return None
+        q = result[0]
+        price = safe_float(q.get("regularMarketPrice"))
+        if not price:
+            return None
+        return {
+            "price":      price,
+            "change24h":  signed_float(q.get("regularMarketChangePercent")),
+            "high24h":    safe_float(q.get("regularMarketDayHigh")),
+            "low24h":     safe_float(q.get("regularMarketDayLow")),
+            "volume24h":  safe_float(q.get("regularMarketVolume")),
+            "market_cap": safe_float(q.get("marketCap")),
+            "source":     "Yahoo Finance",
+        }
+    except Exception:
+        return None
+
 def api_forex(sym):
     s = sym.upper()
     if len(s) != 6:
@@ -614,7 +694,8 @@ APIS = [
     api_mexc, api_kucoin, api_gateio,
     api_okx, api_kraken, api_cryptocompare,
     api_coincap, api_coingecko, api_bitfinex,
-    api_brapi
+    api_brapi,
+    api_yahoo_finance,   # last resort — stocks, ETFs, futures, anything Yahoo covers
 ]
 
 def _fetch_price_raw(symbol):
@@ -861,6 +942,37 @@ def search_symbols():
                         })
                 matches.sort(key=lambda s: (
                     not s["symbol"].upper().startswith(q), s["symbol"]))
+        except Exception:
+            pass
+    # Final fallback: Yahoo Finance suggestions (covers stocks, ETFs, futures, forex)
+    if not matches and len(q) >= 1:
+        try:
+            yf_url = (
+                f"https://query2.finance.yahoo.com/v1/finance/search"
+                f"?q={urllib.parse.quote(q)}&lang=en-US&region=US"
+                f"&quotesCount=10&newsCount=0&enableFuzzyQuery=false"
+            )
+            req_yf = urllib.request.Request(yf_url, headers={
+                "User-Agent": _YF_UA, "Accept": "application/json"
+            })
+            with urllib.request.urlopen(req_yf, timeout=6) as r:
+                yf_d = json.loads(r.read().decode())
+            quotes = (yf_d.get("quotes") or [])
+            seen_syms = set()
+            for item in quotes:
+                sym  = (item.get("symbol") or "").upper()
+                name = item.get("longname") or item.get("shortname") or ""
+                exch = item.get("exchDisp") or item.get("exchange") or "Yahoo Finance"
+                if not sym or sym in seen_syms:
+                    continue
+                seen_syms.add(sym)
+                matches.append({
+                    "symbol":   sym,
+                    "name":     name,
+                    "exchange": exch,
+                })
+            matches.sort(key=lambda s: (
+                not s["symbol"].upper().startswith(q), s["symbol"]))
         except Exception:
             pass
     return jsonify(matches[:15])
