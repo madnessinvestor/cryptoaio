@@ -2,7 +2,9 @@
 
 let dashWallets      = [];
 let dashManual       = [];
+let dashHistory      = [];
 let dashLoaded       = false;
+let _portfolioPeriod = "1D";
 let _walletListOpen  = true;
 let _manualListOpen  = true;
 const dashExpanded      = new Set();
@@ -144,13 +146,17 @@ function shortAddr(addr) {
 }
 
 async function loadDashboard() {
-  const [wr, mr] = await Promise.all([
+  const [wr, mr, hr] = await Promise.all([
     fetch("/api/dashboard/wallets"),
-    fetch("/api/dashboard/manual")
+    fetch("/api/dashboard/manual"),
+    fetch("/api/dashboard/history")
   ]);
   dashWallets = await wr.json();
   dashManual  = await mr.json();
+  try { dashHistory = await hr.json(); } catch { dashHistory = []; }
   dashLoaded  = true;
+  // Save snapshot in background — don't block render
+  fetch("/api/dashboard/snapshot", { method: "POST" }).catch(() => {});
   renderDashboard();
 }
 
@@ -185,10 +191,7 @@ function renderDashboard() {
   let html = "";
 
   if (grandTotal > 0) {
-    html += `<div class="dash-total-bar">
-      <span class="dash-total-label">${t("dash_total_label")}</span>
-      <span class="dash-total-val">${fmtDashUsd(grandTotal)}</span>
-    </div>`;
+    html += _portfolioHeroHtml(grandTotal);
     html += _diversificationChartHtml(grandTotal);
   }
 
@@ -321,6 +324,133 @@ function _buildDivData() {
   if (rest > 0) top.push([t("rpt_others"), rest]);
   const total   = top.reduce((s,[,v]) => s+v, 0);
   return top.map(([sym, val]) => ({ sym, val, pct: total > 0 ? val/total*100 : 0 }));
+}
+
+// ── Portfolio hero (Jumper-style) ─────────────────────────────────────────────
+
+function setPeriod(p) {
+  _portfolioPeriod = p;
+  renderDashboard();
+}
+
+/** Filter dashHistory to the selected time window. */
+function _getFilteredHistory(period) {
+  if (!dashHistory || dashHistory.length === 0) return [];
+  if (period === "All") return dashHistory;
+  const SECS = { "1D": 86400, "1W": 604800, "1M": 2592000, "3M": 7776000, "1Y": 31536000 };
+  const cutoff = (Date.now() / 1000) - (SECS[period] || 86400);
+  const filtered = dashHistory.filter(p => p.ts >= cutoff);
+  return filtered.length >= 2 ? filtered : [];
+}
+
+/** Compute absolute and % change vs the start of the selected period. */
+function _computeChange(grandTotal, period) {
+  const pts = _getFilteredHistory(period);
+  if (pts.length < 2) {
+    // 1D fallback: weighted average of token change24h
+    if (period === "1D") {
+      let wSum = 0, vSum = 0;
+      for (const w of dashWallets) {
+        for (const tk of (w.tokens || [])) {
+          const c = tk.change24h;
+          if (c != null && !isNaN(c) && (tk.value_usd || 0) > 0) {
+            wSum += c * tk.value_usd;
+            vSum += tk.value_usd;
+          }
+        }
+      }
+      if (vSum > 0) {
+        const pct = wSum / vSum;
+        const abs = grandTotal - grandTotal / (1 + pct / 100);
+        return { pct, abs };
+      }
+    }
+    return null;
+  }
+  const ref = pts[0].v;
+  if (!ref || ref === 0) return null;
+  const abs = grandTotal - ref;
+  const pct = (abs / ref) * 100;
+  return { abs, pct };
+}
+
+/** SVG area sparkline from an array of {ts, v} points. */
+function _sparklineSvg(pts, isPositive) {
+  if (!pts || pts.length < 2) return "";
+  const W = 400, H = 64;
+  const vals = pts.map(p => p.v);
+  const minV = Math.min(...vals);
+  const maxV = Math.max(...vals);
+  const range = maxV - minV || 1;
+  const PAD = 6;
+  const xs = pts.map((_, i) => (i / (pts.length - 1)) * W);
+  const ys = vals.map(v => H - PAD - ((v - minV) / range) * (H - PAD * 2));
+  const color = isPositive ? "var(--accent, #00c27c)" : "#ef4444";
+  const line  = xs.map((x, i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
+  const area  = `${line} L${W},${H} L0,${H} Z`;
+  return `<svg class="dash-hero-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+    xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="heroGrad${isPositive ? "P" : "N"}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${area}" fill="url(#heroGrad${isPositive ? "P" : "N"})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function _portfolioHeroHtml(grandTotal) {
+  const PERIODS = ["1D","1W","1M","3M","1Y","All"];
+  const change  = _computeChange(grandTotal, _portfolioPeriod);
+  const isPos   = change && change.abs >= 0;
+  const cls     = !change ? "neu" : (isPos ? "pos" : "neg");
+
+  // Format change line: "-26.50% • -$5.5K"
+  let changeLine = "—";
+  if (change) {
+    const pctStr = (change.pct >= 0 ? "+" : "") + change.pct.toFixed(2) + "%";
+    const rate = (typeof getRate  === "function") ? getRate()  : 1;
+    const sym  = (typeof currSym  === "function") ? currSym()  : "$";
+    const absV = Math.abs(change.abs) * rate;
+    let absStr;
+    if (absV >= 1e6)       absStr = sym + (absV / 1e6).toFixed(2) + "M";
+    else if (absV >= 1000) absStr = sym + absV.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    else                   absStr = sym + absV.toFixed(2);
+    const absSign = change.abs >= 0 ? "+" : "−";
+    changeLine = `${pctStr} &bull; ${absSign}${absStr}`;
+  }
+
+  // Period buttons
+  const btnHtml = PERIODS.map(p =>
+    `<button class="dash-hero-period-btn${p === _portfolioPeriod ? " active" : ""}"
+      onclick="setPeriod('${p}')">${p}</button>`
+  ).join("");
+
+  // Sparkline
+  const pts = _getFilteredHistory(_portfolioPeriod);
+  let chartHtml;
+  if (pts.length >= 2) {
+    chartHtml = _sparklineSvg(pts, isPos !== false);
+  } else {
+    const hint = _portfolioPeriod === "1D"
+      ? (typeof t === "function" ? t("hero_no_data_1d") || "Histórico acumulando — dados disponíveis após 1h" : "Histórico acumulando — dados disponíveis após 1h")
+      : (typeof t === "function" ? t("hero_no_data") || "Sem dados para este período ainda" : "Sem dados para este período ainda");
+    chartHtml = `<div class="dash-hero-no-data">${hint}</div>`;
+  }
+
+  return `<div class="dash-hero">
+    <div class="dash-hero-top">
+      <div class="dash-hero-header">
+        <span class="dash-hero-title">Portfólio</span>
+      </div>
+      <div class="dash-hero-value">${fmtDashUsd(grandTotal)}</div>
+      <div class="dash-hero-change ${cls}">${changeLine}</div>
+      <div class="dash-hero-periods">${btnHtml}</div>
+    </div>
+    ${chartHtml}
+  </div>`;
 }
 
 function _diversificationChartHtml(grandTotal) {

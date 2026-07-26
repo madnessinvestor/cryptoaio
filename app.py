@@ -2872,6 +2872,49 @@ def load_dash_manual():
 def save_dash_manual(data):
     _save_json_file(DASH_MANUAL_FILE, data)
 
+# ── Portfolio history snapshots ───────────────────────────────────────────────
+DASH_HISTORY_FILE = "dashboard_history.json"
+_HISTORY_MAX_PTS  = 8760   # ~1 year of hourly snapshots
+
+def _compute_grand_total():
+    """Compute current portfolio grand total from stored data (no live API calls)."""
+    total = 0.0
+    for w in load_dash_wallets():
+        total += sum((t.get("value_usd") or 0) for t in w.get("tokens", []))
+        total += sum((d.get("net_usd")   or 0) for d in w.get("defi",   []))
+        total += sum((p.get("net_usd")   or 0) for p in w.get("perps",  []))
+    for a in load_dash_manual():
+        total += (a.get("balance", 0) or 0) * (a.get("price_usd", 0) or 0)
+    return round(total, 2)
+
+def _save_dash_snapshot():
+    """Append current grand total to history (deduplicates within the same clock-hour)."""
+    total = _compute_grand_total()
+    if total <= 0:
+        return
+    now = int(time.time())
+    history = _load_json_file(DASH_HISTORY_FILE)
+    if not isinstance(history, list):
+        history = []
+    if history and now - history[-1].get("ts", 0) < 3600:
+        history[-1] = {"ts": now, "v": total}   # update the current-hour bucket
+    else:
+        history.append({"ts": now, "v": total})
+    if len(history) > _HISTORY_MAX_PTS:
+        history = history[-_HISTORY_MAX_PTS:]
+    _save_json_file(DASH_HISTORY_FILE, history)
+
+@app.route("/api/dashboard/history", methods=["GET"])
+def get_dash_history():
+    history = _load_json_file(DASH_HISTORY_FILE)
+    return jsonify(history if isinstance(history, list) else [])
+
+@app.route("/api/dashboard/snapshot", methods=["POST"])
+def post_dash_snapshot():
+    """Save a portfolio snapshot asynchronously (fire-and-forget)."""
+    threading.Thread(target=_save_dash_snapshot, daemon=True).start()
+    return jsonify({"ok": True})
+
 @app.route("/api/dashboard/status", methods=["GET"])
 def get_dash_status():
     return jsonify({"ready": True})
