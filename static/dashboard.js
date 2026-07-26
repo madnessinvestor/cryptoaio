@@ -7,6 +7,8 @@ let dashLoaded       = false;
 let _portfolioPeriod = "1D";
 let _walletListOpen  = true;
 let _manualListOpen  = true;
+const _chartCache    = {};        // period -> [{ts,v},...]
+const _chartLoading  = new Set(); // periods currently being fetched
 const dashExpanded      = new Set();
 const dashManualExpanded = new Set();
 const dashActiveTab  = {};
@@ -158,6 +160,26 @@ async function loadDashboard() {
   // Save snapshot in background — don't block render
   fetch("/api/dashboard/snapshot", { method: "POST" }).catch(() => {});
   renderDashboard();
+  // Kick off historical chart fetch for the active period (non-blocking)
+  _fetchChart(_portfolioPeriod);
+}
+
+/** Fetch chart data for a period from the server; re-render when ready. */
+async function _fetchChart(period) {
+  if (_chartLoading.has(period)) return;
+  _chartLoading.add(period);
+  try {
+    const r = await fetch(`/api/dashboard/chart?period=${period}`);
+    if (r.ok) {
+      const d = await r.json();
+      if (Array.isArray(d.points) && d.points.length >= 2) {
+        _chartCache[period] = d.points;
+        // Only re-render if this is still the active period
+        if (period === _portfolioPeriod) renderDashboard();
+      }
+    }
+  } catch { /* silent */ }
+  _chartLoading.delete(period);
 }
 
 function renderDashboard() {
@@ -358,6 +380,8 @@ function _buildDivData() {
 function setPeriod(p) {
   _portfolioPeriod = p;
   renderDashboard();
+  // Fetch chart data if not yet cached for this period
+  if (!_chartCache[p]) _fetchChart(p);
 }
 
 /** Filter dashHistory to the selected time window. */
@@ -370,41 +394,51 @@ function _getFilteredHistory(period) {
   return filtered.length >= 2 ? filtered : [];
 }
 
-/** Compute absolute and % change vs the start of the selected period. */
+/** Compute absolute and % change vs the start of the selected period.
+ *  Prefers reconstructed chart data (chartCache), falls back to
+ *  hourly snapshots (dashHistory), then to 24h weighted token change. */
 function _computeChange(grandTotal, period) {
+  // 1. Use reconstructed chart data if available
+  const chartPts = _chartCache[period];
+  if (chartPts && chartPts.length >= 2) {
+    const ref = chartPts[0].v;
+    if (ref && ref !== 0) {
+      const abs = grandTotal - ref;
+      return { abs, pct: (abs / ref) * 100 };
+    }
+  }
+  // 2. Fallback: old hourly snapshots
   const pts = _getFilteredHistory(period);
-  if (pts.length < 2) {
-    // 1D fallback: weighted average of token change24h across spot tokens,
-    // DeFi supply tokens, and perp supply tokens (wallet spot tokens are
-    // deduplicated out of positions, so combining both covers everything).
-    if (period === "1D") {
-      let wSum = 0, vSum = 0;
-      const _acc = (tk) => {
-        const c = tk.change24h;
-        if (c != null && !isNaN(c) && (tk.value_usd || 0) > 0) {
-          wSum += c * tk.value_usd;
-          vSum += tk.value_usd;
-        }
-      };
-      for (const w of dashWallets) {
-        for (const tk of (w.tokens || [])) _acc(tk);
-        for (const pos of [...(w.defi || []), ...(w.perps || [])]) {
-          for (const tk of (pos.supply_tokens || [])) _acc(tk);
-        }
+  if (pts.length >= 2) {
+    const ref = pts[0].v;
+    if (ref && ref !== 0) {
+      const abs = grandTotal - ref;
+      return { abs, pct: (abs / ref) * 100 };
+    }
+  }
+  // 3. Last-resort 1D fallback: weighted token change24h
+  if (period === "1D") {
+    let wSum = 0, vSum = 0;
+    const _acc = (tk) => {
+      const c = tk.change24h;
+      if (c != null && !isNaN(c) && (tk.value_usd || 0) > 0) {
+        wSum += c * tk.value_usd;
+        vSum += tk.value_usd;
       }
-      if (vSum > 0) {
-        const pct = wSum / vSum;
-        const abs = grandTotal - grandTotal / (1 + pct / 100);
-        return { pct, abs };
+    };
+    for (const w of dashWallets) {
+      for (const tk of (w.tokens || [])) _acc(tk);
+      for (const pos of [...(w.defi || []), ...(w.perps || [])]) {
+        for (const tk of (pos.supply_tokens || [])) _acc(tk);
       }
     }
-    return null;
+    if (vSum > 0) {
+      const pct = wSum / vSum;
+      const abs = grandTotal - grandTotal / (1 + pct / 100);
+      return { pct, abs };
+    }
   }
-  const ref = pts[0].v;
-  if (!ref || ref === 0) return null;
-  const abs = grandTotal - ref;
-  const pct = (abs / ref) * 100;
-  return { abs, pct };
+  return null;
 }
 
 /** SVG area sparkline from an array of {ts, v} points. */
@@ -461,15 +495,21 @@ function _portfolioHeroHtml(grandTotal) {
       onclick="setPeriod('${p}')">${p}</button>`
   ).join("");
 
-  // Sparkline
-  const pts = _getFilteredHistory(_portfolioPeriod);
+  // Sparkline — prefer reconstructed chart data, fall back to snapshots
+  const chartPts   = _chartCache[_portfolioPeriod];
+  const snapPts    = _getFilteredHistory(_portfolioPeriod);
+  const bestPts    = (chartPts && chartPts.length >= 2) ? chartPts : snapPts;
   let chartHtml;
-  if (pts.length >= 2) {
-    chartHtml = _sparklineSvg(pts, isPos !== false);
+  if (bestPts.length >= 2) {
+    chartHtml = _sparklineSvg(bestPts, isPos !== false);
+  } else if (_chartLoading.has(_portfolioPeriod)) {
+    chartHtml = `<div class="dash-hero-no-data" style="opacity:.55">
+      <span style="display:inline-block;animation:spin 1s linear infinite;margin-right:6px">⟳</span>
+      Carregando histórico…</div>`;
   } else {
     const hint = _portfolioPeriod === "1D"
-      ? (typeof t === "function" ? t("hero_no_data_1d") || "Histórico acumulando — dados disponíveis após 1h" : "Histórico acumulando — dados disponíveis após 1h")
-      : (typeof t === "function" ? t("hero_no_data") || "Sem dados para este período ainda" : "Sem dados para este período ainda");
+      ? "Histórico acumulando — dados disponíveis após 1h"
+      : "Sem dados para este período ainda";
     chartHtml = `<div class="dash-hero-no-data">${hint}</div>`;
   }
 

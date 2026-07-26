@@ -2926,6 +2926,176 @@ def get_dash_history():
     history = _load_json_file(DASH_HISTORY_FILE)
     return jsonify(history if isinstance(history, list) else [])
 
+# ── Portfolio chart — historical reconstruction via exchange candles ───────────
+
+# Tokens treated as $1 stable (no price history needed)
+_CHART_STABLECOINS = {
+    "USDC","USDT","DAI","USDE","BUSD","TUSD","USDP","FRAX",
+    "GUSD","LUSD","CRVUSD","PYUSD","USDS","SUSD","EUSD","FUSD",
+    "FDUSD","CUSD","HUSD","USDX","VUSD","NUSD","USDBC","USDCE",
+    "USDC.E","USD₮0",   # HyperEVM USDT and Base USDC.e
+}
+
+# Map wrapped/staked/bridged tokens → canonical exchange ticker for candle fetching
+_CHART_SYM_MAP = {
+    # ETH family
+    "UETH":"ETH","WETH":"ETH","STETH":"ETH","WSTETH":"ETH",
+    "CBETH":"ETH","RETH":"ETH","SETH":"ETH","WEETH":"ETH",
+    # BTC family
+    "UBTC":"BTC","WBTC":"BTC","CBBTC":"BTC","TBTC":"BTC",
+    # SOL family
+    "WSOL":"SOL","JITOSOL":"SOL","MSOL":"SOL","BSOL":"SOL",
+    "XSOL":"SOL","STKESOL":"SOL","JSOL":"SOL",
+    # Wrapped Sonic
+    "WS":"S",
+    # Staked ENA
+    "SENA":"ENA",
+    # Staked SUSDE → ENA (rough proxy; sUSDe ≈ USDe ≈ 1 USD so treat as stable)
+    "SUSDE":"__stable__",
+    # Polygon
+    "POL":"MATIC","WMATIC":"MATIC",
+}
+
+_CHART_CACHE:    dict = {}   # period -> (saved_ts, points_list)
+_CHART_CACHE_TTL = 600       # 10 min
+
+# period → (hl_interval, count, interval_ms)
+_CHART_PERIOD_CONF = {
+    "1D":  ("1h",  24,   3_600_000),
+    "1W":  ("4h",  42,  14_400_000),
+    "1M":  ("1d",  30,  86_400_000),
+    "3M":  ("1d",  90,  86_400_000),
+    "1Y":  ("1d", 365,  86_400_000),
+    "ALL": ("1d", 1095, 86_400_000),
+}
+
+def _chart_candles(sym: str, period: str):
+    """Return [[ms, close_price], ...] for a symbol using exchange candle APIs."""
+    interval, count, interval_ms = _CHART_PERIOD_CONF.get(period, ("1h", 24, 3_600_000))
+    now_ms   = int(time.time() * 1000)
+    start_ms = now_ms - count * interval_ms
+
+    raw = (
+        _candles_hyperliquid(sym, interval, start_ms, now_ms) or
+        _candles_mexc(sym, interval, count)                   or
+        _candles_gate(sym, interval, count)                   or
+        _candles_okx(sym, interval, count)
+    )
+    if not raw:
+        return []
+    return [[c["t"], c["c"]] for c in raw if c.get("c") is not None]
+
+def _build_portfolio_chart(period: str):
+    """Reconstruct historical portfolio value: current_balance × historical_price."""
+    p = period.upper()
+
+    # ── Collect token groups: exchange_ticker → {balance, value_usd} ──────────
+    stable_total  = 0.0
+    token_groups: dict = {}   # ticker -> {balance, value_usd}
+
+    def _add(sym_raw: str, balance: float, value_usd: float):
+        nonlocal stable_total
+        if balance <= 0 and value_usd <= 0:
+            return
+        sym = sym_raw.upper().strip()
+        # 1. Hard stablecoin list
+        if sym in _CHART_STABLECOINS or (sym.startswith("USD") and len(sym) <= 6):
+            stable_total += value_usd
+            return
+        # 2. Wrapped/staked alias
+        mapped = _CHART_SYM_MAP.get(sym, sym)
+        if mapped == "__stable__":
+            stable_total += value_usd
+            return
+        if mapped not in token_groups:
+            token_groups[mapped] = {"balance": 0.0, "value_usd": 0.0}
+        token_groups[mapped]["balance"]   += balance
+        token_groups[mapped]["value_usd"] += value_usd
+
+    for w in load_dash_wallets():
+        for t in w.get("tokens", []):
+            _add(t.get("symbol",""), t.get("balance",0) or 0, t.get("value_usd",0) or 0)
+        for pos in w.get("defi",[]) + w.get("perps",[]):
+            for t in pos.get("supply_tokens",[]) + pos.get("reward_tokens",[]):
+                _add(t.get("symbol",""), t.get("balance",0) or 0, t.get("value_usd",0) or 0)
+            for t in pos.get("borrow_tokens",[]):
+                stable_total -= (t.get("value_usd",0) or 0)   # borrows subtract
+    for a in load_dash_manual():
+        bal   = a.get("balance",0) or 0
+        price = a.get("price_usd",0) or 0
+        _add(a.get("symbol") or a.get("name") or "", bal, bal * price)
+
+    if not token_groups:
+        return []
+
+    # ── Fetch price histories in parallel (reuse existing exchange candle code) ─
+    price_hist: dict = {}   # ticker -> [[ms, price], ...]
+
+    def _fetch(ticker):
+        return ticker, _chart_candles(ticker, p)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+        for ticker, prices in ex.map(_fetch, list(token_groups.keys())):
+            if prices:
+                price_hist[ticker] = prices
+
+    if not price_hist:
+        return []
+
+    # ── Use the longest timeline as reference ─────────────────────────────────
+    ref_ticker = max(price_hist, key=lambda k: len(price_hist[k]))
+    ref_ts_ms  = [pt[0] for pt in price_hist[ref_ticker]]
+
+    # Binary-search nearest-price lookup
+    def _sorted(prices):
+        arr = sorted(prices, key=lambda x: x[0])
+        return arr
+
+    sorted_hists = {k: _sorted(v) for k, v in price_hist.items()}
+
+    def _nearest(arr, target_ms):
+        lo, hi = 0, len(arr) - 1
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if arr[mid][0] < target_ms:
+                lo = mid + 1
+            else:
+                hi = mid
+        if lo > 0 and abs(arr[lo-1][0] - target_ms) < abs(arr[lo][0] - target_ms):
+            lo -= 1
+        return arr[lo][1]
+
+    # ── Build output points ───────────────────────────────────────────────────
+    points = []
+    for ts_ms in ref_ts_ms:
+        total = stable_total
+        for ticker, group in token_groups.items():
+            sh = sorted_hists.get(ticker)
+            if not sh:
+                total += group["value_usd"]   # no history: use current value as constant
+                continue
+            price = _nearest(sh, ts_ms)
+            if price:
+                total += group["balance"] * price
+            else:
+                total += group["value_usd"]
+        points.append({"ts": ts_ms // 1000, "v": round(total, 2)})
+
+    return points
+
+@app.route("/api/dashboard/chart")
+def get_dash_chart():
+    """Return historical portfolio chart points reconstructed from exchange price history."""
+    period = request.args.get("period", "1D").upper()
+    if period not in _CHART_PERIOD_CONF:
+        return jsonify({"error": "invalid period"}), 400
+    cached = _CHART_CACHE.get(period)
+    if cached and time.time() - cached[0] < _CHART_CACHE_TTL:
+        return jsonify({"period": period, "points": cached[1]})
+    pts = _build_portfolio_chart(period)
+    _CHART_CACHE[period] = (time.time(), pts)
+    return jsonify({"period": period, "points": pts})
+
 @app.route("/api/dashboard/snapshot", methods=["POST"])
 def post_dash_snapshot():
     """Save a portfolio snapshot asynchronously (fire-and-forget)."""

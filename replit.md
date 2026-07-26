@@ -23,4 +23,10 @@ Runs on port 5000.
 
 Mad AI features (voice input, AI chat) are disabled without the optional keys. All other features (watchlist, portfolio, alerts, forex, stocks) work without any keys.
 
+## Dependencies
+Install with:
+```
+pip install -r requirements.txt
+```
+
 ## User preferences
