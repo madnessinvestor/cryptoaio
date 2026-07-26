@@ -374,16 +374,22 @@ function _getFilteredHistory(period) {
 function _computeChange(grandTotal, period) {
   const pts = _getFilteredHistory(period);
   if (pts.length < 2) {
-    // 1D fallback: weighted average of token change24h
+    // 1D fallback: weighted average of token change24h across spot tokens,
+    // DeFi supply tokens, and perp supply tokens (wallet spot tokens are
+    // deduplicated out of positions, so combining both covers everything).
     if (period === "1D") {
       let wSum = 0, vSum = 0;
+      const _acc = (tk) => {
+        const c = tk.change24h;
+        if (c != null && !isNaN(c) && (tk.value_usd || 0) > 0) {
+          wSum += c * tk.value_usd;
+          vSum += tk.value_usd;
+        }
+      };
       for (const w of dashWallets) {
-        for (const tk of (w.tokens || [])) {
-          const c = tk.change24h;
-          if (c != null && !isNaN(c) && (tk.value_usd || 0) > 0) {
-            wSum += c * tk.value_usd;
-            vSum += tk.value_usd;
-          }
+        for (const tk of (w.tokens || [])) _acc(tk);
+        for (const pos of [...(w.defi || []), ...(w.perps || [])]) {
+          for (const tk of (pos.supply_tokens || [])) _acc(tk);
         }
       }
       if (vSum > 0) {

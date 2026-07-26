@@ -3197,18 +3197,20 @@ def _collect_live_prices(symbols):
     first, then the full APIS sequence). Each token's fetch is staggered by
     50 ms to avoid hammering rate-limited APIs (e.g. CoinGecko) simultaneously.
     Fetches run in overlapping threads — the stagger only controls the *start*
-    time, not serialisation. Returns {SYMBOL: price}."""
+    time, not serialisation. Returns ({SYMBOL: price}, {SYMBOL: change24h})."""
     symbols = {s.strip().upper() for s in symbols if s and s.strip()}
     STABLES = {"USDC", "USDT", "DAI", "USDC.E", "USDBC", "FDUSD", "TUSD", "USDE"}
-    prices = {}
+    prices  = {}
+    changes = {}
     to_fetch = []
     for s in symbols:
         if s in STABLES:
-            prices[s] = 1.0
+            prices[s]  = 1.0
+            changes[s] = 0.0
         else:
             to_fetch.append(s)
     if not to_fetch:
-        return prices
+        return prices, changes
 
     results = {}
     lock = threading.Lock()
@@ -3218,7 +3220,7 @@ def _collect_live_prices(symbols):
             r = fetch_price(_price_symbol_for(sym))  # resolves WS→S, WHYPE→HYPE, etc.
             if r and r.get("price"):
                 with lock:
-                    results[sym] = float(r["price"])
+                    results[sym] = (float(r["price"]), r.get("change24h"))
         except Exception:
             pass
 
@@ -3233,8 +3235,12 @@ def _collect_live_prices(symbols):
     for t in threads:
         t.join(timeout=30)
 
-    prices.update(results)
-    return prices
+    for sym, (price, change) in results.items():
+        prices[sym] = price
+        if change is not None:
+            changes[sym] = change
+
+    return prices, changes
 
 def _apply_live_prices(tokens, defi, perps):
     """Recompute price_usd/value_usd for wallet tokens and defi/perp position
@@ -3255,11 +3261,14 @@ def _apply_live_prices(tokens, defi, perps):
         for t in row.get("supply_tokens", []) + row.get("reward_tokens", []) + row.get("borrow_tokens", []):
             symbols.add(t.get("symbol", ""))
 
-    price_map = _collect_live_prices(symbols)
+    price_map, change_map = _collect_live_prices(symbols)
 
     def _reprice(t, use_jumper_ceiling=False):
-        sym   = t.get("symbol", "").strip().upper()
-        price = price_map.get(sym)
+        sym    = t.get("symbol", "").strip().upper()
+        price  = price_map.get(sym)
+        change = change_map.get(sym)
+        if change is not None:
+            t["change24h"] = change
         if price is not None and t.get("balance", 0) > 0:
             live_value = t["balance"] * price
             jumper_usd = t.get("jumper_usd") if use_jumper_ceiling else None
