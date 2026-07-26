@@ -305,18 +305,45 @@ function _svgDonutArc(R, r, startDeg, endDeg) {
   ].join(" ");
 }
 
+// Normalize wrapped/bridged token symbols to their underlying asset for chart display
+function _normChartSym(s) {
+  const u = (s || "?").toUpperCase();
+  const MAP = {
+    UETH: "ETH", WETH: "ETH",
+    UBTC: "BTC", CBBTC: "BTC",
+    WHYPE: "HYPE",
+    WS: "S",
+  };
+  return MAP[u] || u;
+}
+
 function _buildDivData() {
   const map = {};
-  const add = (sym, val) => {
-    if (val > 0) map[sym] = (map[sym] || 0) + val;
-  };
+  const add = (sym, val) => { if (val > 0) map[sym] = (map[sym] || 0) + val; };
+  const sub = (sym, val) => { if (val > 0) map[sym] = (map[sym] || 0) - val; };
+
+  // Expand a position (DeFi or Perp) into its underlying supply/borrow/reward tokens.
+  // Falls back to a single bucket label when no token breakdown is available.
+  function _expandPos(pos, fallbackLabel) {
+    const supply = pos.supply_tokens || [];
+    const borrow = pos.borrow_tokens || [];
+    const reward = pos.reward_tokens || [];
+    if (supply.length === 0 && borrow.length === 0) {
+      add(fallbackLabel, pos.net_usd || 0);
+      return;
+    }
+    for (const tk of supply) add(_normChartSym(tk.symbol), tk.value_usd || 0);
+    for (const tk of borrow) sub(_normChartSym(tk.symbol), tk.value_usd || 0);
+    for (const tk of reward) add(_normChartSym(tk.symbol), tk.value_usd || 0);
+  }
+
   for (const w of dashWallets) {
-    for (const tk of (w.tokens || [])) add((tk.symbol || "?").toUpperCase(), tk.value_usd || 0);
-    for (const d  of (w.defi   || [])) add("DeFi",  d.net_usd || 0);
-    for (const p  of (w.perps  || [])) add("Perps", p.net_usd || 0);
+    for (const tk of (w.tokens || [])) add(_normChartSym(tk.symbol), tk.value_usd || 0);
+    for (const d  of (w.defi  || [])) _expandPos(d, "DeFi");
+    for (const p  of (w.perps || [])) _expandPos(p, "Perps");
   }
   for (const a of dashManual) {
-    add((a.symbol || "?").toUpperCase(), (a.balance || 0) * (a.price_usd || 0));
+    add(_normChartSym(a.symbol), (a.balance || 0) * (a.price_usd || 0));
   }
   const entries = Object.entries(map).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
   const top     = entries.slice(0, 9);
