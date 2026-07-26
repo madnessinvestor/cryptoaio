@@ -44,10 +44,17 @@ let exchangeRates   = { EUR: 0.92, BRL: 5.70 };
 const CURRENCY_LABELS  = { USD: "$",   EUR: "€",  BRL: "R$" };
 const CURRENCY_CYCLE   = ["USD", "EUR", "BRL"];
 const FOREX_CURRENCIES = new Set(["USD","EUR","BRL","GBP","JPY","CHF","AUD","CAD"]);
+const FOREX_SYMS = { USD: "$", EUR: "€", BRL: "R$", GBP: "£", JPY: "¥", CHF: "Fr", AUD: "A$", CAD: "C$" };
 
 function isForexPair(sym) {
   if (!sym || sym.length !== 6) return false;
   return FOREX_CURRENCIES.has(sym.slice(0,3)) && FOREX_CURRENCIES.has(sym.slice(3,6));
+}
+
+function forexQuoteSym(sym) {
+  // Returns the currency symbol for the quote (right-hand) side of a forex pair
+  const quote = sym.slice(3, 6).toUpperCase();
+  return FOREX_SYMS[quote] || quote;
 }
 
 function getRate() {
@@ -138,10 +145,10 @@ function formatUSD(v, skip = false) {
   return sign + fmt;
 }
 
-function formatPrice(v, skip = false) {
+function formatPrice(v, skip = false, forceSym = null) {
   if (v === null || v === undefined) return "—";
   const rate = skip ? 1 : getRate();
-  const sym  = skip ? "$" : currSym();
+  const sym  = forceSym != null ? forceSym : (skip ? "$" : currSym());
   v = v * rate;
   const neg = v < 0;
   const abs = Math.abs(v);
@@ -245,6 +252,7 @@ function initSortable() {
 
 function cardHTML(a) {
   const skip     = isForexPair(a.symbol);
+  const fxSym    = skip ? forexQuoteSym(a.symbol) : null;
   const hasPrice = a.price !== null && a.price !== undefined;
 
   return `<div class="asset-card" data-sym="${a.symbol}" onclick="handleCardClick(this,event)">
@@ -262,7 +270,7 @@ function cardHTML(a) {
         </div>
       </div>
       <div class="asset-right">
-        <div class="asset-price">${hasPrice ? formatPrice(a.price, skip) : "—"}</div>
+        <div class="asset-price">${hasPrice ? formatPrice(a.price, skip, fxSym) : "—"}</div>
         ${changeHTML(a.change24h)}
       </div>
     </div>
@@ -528,7 +536,8 @@ async function fetchTickerPrice(sym, seq) {
 
     if (seq !== searchSeq) return;
 
-    const skip = isForexPair(sym);
+    const skip  = isForexPair(sym);
+    const fxSym = skip ? forexQuoteSym(sym) : null;
 
     pendingSymbol = sym;
     searchingFor  = null;
@@ -536,15 +545,15 @@ async function fetchTickerPrice(sym, seq) {
     document.getElementById("pr-symbol").textContent = sym.slice(0, 4);
     const lblEl = document.getElementById("pr-symbol-label");
     if (lblEl) lblEl.textContent = d.symbol;
-    document.getElementById("pr-price").textContent  = formatPrice(d.price, skip);
+    document.getElementById("pr-price").textContent  = formatPrice(d.price, skip, fxSym);
     document.getElementById("pr-change").innerHTML   = changeHTML(d.change24h, "lg");
     document.getElementById("pr-source").textContent = t("via") + " " + (d.source || "—");
     loadModalIcon(sym);
 
     const statsEl = document.getElementById("pr-stats");
     const rows = [];
-    if (d.high24h)    rows.push(`<div class="stat"><span class="stat-label">${t("max24h")}</span><span class="stat-val">${formatPrice(d.high24h, skip)}</span></div>`);
-    if (d.low24h)     rows.push(`<div class="stat"><span class="stat-label">${t("min24h")}</span><span class="stat-val">${formatPrice(d.low24h, skip)}</span></div>`);
+    if (d.high24h)    rows.push(`<div class="stat"><span class="stat-label">${t("max24h")}</span><span class="stat-val">${formatPrice(d.high24h, skip, fxSym)}</span></div>`);
+    if (d.low24h)     rows.push(`<div class="stat"><span class="stat-label">${t("min24h")}</span><span class="stat-val">${formatPrice(d.low24h, skip, fxSym)}</span></div>`);
     if (d.volume24h)  rows.push(`<div class="stat"><span class="stat-label">${t("vol24h")}</span><span class="stat-val">${formatUSD(d.volume24h, skip)}</span></div>`);
     if (d.market_cap) rows.push(`<div class="stat"><span class="stat-label">${t("mcap")}</span><span class="stat-val">${formatUSD(d.market_cap, skip)}</span></div>`);
     statsEl.innerHTML = rows.join("");
@@ -618,11 +627,12 @@ function openDetailSheet(sym) {
 
   const asset = cachedAssets.find(a => a.symbol === sym);
   const skip  = isForexPair(sym);
+  const fxSym = skip ? forexQuoteSym(sym) : null;
 
   document.getElementById("detail-sym").textContent       = sym;
   document.getElementById("detail-icon-text").textContent = sym.slice(0, 4);
   document.getElementById("detail-source").textContent    = asset?.source || "";
-  document.getElementById("detail-price").textContent     = asset?.price != null ? formatPrice(asset.price, skip) : "—";
+  document.getElementById("detail-price").textContent     = asset?.price != null ? formatPrice(asset.price, skip, fxSym) : "—";
   document.getElementById("detail-change").innerHTML      = changeHTML(asset?.change24h, "lg");
 
   renderDetailStats(asset);
@@ -722,15 +732,16 @@ function closeDetailSheet() {
 }
 
 function renderDetailStats(asset) {
-  const el   = document.getElementById("detail-stats");
-  const skip = isForexPair(_detailSym);
+  const el    = document.getElementById("detail-stats");
+  const skip  = isForexPair(_detailSym);
+  const fxSym = skip ? forexQuoteSym(_detailSym) : null;
   if (!asset) { el.innerHTML = ""; return; }
   const hasBoth = asset.high24h != null && asset.low24h != null;
   const rows = [
     hasBoth
-      ? `<div class="stat"><span class="stat-label">${t("min24h")} / ${t("max24h")}</span><span class="stat-val">${formatPrice(asset.low24h, skip)} – ${formatPrice(asset.high24h, skip)}</span></div>` : "",
-    !hasBoth && asset.high24h != null ? `<div class="stat"><span class="stat-label">${t("max24h")}</span><span class="stat-val">${formatPrice(asset.high24h, skip)}</span></div>` : "",
-    !hasBoth && asset.low24h  != null ? `<div class="stat"><span class="stat-label">${t("min24h")}</span><span class="stat-val">${formatPrice(asset.low24h, skip)}</span></div>` : "",
+      ? `<div class="stat"><span class="stat-label">${t("min24h")} / ${t("max24h")}</span><span class="stat-val">${formatPrice(asset.low24h, skip, fxSym)} – ${formatPrice(asset.high24h, skip, fxSym)}</span></div>` : "",
+    !hasBoth && asset.high24h != null ? `<div class="stat"><span class="stat-label">${t("max24h")}</span><span class="stat-val">${formatPrice(asset.high24h, skip, fxSym)}</span></div>` : "",
+    !hasBoth && asset.low24h  != null ? `<div class="stat"><span class="stat-label">${t("min24h")}</span><span class="stat-val">${formatPrice(asset.low24h, skip, fxSym)}</span></div>` : "",
     asset.volume24h  != null ? `<div class="stat"><span class="stat-label">${t("vol24h")}</span><span class="stat-val">${formatUSD(asset.volume24h, skip)}</span></div>` : "",
     asset.market_cap != null ? `<div class="stat"><span class="stat-label">${t("mcap")}</span><span class="stat-val">${formatUSD(asset.market_cap, skip)}</span></div>` : "",
   ].filter(Boolean);
@@ -998,7 +1009,8 @@ function _drawChartCrosshair(ctx, geo, candles, idx) {
   ctx.stroke();
 
   const skip  = isForexPair(_detailSym);
-  const price = formatPrice(candle.c, skip);
+  const fxSym = skip ? forexQuoteSym(_detailSym) : null;
+  const price = formatPrice(candle.c, skip, fxSym);
   const date  = _fmtChartDate(candle.t, _detailPeriod);
   const label = `${price}   ${date}`;
 
