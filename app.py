@@ -321,8 +321,24 @@ def api_coincap(sym):
                         "source": "CoinCap"
                     }
 
+# Symbols where multiple tokens share the same ticker across exchanges, causing
+# price sources like Hyperliquid/MEXC to return data for the WRONG token.
+# Map symbol (upper) → canonical CoinGecko coin ID to bypass ambiguous search.
+_CG_ID_OVERRIDE = {
+    "S": "sonic-3",   # Sonic native — Hyperliquid's "S" is a different token
+}
+
+# Symbols that must skip exchange APIs (Hyperliquid, MEXC, etc.) and go straight
+# to CoinGecko, because those exchanges list a different token with the same ticker.
+_FORCE_COINGECKO = {"S"}
+
 def _coingecko_coin_data(sym):
     s = sym.lower()
+    # Direct CoinGecko ID override — skip the search entirely for known-ambiguous symbols
+    if sym.upper() in _CG_ID_OVERRIDE:
+        coin_id = _CG_ID_OVERRIDE[sym.upper()]
+        d = http_get(f"https://api.coingecko.com/api/v3/coins/{coin_id}?localization=false&tickers=false&community_data=false&developer_data=false")
+        return coin_id, d
     search = http_get(f"https://api.coingecko.com/api/v3/search?query={s}")
     if not search or not search.get("coins"):
         return None, None
