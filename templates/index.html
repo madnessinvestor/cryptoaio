@@ -433,23 +433,41 @@
       </div>
 
       <!-- GitHub Gist Sync -->
-      <div class="settings-title" style="margin-top:10px;" data-i18n="set_gist_title">Sync GitHub Gist</div>
-
-      <div class="settings-row settings-row-col">
-        <input type="password" id="gist-token-input" class="settings-input"
-               placeholder="ghp_…" data-i18n-placeholder="set_gist_token_ph" autocomplete="off">
-        <button class="settings-toggle-btn" onclick="gistSaveToken()" data-i18n="set_gist_save">Salvar token</button>
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row-label" data-i18n="set_gist_data">Dados</span>
-        <div class="settings-toggle-group">
-          <button class="settings-toggle-btn" onclick="gistBackup()" data-i18n="set_gist_backup">☁️ Backup</button>
-          <button class="settings-toggle-btn" onclick="gistRestore()" data-i18n="set_gist_restore">⬇️ Restaurar</button>
+      <div class="ai-cfg-card" style="margin-top:10px;">
+        <div class="ai-cfg-card-header">
+          <span class="ai-cfg-card-title" data-i18n="set_gist_title">Sync GitHub Gist</span>
+          <span id="gist-cfg-badge" class="ai-cfg-badge ai-cfg-badge-none">Sem token</span>
         </div>
-      </div>
 
-      <div id="gist-status" class="gist-status"></div>
+        <!-- Token salvo (renderizado via JS, igual ao ai-saved-keys) -->
+        <div id="gist-saved-token"></div>
+
+        <!-- Formulário de adição (oculto quando já há token) -->
+        <div id="gist-add-form">
+          <div class="ai-cfg-add-label">Adicionar token</div>
+          <div class="ai-cfg-inputs">
+            <div class="ai-cfg-input-wrap">
+              <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="gist-token-input" class="ai-cfg-input"
+                     placeholder="ghp_…" data-i18n-placeholder="set_gist_token_ph" autocomplete="off">
+            </div>
+          </div>
+          <div class="ai-cfg-actions">
+            <button class="ai-cfg-save-btn" onclick="gistSaveToken()" data-i18n="set_gist_save">Salvar token</button>
+          </div>
+        </div>
+
+        <!-- Ações de dados (visível só quando há token) -->
+        <div id="gist-data-section" style="display:none;">
+          <div class="ai-cfg-add-label" data-i18n="set_gist_data">Dados</div>
+          <div class="ai-cfg-actions">
+            <button class="ai-cfg-save-btn gist-action-btn" onclick="gistBackup()" data-i18n="set_gist_backup">☁️ Backup</button>
+            <button class="ai-cfg-save-btn gist-action-btn" onclick="gistRestore()" data-i18n="set_gist_restore">⬇️ Restaurar</button>
+          </div>
+        </div>
+
+        <div id="gist-status" class="gist-status"></div>
+      </div>
 
     </div>
   </div>
@@ -950,6 +968,6 @@
   <script src="/static/madai.js?v=9"></script>
   <script src="/static/dashboard.js?v=19"></script>
   <script src="/static/widget.js?v=6"></script>
-  <script src="/static/gist.js?v=1"></script>
+  <script src="/static/gist.js?v=3"></script>
 </body>
 </html>

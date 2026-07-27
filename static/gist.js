@@ -57,6 +57,7 @@ async function _gistDoSync() {
     const d = await r.json();
     if (d.ok) {
       localStorage.setItem(GIST_ID_KEY, d.gist_id);
+      _gistUpdateBadge();
       _gistSetStatus('ok', `☁️ ${_gt('set_gist_synced')}`);
     } else {
       _gistSetStatus('error', d.error || _gt('set_gist_err_generic'));
@@ -82,6 +83,7 @@ async function gistBackup() {
     const d = await r.json();
     if (d.ok) {
       localStorage.setItem(GIST_ID_KEY, d.gist_id);
+      _gistUpdateBadge();
       _gistSetStatus('ok', `✅ ${_gt('set_gist_backup_ok')} ${d.gist_id.slice(0, 8)}…`);
     } else {
       _gistSetStatus('error', d.error || _gt('set_gist_err_generic'));
@@ -122,15 +124,80 @@ function gistSaveToken() {
   const token = (document.getElementById('gist-token-input')?.value || '').trim();
   if (!token) { _gistSetStatus('error', _gt('set_gist_err_no_token')); return; }
   localStorage.setItem(GIST_TOKEN_KEY, token);
+  const inp = document.getElementById('gist-token-input');
+  if (inp) inp.value = '';
+  _gistRenderSaved();
   _gistSetStatus('ok', _gt('set_gist_token_saved'));
+}
+
+// ── Token delete ──────────────────────────────────────────────────────────────
+function gistDeleteToken() {
+  localStorage.removeItem(GIST_TOKEN_KEY);
+  localStorage.removeItem(GIST_ID_KEY);
+  clearTimeout(_gistSyncTimer);
+  _gistRenderSaved();
+  _gistSetStatus('info', '');
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
 function gistInit() {
-  const token = localStorage.getItem(GIST_TOKEN_KEY) || '';
-  const el    = document.getElementById('gist-token-input');
-  if (el && token) el.value = token;
+  _gistRenderSaved();
   _gistUpdateStatus();
+}
+
+// Renders the saved-token card (or clears it) and toggles the add form / data section
+function _gistRenderSaved() {
+  const token   = localStorage.getItem(GIST_TOKEN_KEY) || '';
+  const gistId  = localStorage.getItem(GIST_ID_KEY)    || '';
+  const wrap    = document.getElementById('gist-saved-token');
+  const addForm = document.getElementById('gist-add-form');
+  const dataSection = document.getElementById('gist-data-section');
+
+  if (!wrap) return;
+
+  if (token) {
+    const masked  = token.slice(0, 6) + '••••••••••••••••';
+    const gistLbl = gistId ? `Gist: ${gistId.slice(0, 8)}…` : 'Nenhum backup ainda';
+    wrap.innerHTML = `
+      <div class="ai-key-item active">
+        <div class="ai-key-item-info">
+          <span class="ai-key-item-prov">GitHub</span>
+          <span class="ai-key-item-key">${masked}</span>
+          <span class="ai-key-item-model">${gistLbl}</span>
+        </div>
+        <div class="ai-key-item-actions">
+          <span class="ai-key-active-badge">Ativo</span>
+          <button class="ai-key-delete-btn" onclick="gistDeleteToken()" title="Remover token">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+    if (addForm)     addForm.style.display     = 'none';
+    if (dataSection) dataSection.style.display = '';
+  } else {
+    wrap.innerHTML = '';
+    if (addForm)     addForm.style.display     = '';
+    if (dataSection) dataSection.style.display = 'none';
+  }
+
+  _gistUpdateBadge();
+}
+
+function _gistUpdateBadge() {
+  const badge  = document.getElementById('gist-cfg-badge');
+  if (!badge) return;
+  const token  = localStorage.getItem(GIST_TOKEN_KEY) || '';
+  const gistId = localStorage.getItem(GIST_ID_KEY)    || '';
+  if (token && gistId) {
+    badge.textContent = `Gist ${gistId.slice(0, 6)}…`;
+    badge.className   = 'ai-cfg-badge';
+  } else if (token) {
+    badge.textContent = 'Token salvo';
+    badge.className   = 'ai-cfg-badge';
+  } else {
+    badge.textContent = 'Sem token';
+    badge.className   = 'ai-cfg-badge ai-cfg-badge-none';
+  }
 }
 
 function _gistUpdateStatus() {

@@ -390,6 +390,12 @@ html { font-size: 114%; }
 }
 .ai-cfg-save-btn:hover  { opacity: 0.88; }
 .ai-cfg-save-btn:active { opacity: 0.7;  }
+.gist-action-btn {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.gist-action-btn:hover { opacity: 1; border-color: var(--accent); color: var(--accent); }
 .ai-cfg-remove-btn {
   background: transparent;
   border: 1px solid var(--border);
