@@ -2927,8 +2927,28 @@ def _ask_ai_user(messages, provider, api_key, model, base_url,
         req = urllib.request.Request(
             url, data=json.dumps(body).encode(),
             headers={"Content-Type": "application/json"}, method="POST")
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            result = json.loads(r.read().decode())
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                result = json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            body_err = ""
+            try: body_err = e.read().decode("utf-8", errors="replace")
+            except Exception: pass
+            detail = ""
+            try:
+                bd = json.loads(body_err)
+                detail = (bd.get("error", {}) or {}).get("message", "") or bd.get("message", "")
+            except Exception:
+                detail = body_err[:200] if body_err else ""
+            _HTTP_HINTS = {
+                401: "API key do Gemini inválida ou expirada.",
+                403: "Acesso negado (403) — verifique se a API key do Gemini é válida.",
+                429: "Limite de requisições atingido (429) — aguarde e tente novamente.",
+                404: "Modelo Gemini não encontrado — verifique o nome do modelo.",
+            }
+            hint = _HTTP_HINTS.get(e.code, f"HTTP {e.code}")
+            msg  = hint + (f" Detalhe: {detail}" if detail else "")
+            raise RuntimeError(msg) from e
         return _gw_parse_gemini(result, m)
 
     else:  # OpenAI-compatible: groq / openrouter / custom
@@ -2951,9 +2971,33 @@ def _ask_ai_user(messages, provider, api_key, model, base_url,
             headers["HTTP-Referer"] = "https://cryptoaio.replit.app"
             headers["X-Title"]      = "CryptoAIO"
         req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            result = json.loads(r.read().decode())
-        return _gw_parse_openai(result, provider or "custom")
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                result = json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            body = ""
+            try: body = e.read().decode("utf-8", errors="replace")
+            except Exception: pass
+            # Try to extract a meaningful message from the JSON body
+            detail = ""
+            try:
+                bd = json.loads(body)
+                detail = (bd.get("error", {}) or {}).get("message", "") or \
+                         bd.get("message", "") or bd.get("error", "")
+                if isinstance(detail, dict):
+                    detail = detail.get("message", "")
+            except Exception:
+                detail = body[:200] if body else ""
+            _HTTP_HINTS = {
+                401: "API key inválida ou expirada.",
+                403: "Acesso negado (403) — verifique se a API key está correta e tem saldo/permissão.",
+                429: "Limite de requisições atingido (429) — aguarde um momento e tente novamente.",
+                402: "Saldo insuficiente na conta do provedor.",
+                404: "Modelo não encontrado — verifique o nome do modelo.",
+            }
+            hint = _HTTP_HINTS.get(e.code, f"HTTP {e.code}")
+            msg  = f"{hint}" + (f" Detalhe: {detail}" if detail else "")
+            raise RuntimeError(msg) from e
 
 
 @app.route("/api/ai/chat", methods=["POST"])
