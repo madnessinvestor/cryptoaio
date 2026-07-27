@@ -2508,7 +2508,8 @@ def _gw_build_groq(messages, model, temperature, max_tokens):
     payload = json.dumps({"model": m, "messages": messages,
                           "max_tokens": max_tokens, "temperature": temperature}).encode()
     headers = {"Authorization": f"Bearer {_gw_groq_key()}",
-                "Content-Type": "application/json"}
+               "Content-Type": "application/json",
+               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"}
     return "https://api.groq.com/openai/v1/chat/completions", headers, payload, m
 
 def _gw_build_gemini(messages, model, temperature, max_tokens):
@@ -2966,7 +2967,8 @@ def _ask_ai_user(messages, provider, api_key, model, base_url,
                               "max_tokens": max_tokens,
                               "temperature": temperature}).encode()
         headers = {"Authorization": f"Bearer {api_key}",
-                   "Content-Type": "application/json"}
+                   "Content-Type": "application/json",
+                   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"}
         if provider == "openrouter":
             headers["HTTP-Referer"] = "https://cryptoaio.replit.app"
             headers["X-Title"]      = "CryptoAIO"
