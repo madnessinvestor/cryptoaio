@@ -41,11 +41,27 @@ function aiToggleAutoSpeak() {
 // Init button state after DOM ready
 document.addEventListener("DOMContentLoaded", _aiUpdateTtsBtn);
 
-// ─── Voice: MediaRecorder + Groq Whisper ─────────────────────────────────────
+// ─── Voice: MediaRecorder + Groq Whisper + Silence Detection ─────────────────
 
-let _aiMediaRecorder = null;
-let _aiListening     = false;
-let _aiAudioChunks   = [];
+let _aiMediaRecorder  = null;
+let _aiListening      = false;
+let _aiAudioChunks    = [];
+
+// Silence detection
+let _aiAudioContext   = null;
+let _aiAnalyser       = null;
+let _aiSilenceRafId   = null;
+let _aiSpeechDetected = false;
+let _aiSilenceSince   = null;
+
+const _AI_SILENCE_THRESHOLD = 12;   // RMS below this (0–128 scale) = silence
+const _AI_SILENCE_DURATION  = 1500; // ms of continuous silence → auto-stop
+const _AI_MIN_SPEECH_MS     = 400;  // ignore silence before at least this much speech
+
+function _aiMicPlaceholder() {
+  const lang = localStorage.getItem("lang") || "pt";
+  return lang === "en" ? "Ask about your portfolio..." : "Pergunte sobre seu portfólio...";
+}
 
 async function aiToggleMic() {
   if (_aiListening) { _aiStopMic(); return; }
@@ -63,7 +79,10 @@ async function aiToggleMic() {
     return;
   }
 
-  _aiAudioChunks = [];
+  _aiAudioChunks    = [];
+  _aiSpeechDetected = false;
+  _aiSilenceSince   = null;
+
   const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
     ? "audio/webm;codecs=opus"
     : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
@@ -75,6 +94,7 @@ async function aiToggleMic() {
   };
 
   _aiMediaRecorder.onstop = async () => {
+    _aiSilenceStop();
     stream.getTracks().forEach(t => t.stop());
     const blob = new Blob(_aiAudioChunks, { type: mimeType || "audio/webm" });
     _aiAudioChunks = [];
@@ -85,12 +105,81 @@ async function aiToggleMic() {
   _aiListening = true;
   document.getElementById("ai-mic-btn")?.classList.add("listening");
   const input = document.getElementById("ai-input");
-  if (input) { input.placeholder = "🎙 Gravando... clique para enviar"; input.disabled = true; }
+  const lang  = localStorage.getItem("lang") || "pt";
+  if (input) {
+    input.placeholder = lang === "en" ? "🎙 Listening... click to send" : "🎙 Ouvindo... clique para enviar";
+    input.disabled = true;
+  }
 
   _aiMediaRecorder.start();
+
+  // ── Silence detection via Web Audio API ──────────────────────────────────
+  try {
+    _aiAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source    = _aiAudioContext.createMediaStreamSource(stream);
+    _aiAnalyser     = _aiAudioContext.createAnalyser();
+    _aiAnalyser.fftSize = 512;
+    source.connect(_aiAnalyser);
+
+    const buf       = new Uint8Array(_aiAnalyser.fftSize);
+    const startedAt = Date.now();
+
+    const tick = () => {
+      if (!_aiListening) return;
+      _aiSilenceRafId = requestAnimationFrame(tick);
+
+      _aiAnalyser.getByteTimeDomainData(buf);
+      // RMS relative to centre (128)
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) { const v = buf[i] - 128; sum += v * v; }
+      const rms = Math.sqrt(sum / buf.length);
+
+      if (rms > _AI_SILENCE_THRESHOLD) {
+        _aiSpeechDetected = true;
+        _aiSilenceSince   = null;
+        // Update placeholder to show voice activity
+        const inp = document.getElementById("ai-input");
+        if (inp && _aiListening) {
+          const l = localStorage.getItem("lang") || "pt";
+          inp.placeholder = l === "en" ? "🎤 Speaking..." : "🎤 Falando...";
+        }
+      } else if (_aiSpeechDetected && Date.now() - startedAt > _AI_MIN_SPEECH_MS) {
+        if (_aiSilenceSince === null) _aiSilenceSince = Date.now();
+        const silentFor = Date.now() - _aiSilenceSince;
+
+        // Show countdown hint once silence starts
+        const inp = document.getElementById("ai-input");
+        if (inp && _aiListening) {
+          const l = localStorage.getItem("lang") || "pt";
+          inp.placeholder = l === "en" ? "🎙 Done? Sending shortly..." : "🎙 Enviando em instantes...";
+        }
+
+        if (silentFor >= _AI_SILENCE_DURATION) {
+          _aiStopMic();
+        }
+      }
+    };
+    _aiSilenceRafId = requestAnimationFrame(tick);
+  } catch (e) {
+    // Web Audio API unavailable — fall back to manual stop only
+    console.warn("Silence detection unavailable:", e);
+  }
+}
+
+function _aiSilenceStop() {
+  if (_aiSilenceRafId !== null) {
+    cancelAnimationFrame(_aiSilenceRafId);
+    _aiSilenceRafId = null;
+  }
+  if (_aiAudioContext) {
+    try { _aiAudioContext.close(); } catch (_) {}
+    _aiAudioContext = null;
+    _aiAnalyser     = null;
+  }
 }
 
 function _aiStopMic() {
+  _aiSilenceStop();
   if (_aiMediaRecorder && _aiMediaRecorder.state !== "inactive") {
     _aiMediaRecorder.stop();
   } else {
@@ -105,7 +194,7 @@ function _aiMicReset() {
   btn?.classList.remove("listening");
   if (input) {
     input.disabled    = _aiLoading;
-    input.placeholder = "Pergunte sobre seu portfólio...";
+    input.placeholder = _aiMicPlaceholder();
   }
 }
 
@@ -113,14 +202,16 @@ async function _aiTranscribeAndSend(blob) {
   const btn   = document.getElementById("ai-mic-btn");
   const input = document.getElementById("ai-input");
 
+  const uiLang = localStorage.getItem("lang") || "pt";
+  const isEn   = uiLang === "en";
+
   // Show transcribing state on mic button
-  if (btn) { btn.disabled = true; btn.title = "Transcrevendo..."; }
-  if (input) { input.placeholder = "⏳ Transcrevendo..."; input.disabled = true; }
+  if (btn) { btn.disabled = true; btn.title = isEn ? "Transcribing..." : "Transcrevendo..."; }
+  if (input) { input.placeholder = isEn ? "⏳ Transcribing..." : "⏳ Transcrevendo..."; input.disabled = true; }
 
   try {
     const form = new FormData();
     form.append("audio", blob, "audio.webm");
-    const uiLang = localStorage.getItem("lang") || "pt";
     form.append("language", uiLang);
 
     const res  = await fetch("/api/ai/transcribe", { method: "POST", body: form });
@@ -128,23 +219,23 @@ async function _aiTranscribeAndSend(blob) {
 
     if (!res.ok || data.error) {
       console.warn("Transcrição falhou:", data.error);
-      if (input) input.placeholder = "Erro ao transcrever. Tente digitar.";
+      if (input) input.placeholder = isEn ? "Transcription failed. Try typing." : "Erro ao transcrever. Tente digitar.";
     } else {
       const transcript = (data.transcript || "").trim();
       if (transcript) {
         aiSendMessage(transcript);
       } else {
-        if (input) input.placeholder = "Não entendi. Tente falar novamente.";
+        if (input) input.placeholder = isEn ? "Didn't catch that. Try again." : "Não entendi. Tente falar novamente.";
       }
     }
   } catch (e) {
     console.warn("Erro de rede na transcrição:", e);
-    if (input) input.placeholder = "Erro de conexão. Tente digitar.";
+    if (input) input.placeholder = isEn ? "Connection error. Try typing." : "Erro de conexão. Tente digitar.";
   } finally {
-    if (btn) { btn.disabled = false; btn.title = "Falar"; }
+    if (btn) { btn.disabled = false; btn.title = isEn ? "Speak" : "Falar"; }
     setTimeout(() => {
       if (input && !_aiListening) {
-        input.placeholder = "Pergunte sobre seu portfólio...";
+        input.placeholder = _aiMicPlaceholder();
         input.disabled    = _aiLoading;
       }
     }, 2000);
