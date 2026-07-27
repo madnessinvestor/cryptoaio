@@ -113,6 +113,72 @@ html { font-size: 114%; }
 }
 .ai-empty-icon { font-size: 2rem; margin-bottom: 10px; }
 
+/* ── Not-configured centred screen ── */
+.ai-not-configured {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  gap: 12px;
+  flex: 1;
+}
+.ai-not-cfg-icon {
+  font-size: 3rem;
+  margin-bottom: 4px;
+  animation: ai-float 3s ease-in-out infinite;
+}
+@keyframes ai-float {
+  0%,100% { transform: translateY(0);   }
+  50%      { transform: translateY(-6px);}
+}
+.ai-not-cfg-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.ai-not-cfg-sub {
+  font-size: 0.78rem;
+  color: var(--muted2);
+  max-width: 280px;
+  line-height: 1.6;
+}
+.ai-not-cfg-btn {
+  margin-top: 6px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  box-shadow: 0 2px 12px rgba(0,230,118,0.3);
+}
+.ai-not-cfg-btn:hover  { opacity: 0.9; transform: translateY(-1px); }
+.ai-not-cfg-btn:active { opacity: 0.75; transform: none; }
+
+/* ── Configured badge shown in settings ── */
+.ai-cfg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(0,230,118,0.12);
+  border: 1px solid rgba(0,230,118,0.3);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+.ai-cfg-badge-none {
+  color: var(--muted2);
+  background: var(--surface2);
+  border-color: var(--border);
+}
+
 .ai-bubble {
   max-width: 88%;
   padding: 10px 14px;

@@ -1142,6 +1142,110 @@ function detailCreateAlert() {
   }, 350);
 }
 
+// ─── Mad AI Config ────────────────────────────────────────────────────────────
+
+function aiConfigSetProvider(prov) {
+  document.querySelectorAll(".ai-prov-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.prov === prov)
+  );
+  const urlField   = document.getElementById("ai-config-url");
+  const modelField = document.getElementById("ai-config-model");
+  if (urlField) urlField.style.display = (prov === "custom") ? "" : "none";
+  if (modelField) {
+    const hints = {
+      groq:       "llama-3.3-70b-versatile",
+      gemini:     "gemini-2.0-flash",
+      openrouter: "meta-llama/llama-3.3-70b-instruct:free",
+      custom:     "gpt-4o",
+    };
+    modelField.placeholder = `Modelo (ex: ${hints[prov] || "gpt-4o"})`;
+  }
+}
+
+function aiConfigSave() {
+  const prov  = document.querySelector(".ai-prov-btn.active")?.dataset.prov || "";
+  const key   = (document.getElementById("ai-config-key")?.value   || "").trim();
+  const model = (document.getElementById("ai-config-model")?.value || "").trim();
+  const url   = (document.getElementById("ai-config-url")?.value   || "").trim();
+
+  if (!key) { _setAiConfigStatus("Informe a API key.", "error"); return; }
+  if (!prov) { _setAiConfigStatus("Selecione um provedor.", "error"); return; }
+
+  localStorage.setItem("madai_provider", prov);
+  localStorage.setItem("madai_key",      key);
+  localStorage.setItem("madai_model",    model);
+  localStorage.setItem("madai_url",      url);
+
+  _setAiConfigStatus("✓ Configuração salva!", "ok");
+  _aiUpdateConfiguredState();
+  _aiUpdateConfigBadge();
+}
+
+function aiConfigRemove() {
+  localStorage.removeItem("madai_provider");
+  localStorage.removeItem("madai_key");
+  localStorage.removeItem("madai_model");
+  localStorage.removeItem("madai_url");
+  const keyEl = document.getElementById("ai-config-key");
+  if (keyEl) keyEl.value = "";
+  _setAiConfigStatus("Configuração removida.", "ok");
+  _aiUpdateConfiguredState();
+  _aiUpdateConfigBadge();
+}
+
+function aiConfigLoad() {
+  const prov  = localStorage.getItem("madai_provider") || "";
+  const key   = localStorage.getItem("madai_key")      || "";
+  const model = localStorage.getItem("madai_model")    || "";
+  const url   = localStorage.getItem("madai_url")      || "";
+
+  if (prov) aiConfigSetProvider(prov);
+  const keyEl   = document.getElementById("ai-config-key");
+  const modelEl = document.getElementById("ai-config-model");
+  const urlEl   = document.getElementById("ai-config-url");
+  if (keyEl   && key)   keyEl.value   = key;
+  if (modelEl && model) modelEl.value = model;
+  if (urlEl   && url)   urlEl.value   = url;
+}
+
+function _setAiConfigStatus(msg, type) {
+  const el = document.getElementById("ai-config-status");
+  if (!el) return;
+  el.textContent = msg;
+  el.className   = "gist-status " + (type === "ok" ? "gist-status-ok" : "gist-status-error");
+  setTimeout(() => { if (el.textContent === msg) { el.textContent = ""; el.className = "gist-status"; } }, 3500);
+}
+
+function _aiUpdateConfigBadge() {
+  const badge = document.getElementById("ai-cfg-badge");
+  if (!badge) return;
+  const prov = localStorage.getItem("madai_provider");
+  const key  = localStorage.getItem("madai_key");
+  if (key && prov) {
+    const labels = { groq: "Groq", gemini: "Gemini", openrouter: "OpenRouter", custom: "Custom" };
+    badge.textContent  = "✓ " + (labels[prov] || prov) + " configurado";
+    badge.className    = "ai-cfg-badge";
+  } else {
+    badge.textContent  = "Sem API key";
+    badge.className    = "ai-cfg-badge ai-cfg-badge-none";
+  }
+}
+
+function _aiUpdateConfiguredState() {
+  const hasKey     = !!localStorage.getItem("madai_key");
+  const notCfg     = document.getElementById("ai-not-configured");
+  const empty      = document.getElementById("ai-empty");
+  const inputArea  = document.querySelector(".ai-input-area");
+  const chips      = document.querySelector(".ai-suggestions");
+  const analyzeBtn = document.getElementById("ai-analyze-btn");
+
+  if (notCfg)    { notCfg.style.display    = hasKey ? "none" : "flex"; }
+  if (empty)     { empty.style.display     = hasKey ? ""     : "none"; }
+  if (inputArea) { inputArea.style.display = hasKey ? ""     : "none"; }
+  if (chips)     { chips.style.display     = hasKey ? ""     : "none"; }
+  if (analyzeBtn){ analyzeBtn.disabled     = !hasKey; }
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 fetchRates();
@@ -1150,3 +1254,9 @@ applyColumns(trackerColumns);
 loadAssets();
 setInterval(loadAssets, 60000);
 _initChartInteraction();
+
+document.addEventListener("DOMContentLoaded", () => {
+  aiConfigLoad();
+  _aiUpdateConfiguredState();
+  _aiUpdateConfigBadge();
+});

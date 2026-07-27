@@ -210,6 +210,8 @@ async function _aiTranscribeAndSend(blob) {
     const form = new FormData();
     form.append("audio", blob, "audio.webm");
     form.append("language", uiLang);
+    const _tKey = localStorage.getItem("madai_key") || "";
+    if (_tKey) form.append("ai_key", _tKey);
 
     const res  = await fetch("/api/ai/transcribe", { method: "POST", body: form });
     const data = await res.json();
@@ -342,7 +344,14 @@ async function aiSendMessage(text) {
     const res = await fetch("/api/ai/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, history: _aiHistory })
+      body: JSON.stringify({
+        message:     text,
+        history:     _aiHistory,
+        ai_key:      localStorage.getItem("madai_key")      || "",
+        ai_provider: localStorage.getItem("madai_provider") || "",
+        ai_model:    localStorage.getItem("madai_model")    || "",
+        ai_url:      localStorage.getItem("madai_url")      || "",
+      })
     });
 
     const data = await res.json();
