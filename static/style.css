@@ -2234,6 +2234,29 @@ section.hidden { display: none; }
   line-height: 1.1;
   margin-bottom: 5px;
 }
+.dash-hero-period-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dash-hero-now {
+  font-size: 0.78rem;
+  color: var(--muted2);
+  margin-bottom: 4px;
+  margin-top: -2px;
+}
+.dash-hero-now strong {
+  color: var(--text);
+  font-weight: 700;
+}
+.dash-hero-val-loading {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  font-size: 1.6rem;
+  color: var(--muted2);
+}
 .dash-hero-change {
   font-size: 0.82rem;
   font-weight: 600;
