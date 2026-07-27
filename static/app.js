@@ -1145,12 +1145,12 @@ function detailCreateAlert() {
 // ─── Mad AI Config ────────────────────────────────────────────────────────────
 
 function aiConfigSetProvider(prov) {
-  document.querySelectorAll(".ai-prov-btn").forEach(b =>
+  document.querySelectorAll(".ai-prov-pill").forEach(b =>
     b.classList.toggle("active", b.dataset.prov === prov)
   );
-  const urlField   = document.getElementById("ai-config-url");
+  const urlWrap    = document.getElementById("ai-config-url-wrap");
   const modelField = document.getElementById("ai-config-model");
-  if (urlField) urlField.style.display = (prov === "custom") ? "" : "none";
+  if (urlWrap) urlWrap.style.display = (prov === "custom") ? "" : "none";
   if (modelField) {
     const hints = {
       groq:       "llama-3.3-70b-versatile",
@@ -1163,7 +1163,7 @@ function aiConfigSetProvider(prov) {
 }
 
 function aiConfigSave() {
-  const prov  = document.querySelector(".ai-prov-btn.active")?.dataset.prov || "";
+  const prov  = document.querySelector(".ai-prov-pill.active")?.dataset.prov || "";
   const key   = (document.getElementById("ai-config-key")?.value   || "").trim();
   const model = (document.getElementById("ai-config-model")?.value || "").trim();
   const url   = (document.getElementById("ai-config-url")?.value   || "").trim();
