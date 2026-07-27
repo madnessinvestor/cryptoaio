@@ -2946,10 +2946,12 @@ def ai_chat():
 
 @app.route("/api/ai/transcribe", methods=["POST"])
 def ai_transcribe():
-    """Transcribe audio via Groq Whisper."""
-    groq_key = _gw_groq_key()
-    if not groq_key:
-        return jsonify({"error": "GROQ_API_KEY não configurada."}), 503
+    """Transcribe audio via Groq Whisper (primary) or OpenAI Whisper (fallback)."""
+    groq_key    = _gw_groq_key()
+    openai_key  = os.environ.get("OPENAI_API_KEY", "").strip()
+
+    if not groq_key and not openai_key:
+        return jsonify({"error": "Nenhuma chave de transcrição configurada. Adicione GROQ_API_KEY ou OPENAI_API_KEY."}), 503
 
     audio_file = request.files.get("audio")
     if not audio_file:
@@ -2957,29 +2959,42 @@ def ai_transcribe():
 
     # Language sent by the frontend (matches the app UI language: "pt" or "en")
     lang = (request.form.get("language") or "pt").strip().lower()
-    # Groq Whisper accepts ISO-639-1 codes; map app lang codes to full codes
     whisper_lang = "en" if lang == "en" else "pt"
 
     try:
         import requests as _req
-        filename = audio_file.filename or "audio.webm"
+        filename   = audio_file.filename or "audio.webm"
         audio_bytes = audio_file.read()
 
-        resp = _req.post(
-            "https://api.groq.com/openai/v1/audio/transcriptions",
-            headers={"Authorization": f"Bearer {groq_key}"},
-            files={"file": (filename, audio_bytes, "audio/webm")},
-            data={
-                "model": "whisper-large-v3-turbo",
-                "language": whisper_lang,
-                "response_format": "json",
-            },
-            timeout=30,
-        )
-        if not resp.ok:
-            return jsonify({"error": f"Groq Whisper erro {resp.status_code}: {resp.text}"}), 502
-        transcript = (resp.json().get("text") or "").strip()
-        return jsonify({"transcript": transcript})
+        # ── Primary: Groq Whisper ─────────────────────────────────────────────
+        if groq_key:
+            resp = _req.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {groq_key}"},
+                files={"file": (filename, audio_bytes, "audio/webm")},
+                data={"model": "whisper-large-v3-turbo", "language": whisper_lang, "response_format": "json"},
+                timeout=30,
+            )
+            if resp.ok:
+                transcript = (resp.json().get("text") or "").strip()
+                return jsonify({"transcript": transcript})
+            # fall through to OpenAI if Groq fails
+
+        # ── Fallback: OpenAI Whisper ──────────────────────────────────────────
+        if openai_key:
+            resp = _req.post(
+                "https://api.openai.com/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {openai_key}"},
+                files={"file": (filename, audio_bytes, "audio/webm")},
+                data={"model": "whisper-1", "language": whisper_lang, "response_format": "json"},
+                timeout=30,
+            )
+            if not resp.ok:
+                return jsonify({"error": f"OpenAI Whisper erro {resp.status_code}: {resp.text}"}), 502
+            transcript = (resp.json().get("text") or "").strip()
+            return jsonify({"transcript": transcript})
+
+        return jsonify({"error": "Transcrição indisponível."}), 503
     except Exception as e:
         return jsonify({"error": f"Erro na transcrição: {str(e)}"}), 502
 
