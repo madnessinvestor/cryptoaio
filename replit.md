@@ -32,4 +32,4 @@ Configured for Replit Autoscale using `gunicorn` (`run` in `.replit`).
 
 ## User preferences
 
-- Git identity: `user.name = madnessinvestor`, `user.email = madness.investor@gmail.com` — sempre configurar com `git config --global` antes de commitar.
+- Git identity: sempre usar `user.name = madnessinvestor`, `user.email = madness.investor@gmail.com`. Antes de qualquer commit/push, rodar `git config user.name "madnessinvestor" && git config user.email "madness.investor@gmail.com"` para garantir que o autor seja o usuário, nunca o agente.
