@@ -271,6 +271,106 @@ html { font-size: 114%; }
 }
 .ai-cfg-input::placeholder { color: var(--muted2); }
 
+/* add label */
+.ai-cfg-add-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+/* saved key items */
+#ai-saved-keys {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-key-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.ai-key-item.active {
+  border-color: var(--accent);
+  background: rgba(0,230,118,0.06);
+}
+.ai-key-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.ai-key-item-prov {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.ai-key-item.active .ai-key-item-prov { color: var(--accent); }
+.ai-key-item-key {
+  font-size: 0.72rem;
+  color: var(--muted2);
+  font-family: monospace;
+  letter-spacing: 0.04em;
+}
+.ai-key-item-model {
+  font-size: 0.68rem;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ai-key-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ai-key-active-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0,230,118,0.15);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+.ai-key-use-btn {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted2);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ai-key-use-btn:hover { color: var(--accent); border-color: var(--accent); }
+.ai-key-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.ai-key-delete-btn:hover { color: #f66; border-color: #f664; background: rgba(255,102,102,0.08); }
+
 /* actions */
 .ai-cfg-actions {
   display: flex;

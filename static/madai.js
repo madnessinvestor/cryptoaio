@@ -210,8 +210,8 @@ async function _aiTranscribeAndSend(blob) {
     const form = new FormData();
     form.append("audio", blob, "audio.webm");
     form.append("language", uiLang);
-    const _tKey = localStorage.getItem("madai_key") || "";
-    if (_tKey) form.append("ai_key", _tKey);
+    const _tCfg = (() => { try { const k = JSON.parse(localStorage.getItem("madai_keys")||"{}"); const a = localStorage.getItem("madai_active")||Object.keys(k)[0]||""; return k[a]||{}; } catch { return {}; } })();
+    if (_tCfg.key) form.append("ai_key", _tCfg.key);
 
     const res  = await fetch("/api/ai/transcribe", { method: "POST", body: form });
     const data = await res.json();
@@ -341,16 +341,23 @@ async function aiSendMessage(text) {
   const thinkingId = _aiAppendThinking();
 
   try {
+    const _aiCfg = (() => {
+      try {
+        const keys   = JSON.parse(localStorage.getItem("madai_keys") || "{}");
+        const active = localStorage.getItem("madai_active") || Object.keys(keys)[0] || "";
+        return { ...(keys[active] || {}), provider: active };
+      } catch { return {}; }
+    })();
     const res = await fetch("/api/ai/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message:     text,
         history:     _aiHistory,
-        ai_key:      localStorage.getItem("madai_key")      || "",
-        ai_provider: localStorage.getItem("madai_provider") || "",
-        ai_model:    localStorage.getItem("madai_model")    || "",
-        ai_url:      localStorage.getItem("madai_url")      || "",
+        ai_key:      _aiCfg.key      || "",
+        ai_provider: _aiCfg.provider || "",
+        ai_model:    _aiCfg.model    || "",
+        ai_url:      _aiCfg.url      || "",
       })
     });
 

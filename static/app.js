@@ -1143,6 +1143,16 @@ function detailCreateAlert() {
 }
 
 // ─── Mad AI Config ────────────────────────────────────────────────────────────
+// Storage: madai_keys = { groq:{key,model}, openrouter:{key,model}, gemini:{key,model}, custom:{key,model,url} }
+//          madai_active = "groq"
+
+const _AI_PROV_LABELS = { groq: "Groq", openrouter: "OpenRouter", gemini: "Gemini", custom: "Custom" };
+
+function _aiGetKeys() {
+  try { return JSON.parse(localStorage.getItem("madai_keys") || "{}"); } catch { return {}; }
+}
+function _aiSetKeys(obj) { localStorage.setItem("madai_keys", JSON.stringify(obj)); }
+function _aiGetActive() { return localStorage.getItem("madai_active") || ""; }
 
 function aiConfigSetProvider(prov) {
   document.querySelectorAll(".ai-prov-pill").forEach(b =>
@@ -1152,14 +1162,18 @@ function aiConfigSetProvider(prov) {
   const modelField = document.getElementById("ai-config-model");
   if (urlWrap) urlWrap.style.display = (prov === "custom") ? "" : "none";
   if (modelField) {
-    const hints = {
-      groq:       "llama-3.3-70b-versatile",
-      gemini:     "gemini-2.0-flash",
-      openrouter: "meta-llama/llama-3.3-70b-instruct:free",
-      custom:     "gpt-4o",
-    };
+    const hints = { groq: "llama-3.3-70b-versatile", gemini: "gemini-2.0-flash",
+                    openrouter: "meta-llama/llama-3.3-70b-instruct:free", custom: "gpt-4o" };
     modelField.placeholder = `Modelo (ex: ${hints[prov] || "gpt-4o"})`;
   }
+  // Pre-fill fields if key already saved for this provider
+  const saved = _aiGetKeys()[prov] || {};
+  const keyEl   = document.getElementById("ai-config-key");
+  const modelEl = document.getElementById("ai-config-model");
+  const urlEl   = document.getElementById("ai-config-url");
+  if (keyEl)   keyEl.value   = saved.key   || "";
+  if (modelEl) modelEl.value = saved.model || "";
+  if (urlEl)   urlEl.value   = saved.url   || "";
 }
 
 function aiConfigSave() {
@@ -1168,44 +1182,92 @@ function aiConfigSave() {
   const model = (document.getElementById("ai-config-model")?.value || "").trim();
   const url   = (document.getElementById("ai-config-url")?.value   || "").trim();
 
-  if (!key) { _setAiConfigStatus("Informe a API key.", "error"); return; }
+  if (!key)  { _setAiConfigStatus("Informe a API key.", "error"); return; }
   if (!prov) { _setAiConfigStatus("Selecione um provedor.", "error"); return; }
 
-  localStorage.setItem("madai_provider", prov);
-  localStorage.setItem("madai_key",      key);
-  localStorage.setItem("madai_model",    model);
-  localStorage.setItem("madai_url",      url);
+  const keys = _aiGetKeys();
+  keys[prov] = { key, model, url };
+  _aiSetKeys(keys);
 
-  _setAiConfigStatus("✓ Configuração salva!", "ok");
+  // If no active yet, make this one active
+  if (!_aiGetActive()) localStorage.setItem("madai_active", prov);
+
+  // Clear form
+  const keyEl = document.getElementById("ai-config-key");
+  const modelEl = document.getElementById("ai-config-model");
+  const urlEl   = document.getElementById("ai-config-url");
+  if (keyEl)   keyEl.value   = "";
+  if (modelEl) modelEl.value = "";
+  if (urlEl)   urlEl.value   = "";
+  document.querySelectorAll(".ai-prov-pill").forEach(b => b.classList.remove("active"));
+
+  _setAiConfigStatus("✓ Chave salva!", "ok");
+  _aiRenderSavedKeys();
   _aiUpdateConfiguredState();
   _aiUpdateConfigBadge();
 }
 
-function aiConfigRemove() {
-  localStorage.removeItem("madai_provider");
-  localStorage.removeItem("madai_key");
-  localStorage.removeItem("madai_model");
-  localStorage.removeItem("madai_url");
-  const keyEl = document.getElementById("ai-config-key");
-  if (keyEl) keyEl.value = "";
-  _setAiConfigStatus("Configuração removida.", "ok");
+function aiConfigDelete(prov) {
+  const keys = _aiGetKeys();
+  delete keys[prov];
+  _aiSetKeys(keys);
+  // If we deleted the active, pick another or clear
+  if (_aiGetActive() === prov) {
+    const remaining = Object.keys(keys);
+    localStorage.setItem("madai_active", remaining[0] || "");
+  }
+  _aiRenderSavedKeys();
   _aiUpdateConfiguredState();
   _aiUpdateConfigBadge();
+}
+
+function aiConfigActivate(prov) {
+  localStorage.setItem("madai_active", prov);
+  _aiRenderSavedKeys();
+  _aiUpdateConfigBadge();
+}
+
+function _aiMaskKey(key) {
+  if (!key) return "";
+  if (key.length <= 8) return "••••••••";
+  return key.slice(0, 4) + "••••" + key.slice(-4);
+}
+
+function _aiRenderSavedKeys() {
+  const container = document.getElementById("ai-saved-keys");
+  if (!container) return;
+  const keys   = _aiGetKeys();
+  const active = _aiGetActive();
+  const entries = Object.entries(keys);
+  if (!entries.length) { container.innerHTML = ""; return; }
+
+  container.innerHTML = entries.map(([prov, cfg]) => {
+    const isActive = prov === active;
+    const label    = _AI_PROV_LABELS[prov] || prov;
+    const model    = cfg.model ? `<span class="ai-key-item-model">${cfg.model}</span>` : "";
+    const activeCls = isActive ? " active" : "";
+    const activeBadge = isActive
+      ? `<span class="ai-key-active-badge">ativo</span>`
+      : `<button class="ai-key-use-btn" onclick="aiConfigActivate('${prov}')">usar</button>`;
+    return `
+      <div class="ai-key-item${activeCls}">
+        <div class="ai-key-item-info" onclick="aiConfigActivate('${prov}')">
+          <span class="ai-key-item-prov">${label}</span>
+          <span class="ai-key-item-key">${_aiMaskKey(cfg.key)}</span>
+          ${model}
+        </div>
+        <div class="ai-key-item-actions">
+          ${activeBadge}
+          <button class="ai-key-delete-btn" onclick="aiConfigDelete('${prov}')" title="Excluir">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
 }
 
 function aiConfigLoad() {
-  const prov  = localStorage.getItem("madai_provider") || "";
-  const key   = localStorage.getItem("madai_key")      || "";
-  const model = localStorage.getItem("madai_model")    || "";
-  const url   = localStorage.getItem("madai_url")      || "";
-
-  if (prov) aiConfigSetProvider(prov);
-  const keyEl   = document.getElementById("ai-config-key");
-  const modelEl = document.getElementById("ai-config-model");
-  const urlEl   = document.getElementById("ai-config-url");
-  if (keyEl   && key)   keyEl.value   = key;
-  if (modelEl && model) modelEl.value = model;
-  if (urlEl   && url)   urlEl.value   = url;
+  _aiRenderSavedKeys();
 }
 
 function _setAiConfigStatus(msg, type) {
@@ -1217,22 +1279,25 @@ function _setAiConfigStatus(msg, type) {
 }
 
 function _aiUpdateConfigBadge() {
-  const badge = document.getElementById("ai-cfg-badge");
+  const badge  = document.getElementById("ai-cfg-badge");
   if (!badge) return;
-  const prov = localStorage.getItem("madai_provider");
-  const key  = localStorage.getItem("madai_key");
-  if (key && prov) {
-    const labels = { groq: "Groq", gemini: "Gemini", openrouter: "OpenRouter", custom: "Custom" };
-    badge.textContent  = "✓ " + (labels[prov] || prov) + " configurado";
-    badge.className    = "ai-cfg-badge";
+  const keys   = _aiGetKeys();
+  const active = _aiGetActive();
+  const count  = Object.keys(keys).length;
+  if (count === 0) {
+    badge.textContent = "Sem API key";
+    badge.className   = "ai-cfg-badge ai-cfg-badge-none";
+  } else if (active && keys[active]) {
+    badge.textContent = "✓ " + (_AI_PROV_LABELS[active] || active) + " ativo";
+    badge.className   = "ai-cfg-badge";
   } else {
-    badge.textContent  = "Sem API key";
-    badge.className    = "ai-cfg-badge ai-cfg-badge-none";
+    badge.textContent = count + (count === 1 ? " chave" : " chaves");
+    badge.className   = "ai-cfg-badge";
   }
 }
 
 function _aiUpdateConfiguredState() {
-  const hasKey     = !!localStorage.getItem("madai_key");
+  const hasKey     = Object.keys(_aiGetKeys()).length > 0;
   const notCfg     = document.getElementById("ai-not-configured");
   const empty      = document.getElementById("ai-empty");
   const inputArea  = document.querySelector(".ai-input-area");
