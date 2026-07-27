@@ -116,6 +116,9 @@ async function aiToggleMic() {
   // ── Silence detection via Web Audio API ──────────────────────────────────
   try {
     _aiAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // Resume is required: AudioContext starts suspended in many browsers
+    if (_aiAudioContext.state === "suspended") await _aiAudioContext.resume();
+
     const source    = _aiAudioContext.createMediaStreamSource(stream);
     _aiAnalyser     = _aiAudioContext.createAnalyser();
     _aiAnalyser.fftSize = 512;
@@ -123,10 +126,14 @@ async function aiToggleMic() {
 
     const buf       = new Uint8Array(_aiAnalyser.fftSize);
     const startedAt = Date.now();
+    const MAX_REC_MS = 30000; // hard cap: auto-stop after 30s regardless
 
     const tick = () => {
       if (!_aiListening) return;
       _aiSilenceRafId = requestAnimationFrame(tick);
+
+      // Hard timeout
+      if (Date.now() - startedAt > MAX_REC_MS) { _aiStopMic(); return; }
 
       _aiAnalyser.getByteTimeDomainData(buf);
       // RMS relative to centre (128)
@@ -134,34 +141,24 @@ async function aiToggleMic() {
       for (let i = 0; i < buf.length; i++) { const v = buf[i] - 128; sum += v * v; }
       const rms = Math.sqrt(sum / buf.length);
 
+      const inp = document.getElementById("ai-input");
+      const l   = localStorage.getItem("lang") || "pt";
+
       if (rms > _AI_SILENCE_THRESHOLD) {
         _aiSpeechDetected = true;
         _aiSilenceSince   = null;
-        // Update placeholder to show voice activity
-        const inp = document.getElementById("ai-input");
-        if (inp && _aiListening) {
-          const l = localStorage.getItem("lang") || "pt";
+        if (inp && _aiListening)
           inp.placeholder = l === "en" ? "🎤 Speaking..." : "🎤 Falando...";
-        }
       } else if (_aiSpeechDetected && Date.now() - startedAt > _AI_MIN_SPEECH_MS) {
         if (_aiSilenceSince === null) _aiSilenceSince = Date.now();
         const silentFor = Date.now() - _aiSilenceSince;
-
-        // Show countdown hint once silence starts
-        const inp = document.getElementById("ai-input");
-        if (inp && _aiListening) {
-          const l = localStorage.getItem("lang") || "pt";
+        if (inp && _aiListening)
           inp.placeholder = l === "en" ? "🎙 Done? Sending shortly..." : "🎙 Enviando em instantes...";
-        }
-
-        if (silentFor >= _AI_SILENCE_DURATION) {
-          _aiStopMic();
-        }
+        if (silentFor >= _AI_SILENCE_DURATION) _aiStopMic();
       }
     };
     _aiSilenceRafId = requestAnimationFrame(tick);
   } catch (e) {
-    // Web Audio API unavailable — fall back to manual stop only
     console.warn("Silence detection unavailable:", e);
   }
 }
