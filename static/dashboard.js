@@ -21,7 +21,14 @@ function setShowTestnets(val) {
   showTestnets = !!val;
   localStorage.setItem("showTestnets", showTestnets);
   _applyTestnetToggleUI();
-  if (dashLoaded) renderDashboard();
+  if (!dashLoaded) return;
+  // Auto-expand wallets that have testnet tokens so they are immediately visible
+  if (showTestnets) {
+    for (const w of dashWallets) {
+      if ((w.testnet_tokens || []).length > 0) dashExpanded.add(w.address);
+    }
+  }
+  renderDashboard();
 }
 
 function _applyTestnetToggleUI() {
@@ -42,35 +49,55 @@ function _applyTestnetToggleUI() {
 })();
 
 const CHAIN_META = {
-  // Jumper chain keys
-  eth:        { name: "Ethereum",   color: "#627eea", id: 1 },
-  bsc:        { name: "BNB Chain",  color: "#f0b90b", id: 56 },
-  pol:        { name: "Polygon",    color: "#8247e5", id: 137 },
-  arb:        { name: "Arbitrum",   color: "#28a0f0", id: 42161 },
-  opt:        { name: "Optimism",   color: "#ff0420", id: 10 },
-  avax:       { name: "Avalanche",  color: "#e84142", id: 43114 },
-  ftm:        { name: "Fantom",     color: "#1969ff", id: 250 },
-  base:       { name: "Base",       color: "#0052ff", id: 8453 },
-  bas:        { name: "Base",       color: "#0052ff", id: 8453 },
-  gnosis:     { name: "Gnosis",     color: "#04795b", id: 100 },
-  linea:      { name: "Linea",      color: "#61dfff", id: 59144 },
-  scrl:       { name: "Scroll",     color: "#eebb6a", id: 534352 },
-  era:        { name: "zkSync Era", color: "#8c8dfc", id: 324 },
-  cro:        { name: "Cronos",     color: "#002d74", id: 25 },
-  celo:       { name: "Celo",       color: "#35d07f", id: 42220 },
-  mnt:        { name: "Mantle",     color: "#50e3c2", id: 5000 },
-  blast:      { name: "Blast",      color: "#fcfc03", id: 81457 },
-  mode:       { name: "Mode",       color: "#dffe00", id: 34443 },
-  sol:        { name: "Solana",     color: "#9945ff", id: null },
-  hyp:        { name: "HyperEVM",   color: "#00c27c", id: 999 },
-  sei:        { name: "SEI",        color: "#9d1fff", id: 1329 },
+  // Jumper chain keys — mainnet
+  eth:        { name: "Ethereum",        color: "#627eea", id: 1 },
+  bsc:        { name: "BNB Chain",       color: "#f0b90b", id: 56 },
+  pol:        { name: "Polygon",         color: "#8247e5", id: 137 },
+  arb:        { name: "Arbitrum",        color: "#28a0f0", id: 42161 },
+  opt:        { name: "Optimism",        color: "#ff0420", id: 10 },
+  avax:       { name: "Avalanche",       color: "#e84142", id: 43114 },
+  ftm:        { name: "Fantom",          color: "#1969ff", id: 250 },
+  base:       { name: "Base",            color: "#0052ff", id: 8453 },
+  bas:        { name: "Base",            color: "#0052ff", id: 8453 },
+  gnosis:     { name: "Gnosis",          color: "#04795b", id: 100 },
+  linea:      { name: "Linea",           color: "#61dfff", id: 59144 },
+  lna:        { name: "Linea",           color: "#61dfff", id: 59144 },
+  scrl:       { name: "Scroll",          color: "#eebb6a", id: 534352 },
+  era:        { name: "zkSync Era",      color: "#8c8dfc", id: 324 },
+  cro:        { name: "Cronos",          color: "#002d74", id: 25 },
+  celo:       { name: "Celo",            color: "#35d07f", id: 42220 },
+  mnt:        { name: "Mantle",          color: "#50e3c2", id: 5000 },
+  blast:      { name: "Blast",           color: "#fcfc03", id: 81457 },
+  mode:       { name: "Mode",            color: "#dffe00", id: 34443 },
+  sol:        { name: "Solana",          color: "#9945ff", id: null },
+  hyp:        { name: "HyperEVM",        color: "#00c27c", id: 999 },
+  sei:        { name: "SEI",             color: "#9d1fff", id: 1329 },
+  son:        { name: "Sonic",           color: "#fc6c09", id: 146 },
+  ink:        { name: "Ink",             color: "#7b3fe4", id: 57073 },
+  meg:        { name: "MegaETH",         color: "#00d4aa", id: null },
+  swel:       { name: "Swell",           color: "#00aaff", id: 1923 },
+  ape:        { name: "ApeChain",        color: "#0054fa", id: 33139 },
+  wc:         { name: "World Chain",     color: "#00b0ff", id: 480 },
+  bob:        { name: "BOB",             color: "#f7931a", id: 60808 },
+  corn:       { name: "Corn",            color: "#f7c948", id: 21000000 },
+  // Testnets
+  bast:       { name: "Base Sepolia",    color: "#0052ff", id: 84532,    testnet: true },
+  sep:        { name: "Sepolia",         color: "#627eea", id: 11155111, testnet: true },
+  holesky:    { name: "Holesky",         color: "#627eea", id: 17000,    testnet: true },
+  "arb-sep":  { name: "Arb Sepolia",     color: "#28a0f0", id: 421614,   testnet: true },
+  "opt-sep":  { name: "OP Sepolia",      color: "#ff0420", id: 11155420, testnet: true },
+  amoy:       { name: "Polygon Amoy",    color: "#8247e5", id: 80002,    testnet: true },
+  fuji:       { name: "Fuji",            color: "#e84142", id: 43113,    testnet: true },
+  chapel:     { name: "BSC Chapel",      color: "#f0b90b", id: 97,       testnet: true },
+  mumbai:     { name: "Mumbai",          color: "#8247e5", id: 80001,    testnet: true },
+  goerli:     { name: "Goerli",          color: "#627eea", id: 5,        testnet: true },
   // legacy / alternate aliases
-  polygon:    { name: "Polygon",    color: "#8247e5", id: 137 },
-  arbitrum:   { name: "Arbitrum",   color: "#28a0f0", id: 42161 },
-  optimism:   { name: "Optimism",   color: "#ff0420", id: 10 },
-  avalanche:  { name: "Avalanche",  color: "#e84142", id: 43114 },
-  scroll:     { name: "Scroll",     color: "#eebb6a", id: 534352 },
-  zksync:     { name: "zkSync",     color: "#8c8dfc", id: 324 },
+  polygon:    { name: "Polygon",         color: "#8247e5", id: 137 },
+  arbitrum:   { name: "Arbitrum",        color: "#28a0f0", id: 42161 },
+  optimism:   { name: "Optimism",        color: "#ff0420", id: 10 },
+  avalanche:  { name: "Avalanche",       color: "#e84142", id: 43114 },
+  scroll:     { name: "Scroll",          color: "#eebb6a", id: 534352 },
+  zksync:     { name: "zkSync",          color: "#8c8dfc", id: 324 },
 };
 
 // Two-stage icon error handler: first try /api/icon-img (handles aliases),

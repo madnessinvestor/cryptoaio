@@ -3267,9 +3267,23 @@ def _parse_token_amount(amount_raw, decimals):
         return 0.0
 
 # Chain-key substrings that indicate a testnet (case-insensitive match)
-_TESTNET_CHAIN_PATTERNS = ("sep", "goer", "testnet", "mumbai", "fuji", "chapel",
-                           "ropsten", "rinkeby", "kovan", "holesky",
-                           "bast",   # Base Sepolia Testnet
+_TESTNET_CHAIN_PATTERNS = ("sep",      # Sepolia family (eth-sep, arb-sep, opt-sep, base-sep…)
+                           "goer",     # Goerli
+                           "testnet",  # generic
+                           "mumbai",   # Polygon Mumbai (legacy)
+                           "amoy",     # Polygon Amoy
+                           "fuji",     # Avalanche Fuji
+                           "chapel",   # BNB Chapel
+                           "ropsten",  # legacy
+                           "rinkeby",  # legacy
+                           "kovan",    # legacy
+                           "holesky",  # Ethereum Holesky
+                           "bast",     # Base Sepolia Testnet (Jumper key)
+                           "bsep",     # alternate Base Sepolia
+                           "zksep",    # zkSync Sepolia
+                           "scrsep",   # Scroll Sepolia
+                           "blsep",    # Blast Sepolia
+                           "lineasep", # Linea Sepolia
                            )
 
 def _is_testnet_chain(chain_key: str) -> bool:
