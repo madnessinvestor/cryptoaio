@@ -2012,9 +2012,14 @@ def _parse_evm_result(tx_from, transfers, tx_data, native_sym, chain_name, times
     # output (token B) over the intermediate leg (token A → stable).
     tx_from_direct_seller  = best_seller is not None and best_seller[1] == tx_from
     known_wallet_is_seller = best_seller is not None and best_seller[1] in known_wallets
+    # A saved wallet identified as the BUYER always wins — it is the real trader even
+    # when the aggregator's relayer (tx_from) appears as an intermediate seller.
+    # Example: KyberSwap / 1inch aggregators where tx_from is a router contract that
+    # internally swaps tokens on behalf of the user's saved wallet.
+    known_wallet_is_buyer  = best_buyer  is not None and best_buyer[1]  in known_wallets
 
     chained_swap_buy = False
-    if tx_from_direct_seller and best_buyer is not None:
+    if tx_from_direct_seller and best_buyer is not None and not known_wallet_is_buyer:
         _bought_sym   = best_buyer[2]
         _sold_sym     = best_seller[2]
         _buyer_stable = best_buyer[4]
@@ -2027,8 +2032,8 @@ def _parse_evm_result(tx_from, transfers, tx_data, native_sym, chain_name, times
 
     use_buyer = (
         best_buyer is not None
-        and (not tx_from_direct_seller or chained_swap_buy)
-        and not known_wallet_is_seller  # same for saved wallets
+        and (known_wallet_is_buyer or not tx_from_direct_seller or chained_swap_buy)
+        and not known_wallet_is_seller
     )
 
     if use_buyer:
