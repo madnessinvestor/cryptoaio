@@ -2902,24 +2902,85 @@ def _build_dashboard_context():
     return "\n".join(lines)
 
 
+def _ask_ai_user(messages, provider, api_key, model, base_url,
+                 temperature=0.5, max_tokens=1024, timeout=30):
+    """Call AI with user-supplied credentials.
+    Supports gemini (native format) and any OpenAI-compatible endpoint."""
+    if provider == "gemini":
+        m = model or "gemini-2.0-flash"
+        system_parts, contents = [], []
+        for msg in messages:
+            role, text = msg["role"], msg.get("content", "")
+            if role == "system":
+                system_parts.append({"text": text})
+            elif role == "user":
+                contents.append({"role": "user",  "parts": [{"text": text}]})
+            elif role == "assistant":
+                contents.append({"role": "model", "parts": [{"text": text}]})
+        body = {"contents": contents,
+                "generationConfig": {"temperature": temperature,
+                                     "maxOutputTokens": max_tokens}}
+        if system_parts:
+            body["systemInstruction"] = {"parts": system_parts}
+        url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+               f"{m}:generateContent?key={api_key}")
+        req = urllib.request.Request(
+            url, data=json.dumps(body).encode(),
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            result = json.loads(r.read().decode())
+        return _gw_parse_gemini(result, m)
+
+    else:  # OpenAI-compatible: groq / openrouter / custom
+        if provider == "groq":
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            m   = model or "llama-3.3-70b-versatile"
+        elif provider == "openrouter":
+            url = "https://openrouter.ai/api/v1/chat/completions"
+            m   = model or "openrouter/auto"
+        else:
+            base = (base_url or "https://api.openai.com/v1").rstrip("/")
+            url  = f"{base}/chat/completions"
+            m    = model or "gpt-4o-mini"
+        payload = json.dumps({"model": m, "messages": messages,
+                              "max_tokens": max_tokens,
+                              "temperature": temperature}).encode()
+        headers = {"Authorization": f"Bearer {api_key}",
+                   "Content-Type": "application/json"}
+        if provider == "openrouter":
+            headers["HTTP-Referer"] = "https://cryptoaio.replit.app"
+            headers["X-Title"]      = "CryptoAIO"
+        req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            result = json.loads(r.read().decode())
+        return _gw_parse_openai(result, provider or "custom")
+
+
 @app.route("/api/ai/chat", methods=["POST"])
 def ai_chat():
-    # Check that at least one provider is configured
-    if not any([_gw_groq_key(), _gw_gemini_key(), _gw_openrouter_key()]):
-        return jsonify({"error": "Mad AI não configurado. Adicione GROQ_API_KEY, "
-                                 "GOOGLE_AI_API_KEY ou OPENROUTER_API_KEY nos Secrets."}), 503
-
     data         = request.json or {}
     user_message = (data.get("message") or "").strip()
     history      = data.get("history") or []
 
+    # User-supplied AI config (from localStorage, sent by the frontend)
+    u_key      = (data.get("ai_key")      or "").strip()
+    u_provider = (data.get("ai_provider") or "").strip().lower()
+    u_model    = (data.get("ai_model")    or "").strip()
+    u_url      = (data.get("ai_url")      or "").strip()
+
+    has_user_cfg = bool(u_key)
+    has_env_cfg  = any([_gw_groq_key(), _gw_gemini_key(), _gw_openrouter_key()])
+
+    if not has_user_cfg and not has_env_cfg:
+        return jsonify({"error": "Mad AI não configurado. "
+                                 "Adicione sua API key nas Configurações do app."}), 503
     if not user_message:
         return jsonify({"error": "Mensagem vazia."}), 400
 
     # Build both contexts in parallel
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
-        f_portfolio  = ex.submit(_build_portfolio_context)
-        f_dashboard  = ex.submit(_build_dashboard_context)
+        f_portfolio   = ex.submit(_build_portfolio_context)
+        f_dashboard   = ex.submit(_build_dashboard_context)
         portfolio_ctx = f_portfolio.result()
         dashboard_ctx = f_dashboard.result()
 
@@ -2936,7 +2997,10 @@ def ai_chat():
     messages.append({"role": "user", "content": user_message})
 
     try:
-        result = ask_ai(messages, temperature=0.5, max_tokens=1024)
+        if has_user_cfg:
+            result = _ask_ai_user(messages, u_provider, u_key, u_model, u_url)
+        else:
+            result = ask_ai(messages, temperature=0.5, max_tokens=1024)
         return jsonify({"reply": result["text"], "provider": result["provider"]})
     except RuntimeError as ex:
         return jsonify({"error": str(ex)}), 502
@@ -2947,14 +3011,16 @@ def ai_chat():
 @app.route("/api/ai/transcribe", methods=["POST"])
 def ai_transcribe():
     """Transcribe audio via Groq Whisper (primary) or OpenAI Whisper (fallback)."""
-    groq_key    = _gw_groq_key()
+    # Accept a user-supplied Groq key sent from the frontend
+    user_key    = (request.form.get("ai_key") or "").strip()
+    groq_key    = user_key or _gw_groq_key()
     # Only use OPENAI_API_KEY if it's a real OpenAI key (not an OpenRouter key)
     _raw_openai = os.environ.get("OPENAI_API_KEY", "").strip()
     openai_key  = _raw_openai if _raw_openai and not _raw_openai.startswith("sk-or-") else ""
 
     if not groq_key and not openai_key:
         hint = " (a chave detectada é OpenRouter — ela não suporta transcrição; adicione GROQ_API_KEY)" if _raw_openai.startswith("sk-or-") else ""
-        return jsonify({"error": f"Nenhuma chave de transcrição configurada. Adicione GROQ_API_KEY ou uma OPENAI_API_KEY real.{hint}"}), 503
+        return jsonify({"error": f"Nenhuma chave de transcrição configurada. Configure uma GROQ API key nas Configurações.{hint}"}), 503
 
     audio_file = request.files.get("audio")
     if not audio_file:

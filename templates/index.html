@@ -101,6 +101,12 @@
           <div class="ai-empty-icon">✨</div>
           <p data-i18n="ai_empty">Clique em <b>Analisar meus Trades</b> ou faça uma pergunta sobre seu portfólio.</p>
         </div>
+        <div class="ai-not-configured" id="ai-not-configured" style="display:none">
+          <div class="ai-not-cfg-icon">🤖</div>
+          <p class="ai-not-cfg-title" data-i18n="ai_not_cfg_title">Mad AI não configurado</p>
+          <p class="ai-not-cfg-sub" data-i18n="ai_not_cfg_sub">Escolha um provedor e adicione sua API key nas configurações para começar.</p>
+          <button class="ai-not-cfg-btn" onclick="openSettingsPanel()" data-i18n="ai_not_cfg_btn">Abrir Configurações →</button>
+        </div>
       </div>
 
       <div class="ai-input-area">
@@ -376,6 +382,27 @@
           <button class="settings-toggle-btn" onclick="openDonateModal()">❤️ Donate</button>
         </div>
       </div>
+
+      <!-- Mad AI Config -->
+      <div class="settings-title" style="margin-top:10px;" data-i18n="set_ai_title">Mad AI</div>
+
+      <div class="settings-row">
+        <span class="settings-row-label" data-i18n="set_ai_provider">Provedor</span>
+        <div class="settings-toggle-group" style="flex-wrap:wrap;gap:4px;">
+          <button class="settings-toggle-btn ai-prov-btn" data-prov="groq"       onclick="aiConfigSetProvider('groq')">Groq</button>
+          <button class="settings-toggle-btn ai-prov-btn" data-prov="openrouter" onclick="aiConfigSetProvider('openrouter')">OpenRouter</button>
+          <button class="settings-toggle-btn ai-prov-btn" data-prov="gemini"     onclick="aiConfigSetProvider('gemini')">Gemini</button>
+          <button class="settings-toggle-btn ai-prov-btn" data-prov="custom"     onclick="aiConfigSetProvider('custom')" data-i18n="set_ai_custom">Custom</button>
+        </div>
+      </div>
+
+      <div class="settings-row settings-row-col">
+        <input type="password" id="ai-config-key"   class="settings-input" placeholder="API Key…" autocomplete="off">
+        <input type="text"     id="ai-config-model" class="settings-input" placeholder="Modelo (ex: llama-3.3-70b-versatile)" autocomplete="off">
+        <input type="text"     id="ai-config-url"   class="settings-input" placeholder="Base URL (ex: https://api.openai.com/v1)" autocomplete="off" style="display:none">
+        <button class="settings-toggle-btn" onclick="aiConfigSave()" data-i18n="set_ai_save">Salvar</button>
+      </div>
+      <div id="ai-config-status" class="gist-status"></div>
 
       <!-- GitHub Gist Sync -->
       <div class="settings-title" style="margin-top:10px;" data-i18n="set_gist_title">Sync GitHub Gist</div>
