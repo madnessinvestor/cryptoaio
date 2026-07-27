@@ -2159,71 +2159,250 @@ def _sol_mint_symbol(mint, timeout=5):
         return data["symbol"].upper()
     return None
 
+# ── Solana parser constants ────────────────────────────────────────────────────
+_WSOL_MINT = "So11111111111111111111111111111111111111112"
+# Minimum fee-adjusted SOL change to treat as a real swap leg (not rent/fee noise)
+_SOL_SWAP_MIN_LAMPORTS = 500_000   # 0.0005 SOL ≈ ~$0.10 at $200/SOL
+
+def _candles_mexc_range(sym, interval, start_ms, end_ms):
+    """MEXC klines with explicit start/end timestamps."""
+    mexc_int = {"1h": "60m", "4h": "4h", "1d": "1d"}.get(interval, "60m")
+    data = _tx_fetch(
+        f"https://api.mexc.com/api/v3/klines?symbol={sym}USDT&interval={mexc_int}"
+        f"&startTime={start_ms}&endTime={end_ms}&limit=10")
+    if not data or not isinstance(data, list):
+        return None
+    out = [{"t": int(c[0]), "c": safe_float(c[4])} for c in data if len(c) >= 5]
+    return out if out else None
+
+def _candles_gate_range(sym, interval, start_ms, end_ms):
+    """Gate.io candlesticks with explicit from/to Unix seconds."""
+    gate_int = {"1h": "1h", "4h": "4h", "1d": "1d"}.get(interval, "1h")
+    from_s, to_s = start_ms // 1000, end_ms // 1000
+    data = _tx_fetch(
+        f"https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair={sym}_USDT"
+        f"&interval={gate_int}&from={from_s}&to={to_s}&limit=10")
+    if not data or not isinstance(data, list):
+        return None
+    out = [{"t": int(c[0]) * 1000, "c": safe_float(c[2])} for c in data if len(c) >= 6]
+    return out if out else None
+
+def _sol_hist_price(sym, ts_unix):
+    """Return (price_usd, is_live_fallback) for sym at ts_unix (Unix seconds).
+
+    Tries exchange candles in a ±3 h window around the tx timestamp first;
+    falls back to a live price if no historical data is found.
+    Returns (None, False) when no price at all is available.
+    """
+    if not sym:
+        return None, False
+
+    # Stablecoins are always ~$1
+    if sym.upper() in _STABLECOINS:
+        return 1.0, False
+
+    canon = _price_symbol_for(sym)   # WSOL→SOL, WETH→ETH, etc.
+
+    # ── Historical path ───────────────────────────────────────────────────────
+    if ts_unix:
+        ts_ms    = int(float(ts_unix) * 1000)
+        start_ms = ts_ms - 3 * 3_600_000
+        end_ms   = ts_ms + 3 * 3_600_000
+
+        candles = (
+            _candles_hyperliquid(canon, "1h", start_ms, end_ms) or
+            _candles_mexc_range(canon, "1h", start_ms, end_ms) or
+            _candles_gate_range(canon, "1h", start_ms, end_ms)
+        )
+        if candles:
+            nearest = min(candles, key=lambda c: abs(c["t"] - ts_ms))
+            if nearest.get("c"):
+                return float(nearest["c"]), False
+
+    # ── Live fallback ─────────────────────────────────────────────────────────
+    try:
+        r = fetch_price(canon)
+        if r and r.get("price"):
+            return float(r["price"]), True
+    except Exception:
+        pass
+    return None, False
+
 def _lookup_solana(hash_):
+    """Parse a Solana transaction hash and extract swap legs.
+
+    Strategy:
+      1. Fetch the transaction via getTransaction (jsonParsed).
+      2. Identify the user's wallet = fee-payer (accountKeys[0]).
+      3. Compute SPL token balance deltas ONLY for accounts owned by the user
+         (filters out pool / intermediary accounts in multi-hop routes).
+      4. Add a synthetic native-SOL leg when SOL moves but no WSOL appears in
+         the user's token accounts (common for Jupiter SOL-input/output swaps).
+      5. Resolve mint addresses to symbols via Jupiter token API.
+      6. Estimate USD value from historical candle data at the tx timestamp;
+         fall back to live price; fall back to null (never fail the import).
+    """
     resp = _tx_post("https://api.mainnet-beta.solana.com", {
         "jsonrpc": "2.0", "id": 1, "method": "getTransaction",
         "params": [hash_, {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0}]
     })
     if not resp or not resp.get("result"):
         return jsonify({"error": "not_found"}), 404
-    result = resp["result"]
-    meta   = result.get("meta") or {}
-    ts     = None
-    if result.get("blockTime"):
+
+    tx_result = resp["result"]
+    meta      = tx_result.get("meta") or {}
+
+    # ── Timestamp ─────────────────────────────────────────────────────────────
+    ts_unix = tx_result.get("blockTime")
+    ts = None
+    if ts_unix:
         from datetime import datetime, timezone
-        ts = datetime.fromtimestamp(result["blockTime"], tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        ts = datetime.fromtimestamp(ts_unix, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-    pre_map   = {b["accountIndex"]: b for b in (meta.get("preTokenBalances") or [])}
-    post_list = meta.get("postTokenBalances") or []
-    changes   = []
-    for p in post_list:
-        idx      = p["accountIndex"]
-        pre_b    = pre_map.get(idx, {})
-        pre_amt  = float((pre_b.get("uiTokenAmount") or {}).get("uiAmount") or 0)
-        post_amt = float((p.get("uiTokenAmount") or {}).get("uiAmount") or 0)
-        delta    = post_amt - pre_amt
-        mint     = p.get("mint", "")
-        changes.append({"delta": delta, "mint": mint})
+    # ── User wallet (fee payer = first account key) ───────────────────────────
+    try:
+        ak = tx_result["transaction"]["message"]["accountKeys"]
+        user_wallet = ak[0]["pubkey"] if isinstance(ak[0], dict) else str(ak[0])
+    except (KeyError, IndexError, TypeError):
+        user_wallet = None
 
-    sold = [c for c in changes if c["delta"] < 0]
-    bought = [c for c in changes if c["delta"] > 0]
-    if bought:
-        best = max(bought, key=lambda x: x["delta"])
-        sym  = _sol_mint_symbol(best["mint"])
-        result = {
-            "network":   "Solana",
-            "ticker":    sym or "",
-            "qty":       round(best["delta"], 9),
+    print(f"[SOL PARSER] tx={hash_[:20]}... wallet={user_wallet} ts={ts}")
+
+    # ── SPL token balance deltas for user-owned accounts only ─────────────────
+    pre_map  = {b["accountIndex"]: b for b in (meta.get("preTokenBalances")  or [])}
+    post_map = {b["accountIndex"]: b for b in (meta.get("postTokenBalances") or [])}
+    all_idx  = set(pre_map) | set(post_map)
+
+    user_token_changes = []
+    for idx in all_idx:
+        pre  = pre_map.get(idx, {})
+        post = post_map.get(idx, {})
+        owner = post.get("owner") or pre.get("owner") or ""
+        # When user_wallet couldn't be determined, fall back to the old
+        # all-accounts approach to avoid a total miss.
+        if user_wallet and owner != user_wallet:
+            continue
+        mint     = post.get("mint") or pre.get("mint") or ""
+        pre_amt  = float((pre.get("uiTokenAmount")  or {}).get("uiAmount") or 0)
+        post_amt = float((post.get("uiTokenAmount") or {}).get("uiAmount") or 0)
+        delta    = round(post_amt - pre_amt, 12)
+        if abs(delta) < 1e-12:
+            continue
+        user_token_changes.append({
+            "delta":   delta,
+            "mint":    mint,
+            "is_wsol": mint == _WSOL_MINT,
+        })
+
+    # ── Native SOL leg (fee-adjusted) ─────────────────────────────────────────
+    # Only add when no WSOL token change was found for the user; otherwise
+    # WSOL already captures the SOL movement and we'd double-count.
+    pre_bals  = meta.get("preBalances",  [])
+    post_bals = meta.get("postBalances", [])
+    fee_lamps = meta.get("fee", 0) or 0
+    has_wsol  = any(c["is_wsol"] for c in user_token_changes)
+
+    if not has_wsol and pre_bals and post_bals:
+        # Subtract fee so only the swap value is captured, not tx cost
+        native_delta_lamps = (post_bals[0] - pre_bals[0]) + fee_lamps
+        if abs(native_delta_lamps) >= _SOL_SWAP_MIN_LAMPORTS:
+            user_token_changes.append({
+                "delta":   round(native_delta_lamps / 1e9, 9),
+                "mint":    "NATIVE_SOL",
+                "is_wsol": True,   # treated as SOL for symbol resolution
+            })
+
+    # ── Categorise ────────────────────────────────────────────────────────────
+    bought = [c for c in user_token_changes if c["delta"] > 0]
+    sold   = [c for c in user_token_changes if c["delta"] < 0]
+
+    # In edge cases with multiple positive/negative legs (rare), pick the
+    # one with the largest absolute magnitude as the primary leg.
+    best_bought = max(bought, key=lambda x:  x["delta"]) if bought else None
+    best_sold   = min(sold,   key=lambda x:  x["delta"]) if sold   else None
+
+    # ── Symbol resolution ─────────────────────────────────────────────────────
+    def _resolve(change):
+        if change["is_wsol"]:
+            return "SOL"
+        sym = _sol_mint_symbol(change["mint"])
+        return sym if sym else change["mint"][:8]
+
+    out_sym = _resolve(best_bought) if best_bought else None
+    out_qty = round(best_bought["delta"],  9) if best_bought else None
+    in_sym  = _resolve(best_sold)   if best_sold  else None
+    in_qty  = round(-best_sold["delta"],   9) if best_sold  else None
+
+    # ── Console log — swap path, decision ────────────────────────────────────
+    all_syms = []
+    for c in user_token_changes:
+        sym = "SOL" if c["is_wsol"] else (_sol_mint_symbol(c["mint"]) or c["mint"][:8])
+        all_syms.append(f"{sym}({'+'if c['delta']>0 else ''}{round(c['delta'],6)})")
+    print(f"[SOL PARSER] all tokens involved: {all_syms}")
+    print(f"[SOL PARSER] selected input  (sold):   {in_sym}  qty={in_qty}")
+    print(f"[SOL PARSER] selected output (bought): {out_sym} qty={out_qty}")
+
+    is_swap = bool(best_bought and best_sold)
+    print(f"[SOL PARSER] decision: is_swap={is_swap}  "
+          f"path={in_sym} → {out_sym}")
+
+    if not best_bought and not best_sold:
+        print("[SOL PARSER] no balance changes detected for user wallet")
+        return jsonify({"error": "not_found"}), 404
+
+    # ── Historical USD estimation ─────────────────────────────────────────────
+    # Try output token first; fall back to input token; fall back to None.
+    # Never block the import — total_usd=null is valid.
+    total_usd            = None
+    total_usd_estimated  = False
+    total_usd_historical = False
+
+    for sym, qty in [(out_sym, out_qty), (in_sym, in_qty)]:
+        if sym and qty:
+            price, is_live = _sol_hist_price(sym, ts_unix)
+            if price:
+                total_usd            = round(price * qty, 6)
+                total_usd_estimated  = True
+                total_usd_historical = not is_live
+                break
+
+    # ── Build result ──────────────────────────────────────────────────────────
+    result_data: dict = {"network": "Solana", "timestamp": ts}
+
+    if is_swap:
+        result_data.update({
+            "ticker":      out_sym or "",
+            "qty":         out_qty,
+            "from_ticker": in_sym,
+            "from_qty":    in_qty,
+            "is_swap":     True,
+            "total_usd":   total_usd,
+        })
+        if total_usd is not None:
+            result_data["total_usd_estimated"]  = total_usd_estimated
+            result_data["total_usd_historical"] = total_usd_historical
+
+    elif best_bought:
+        # Inbound transfer / simple receive — no sold leg detected
+        result_data.update({
+            "ticker":    out_sym or "",
+            "qty":       out_qty,
             "total_usd": None,
-            "timestamp": ts,
-            "mint":      best["mint"],
-        }
-        # Token-for-token SPL swap: capture the "from" leg so the USD estimate
-        # (in _finalize_usd) can fall back to its price if the received token's isn't known.
-        if sold:
-            worst = min(sold, key=lambda x: x["delta"])
-            from_sym = _sol_mint_symbol(worst["mint"])
-            if from_sym:
-                result["from_ticker"] = from_sym
-                result["from_qty"]    = round(-worst["delta"], 9)
-                result["is_swap"]     = True
-        return jsonify(_finalize_usd(result))
+            "mint":      best_bought["mint"] if not best_bought["is_wsol"] else None,
+        })
+        result_data = _finalize_usd(result_data)
 
-    pre_sol  = meta.get("preBalances", [])
-    post_sol = meta.get("postBalances", [])
-    if pre_sol and post_sol:
-        gains = [post_sol[i] - pre_sol[i] for i in range(min(len(pre_sol), len(post_sol)))]
-        max_g = max(gains) if gains else 0
-        if max_g > 0:
-            result = {
-                "network":   "Solana",
-                "ticker":    "SOL",
-                "qty":       round(max_g / 1e9, 9),
-                "total_usd": None,
-                "timestamp": ts,
-            }
-            return jsonify(_finalize_usd(result))
-    return jsonify({"error": "not_found"}), 404
+    else:
+        # Only a sell/send leg was detected
+        result_data.update({
+            "ticker":    in_sym or "",
+            "qty":       in_qty,
+            "is_sell":   True,
+            "total_usd": None,
+        })
+        result_data = _finalize_usd(result_data)
+
+    return jsonify(result_data)
 
 @app.route("/api/tx-lookup")
 def tx_lookup():
