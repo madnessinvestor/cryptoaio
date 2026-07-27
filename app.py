@@ -1992,6 +1992,40 @@ def _parse_evm_result(tx_from, transfers, tx_data, native_sym, chain_name, times
                 )
                 break
 
+    # --- Step 2d: native coin → non-stable ERC-20 token swap (e.g. ETH → cbBTC) ---
+    # Handles swaps like ETH → cbBTC, BNB → CAKE routed through an aggregator
+    # (LiFi, 1inch, OKX Router…).  The user sends native ETH via tx.value; the
+    # aggregator wraps it to WETH internally and swaps — so no ERC-20 transfer
+    # ever *leaves* the user's address.  Steps 2b and 2c only cover stable outputs;
+    # this step handles the non-stable output case that falls through to pool noise.
+    # Signal: tx.value > 0  AND  the candidate received a non-stable ERC-20 with
+    # zero ERC-20 sends of their own (only native ETH was spent).
+    if native_val > 0:
+        _native_tok_candidates = (list(known_wallets) if known_wallets else []) + [tx_from]
+        for _cand in _native_tok_candidates:
+            _cd = addr_delta.get(_cand, {})
+            _pos_ns = [(s, d) for s, d in _cd.items()
+                       if d > 0 and not is_stable.get(s) and not is_wrapped.get(s)]
+            _neg_erc20 = any(d < 0 for d in _cd.values())
+            if _pos_ns and not _neg_erc20:
+                _recv_sym, _recv_qty = max(_pos_ns, key=lambda x: x[1])
+                _usd = (_estimate_usd(native_sym, native_val)
+                        or _estimate_usd(_recv_sym, _recv_qty) or 0)
+                # Dominant score so this always beats any spurious pool-address match
+                best_token_swap = (
+                    _usd + 1e12,
+                    _cand, _recv_sym, round(_recv_qty, 10),
+                    native_sym, round(native_val, 10),
+                )
+                # Clear pool/intermediate matches so token-swap wins at Step 3.
+                # best_buyer  = pool that "bought" WETH for stables (counterparty)
+                # best_seller = pool that sold cbBTC for USDC  (counterparty)
+                # best_stable_swap = bridge stable-swap in the route (unrelated)
+                best_buyer       = None
+                best_seller      = None
+                best_stable_swap = None
+                break
+
     # --- Step 3: build result from the best match ---
     # Priority: buy > sell > stable-swap > token-swap
     #
