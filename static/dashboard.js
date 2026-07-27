@@ -387,8 +387,7 @@ function setPeriod(p) {
 /** Filter dashHistory to the selected time window. */
 function _getFilteredHistory(period) {
   if (!dashHistory || dashHistory.length === 0) return [];
-  if (period === "All") return dashHistory;
-  const SECS = { "1D": 86400, "1W": 604800, "1M": 2592000, "3M": 7776000, "1Y": 31536000 };
+  const SECS = { "1D": 86400, "1W": 604800, "1M": 2592000 };
   const cutoff = (Date.now() / 1000) - (SECS[period] || 86400);
   const filtered = dashHistory.filter(p => p.ts >= cutoff);
   return filtered.length >= 2 ? filtered : [];
@@ -469,7 +468,7 @@ function _sparklineSvg(pts, isPositive) {
 }
 
 function _portfolioHeroHtml(grandTotal) {
-  const PERIODS = ["1D","1W","1M","3M","1Y","All"];
+  const PERIODS = ["1D","1W","1M"];
   const change  = _computeChange(grandTotal, _portfolioPeriod);
   const isPos   = change && change.abs >= 0;
   const cls     = !change ? "neu" : (isPos ? "pos" : "neg");
@@ -1343,6 +1342,12 @@ async function submitDashManual() {
 
 // ── Actions ────────────────────────────────────────────────────────────────────
 
+/** Clear the chart cache so the next loadDashboard re-fetches fresh data. */
+function _invalidateChartCache() {
+  Object.keys(_chartCache).forEach(k => delete _chartCache[k]);
+  _chartLoading.clear();
+}
+
 async function refreshWallet(address) {
   const loadBtn = document.getElementById(`dwc-load-${address}`);
   if (loadBtn) { loadBtn.textContent = t("dash_loading"); loadBtn.disabled = true; }
@@ -1357,6 +1362,7 @@ async function refreshWallet(address) {
     showDashError(address, t("dash_err_network"));
     return;
   }
+  _invalidateChartCache();
   await loadDashboard();
 }
 
@@ -1389,6 +1395,7 @@ async function refreshAllWallets() {
     // matching the backend's own default — never drop a wallet from bulk refresh.
     const onChain = wallets.filter(w => w.address);
     await _staggeredWalletRefresh(onChain);
+    _invalidateChartCache();
     await loadDashboard();
   } finally {
     if (btn) { btn.disabled = false; btn.style.opacity = ""; }
@@ -1405,6 +1412,7 @@ function startDashAutoRefresh() {
     if (!dashSection || dashSection.classList.contains("hidden")) return;
     const toRefresh = dashWallets.filter(w => w.last_updated && w.address);
     await _staggeredWalletRefresh(toRefresh, { silent: true });
+    _invalidateChartCache();
     await loadDashboard();
   }, 3 * 60 * 1000); // every 3 minutes
 }
