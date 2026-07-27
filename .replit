@@ -27,7 +27,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 app.py"
+args = "git config user.name \"madnessinvestor\" && git config user.email \"madness.investor@gmail.com\" && python3 app.py"
 waitForPort = 5000
 
 [deployment]
