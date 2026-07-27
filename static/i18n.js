@@ -577,9 +577,10 @@ function t(key, ...args) {
 }
 
 function applyLang() {
-  // Update button label
-  const btn = document.getElementById("btn-lang");
-  if (btn) btn.textContent = currentLang.toUpperCase();
+  // Update PT/EN toggle buttons
+  document.querySelectorAll(".lang-btn").forEach(b => {
+    b.classList.toggle("active", b.id === "btn-lang-" + currentLang);
+  });
 
   // Update all [data-i18n] elements
   document.querySelectorAll("[data-i18n]").forEach(el => {
@@ -608,10 +609,15 @@ function applyLang() {
   if (typeof renderDashboard  === "function") renderDashboard();
 }
 
-function toggleLang() {
-  currentLang = currentLang === "pt" ? "en" : "pt";
+function setLang(lang) {
+  if (currentLang === lang) return;
+  currentLang = lang;
   localStorage.setItem("lang", currentLang);
   applyLang();
+}
+
+function toggleLang() {
+  setLang(currentLang === "pt" ? "en" : "pt");
 }
 
 // Run on load
