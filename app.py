@@ -2504,7 +2504,7 @@ _GW_COST_PER_1K = {"groq": 0.0, "gemini": 0.0, "openrouter": 0.001}
 # ── Per-provider build / parse helpers ───────────────────────────────────────
 
 def _gw_build_groq(messages, model, temperature, max_tokens):
-    m = model or "llama-3.3-70b-versatile"
+    m = model or "llama-3.1-8b-instant"
     payload = json.dumps({"model": m, "messages": messages,
                           "max_tokens": max_tokens, "temperature": temperature}).encode()
     headers = {"Authorization": f"Bearer {_gw_groq_key()}",
@@ -2955,7 +2955,7 @@ def _ask_ai_user(messages, provider, api_key, model, base_url,
     else:  # OpenAI-compatible: groq / openrouter / custom
         if provider == "groq":
             url = "https://api.groq.com/openai/v1/chat/completions"
-            m   = model or "llama-3.3-70b-versatile"
+            m   = model or "llama-3.1-8b-instant"
         elif provider == "openrouter":
             url = "https://openrouter.ai/api/v1/chat/completions"
             m   = model or "openrouter/auto"
@@ -3000,6 +3000,7 @@ def _ask_ai_user(messages, provider, api_key, model, base_url,
             hint = _HTTP_HINTS.get(e.code, f"HTTP {e.code}")
             msg  = f"{hint}" + (f" Detalhe: {detail}" if detail else "")
             raise RuntimeError(msg) from e
+        return _gw_parse_openai(result, provider)
 
 
 @app.route("/api/ai/chat", methods=["POST"])

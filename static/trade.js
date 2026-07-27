@@ -353,6 +353,7 @@ function switchTab(tab) {
   const widgetTab = document.getElementById("tab-widget");
   if (widgetTab) widgetTab.classList.toggle("active", isWidget);
 
+  if (isAi && typeof _aiUpdateConfiguredState === "function") _aiUpdateConfiguredState();
   if (isWidget) widgetOnEnter();
   else if (typeof wltTimer !== "undefined" && wltTimer) { clearInterval(wltTimer); wltTimer = null; }
 
