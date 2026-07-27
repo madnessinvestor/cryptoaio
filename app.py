@@ -1483,13 +1483,17 @@ def _tx_post(url, payload, timeout=10):
 # Icon aliases: when these symbols are requested, use the canonical icon instead.
 # e.g. UETH (unwrapped ETH on some bridges) shows the ETH icon.
 _ICON_ALIAS = {
-    "UETH":  "ETH",
-    "UBTC":  "BTC",
-    "WHYPE": "HYPE",
-    "WS":    "S",      # wrapped Sonic → Sonic native
-    "USDT0": "USDT",
-    "USD₮0": "USDT",
-    "POL":   "MATIC",
+    "UETH":    "ETH",
+    "UBTC":    "BTC",
+    "WHYPE":   "HYPE",
+    "WS":      "S",      # wrapped Sonic → Sonic native
+    "USDT0":   "USDT",
+    "USD₮0":   "USDT",
+    "POL":     "MATIC",
+    "STKESOL": "SOL",   # staked SOL → SOL icon
+    "MSOL":    "SOL",   # Marinade staked SOL → SOL icon
+    "JITOSOL": "SOL",   # Jito staked SOL → SOL icon
+    "BSOL":    "SOL",   # BlazeStake staked SOL → SOL icon
 }
 
 _STABLECOINS = {"USDT","USDC","DAI","BUSD","FDUSD","TUSD","USDE","FRAX","LUSD",
@@ -3683,14 +3687,14 @@ def _merge_testnet_tokens(jumper_tokens, blockscout_tokens):
     return merged
 
 def _save_wallet_result(wallets, address, tokens, defi, perps, testnet_tokens=None):
-    from datetime import datetime
+    from datetime import datetime, timezone
     for w in wallets:
         if w["address"] == address:
             w["tokens"]          = tokens
             w["defi"]            = defi
             w["perps"]           = perps
             w["testnet_tokens"]  = testnet_tokens or []
-            w["last_updated"]    = datetime.utcnow().isoformat()
+            w["last_updated"]    = datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
             break
     save_dash_wallets(wallets)
 
@@ -4527,7 +4531,7 @@ def add_dash_manual():
     raw_date = body.get("purchase_date") or None
     if raw_date and not _re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}', str(raw_date)):
         raw_date = None   # reject malformed dates silently
-    from datetime import datetime
+    from datetime import datetime, timezone
     asset = {
         "id":            str(uuid.uuid4())[:8],
         "symbol":        symbol,
@@ -4536,7 +4540,7 @@ def add_dash_manual():
         "investment":    investment,
         "source":        body.get("source", "").strip()[:64],
         "purchase_date": raw_date,
-        "added_at":      datetime.utcnow().isoformat(),
+        "added_at":      datetime.now(timezone.utc).replace(tzinfo=None).isoformat(),
     }
     manual = load_dash_manual()
     manual.append(asset)
