@@ -31,3 +31,5 @@ Without these keys, Mad AI is unavailable. All other modules (watchlist, portfol
 Configured for Replit Autoscale using `gunicorn` (`run` in `.replit`).
 
 ## User preferences
+
+- Git identity: `user.name = madnessinvestor`, `user.email = madness.investor@gmail.com` — sempre configurar com `git config --global` antes de commitar.
