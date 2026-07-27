@@ -32,4 +32,4 @@ Configured for Replit Autoscale using `gunicorn` (`run` in `.replit`).
 
 ## User preferences
 
-- Git identity: sempre usar `user.name = madnessinvestor`, `user.email = madness.investor@gmail.com`. Antes de qualquer commit/push, rodar `git config user.name "madnessinvestor" && git config user.email "madness.investor@gmail.com"` para garantir que o autor seja o usuário, nunca o agente.
+- **Git identity — OBRIGATÓRIO**: Todos os commits e pushes DEVEM usar `user.name = madnessinvestor` e `user.email = madness.investor@gmail.com`. NUNCA commitar como "Replit Agent" ou "agent@replit.com". Antes de qualquer `git commit` ou `git push`, SEMPRE executar: `git config user.name "madnessinvestor" && git config user.email "madness.investor@gmail.com"`. Isso se aplica ao agente também — não é opcional.

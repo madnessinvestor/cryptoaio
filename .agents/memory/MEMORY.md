@@ -1,1 +1,2 @@
 - [Icon disk cache](icon-disk-cache.md) — ícones baixados e servidos localmente em static/icons/tokens/; não editar app.py com sed (destrói arquivo)
+- [Git Identity](git-identity.md) — OBRIGATÓRIO: todo commit/push deve usar madnessinvestor / madness.investor@gmail.com; nunca agent@replit.com
