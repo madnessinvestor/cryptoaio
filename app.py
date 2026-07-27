@@ -2948,10 +2948,13 @@ def ai_chat():
 def ai_transcribe():
     """Transcribe audio via Groq Whisper (primary) or OpenAI Whisper (fallback)."""
     groq_key    = _gw_groq_key()
-    openai_key  = os.environ.get("OPENAI_API_KEY", "").strip()
+    # Only use OPENAI_API_KEY if it's a real OpenAI key (not an OpenRouter key)
+    _raw_openai = os.environ.get("OPENAI_API_KEY", "").strip()
+    openai_key  = _raw_openai if _raw_openai and not _raw_openai.startswith("sk-or-") else ""
 
     if not groq_key and not openai_key:
-        return jsonify({"error": "Nenhuma chave de transcrição configurada. Adicione GROQ_API_KEY ou OPENAI_API_KEY."}), 503
+        hint = " (a chave detectada é OpenRouter — ela não suporta transcrição; adicione GROQ_API_KEY)" if _raw_openai.startswith("sk-or-") else ""
+        return jsonify({"error": f"Nenhuma chave de transcrição configurada. Adicione GROQ_API_KEY ou uma OPENAI_API_KEY real.{hint}"}), 503
 
     audio_file = request.files.get("audio")
     if not audio_file:
