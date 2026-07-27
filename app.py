@@ -4836,6 +4836,106 @@ def refresh_dash_manual():
     return jsonify({"ok": True, "updated": len(manual)})
 
 
+# ── GitHub Gist Sync ──────────────────────────────────────────────────────────
+
+_GIST_FILES = {
+    "cryptoaio_assets.json":    DATA_FILE,
+    "cryptoaio_portfolio.json": PORTFOLIO_FILE,
+    "cryptoaio_wallets.json":   DASH_WALLETS_FILE,
+    "cryptoaio_manual.json":    DASH_MANUAL_FILE,
+    "cryptoaio_alerts.json":    ALERTS_FILE,
+}
+
+def _gist_req(method, url, token, body=None):
+    data = json.dumps(body).encode() if body else None
+    req  = urllib.request.Request(url, data=data, method=method)
+    req.add_header("Authorization",        f"Bearer {token}")
+    req.add_header("Accept",               "application/vnd.github+json")
+    req.add_header("X-GitHub-Api-Version", "2022-11-28")
+    if data:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read().decode()), r.status
+    except urllib.error.HTTPError as e:
+        try:
+            return json.loads(e.read().decode()), e.code
+        except Exception:
+            return {"message": str(e)}, e.code
+
+@app.route("/api/gist/backup", methods=["POST"])
+def gist_backup():
+    body    = request.get_json(silent=True) or {}
+    token   = (body.get("token")   or "").strip()
+    gist_id = (body.get("gist_id") or "").strip()
+    if not token:
+        return jsonify({"ok": False, "error": "Token não informado"}), 400
+
+    files = {}
+    for gist_name, local_path in _GIST_FILES.items():
+        try:
+            with open(local_path) as f:
+                content = f.read().strip()
+        except FileNotFoundError:
+            content = "[]"
+        files[gist_name] = {"content": content or "[]"}
+
+    payload = {
+        "description": "CryptoAIO backup — gerado automaticamente",
+        "public": False,
+        "files": files,
+    }
+
+    if gist_id:
+        result, status = _gist_req("PATCH", f"https://api.github.com/gists/{gist_id}", token, payload)
+    else:
+        result, status = _gist_req("POST", "https://api.github.com/gists", token, payload)
+
+    if status not in (200, 201):
+        return jsonify({"ok": False, "error": result.get("message", "Erro desconhecido")}), 400
+
+    return jsonify({"ok": True, "gist_id": result["id"], "url": result["html_url"]})
+
+
+@app.route("/api/gist/restore", methods=["POST"])
+def gist_restore():
+    body    = request.get_json(silent=True) or {}
+    token   = (body.get("token")   or "").strip()
+    gist_id = (body.get("gist_id") or "").strip()
+    if not token or not gist_id:
+        return jsonify({"ok": False, "error": "Token e Gist ID são obrigatórios"}), 400
+
+    result, status = _gist_req("GET", f"https://api.github.com/gists/{gist_id}", token)
+    if status != 200:
+        return jsonify({"ok": False, "error": result.get("message", "Gist não encontrado")}), 400
+
+    gist_files = result.get("files", {})
+    restored   = []
+    for gist_name, local_path in _GIST_FILES.items():
+        if gist_name not in gist_files:
+            continue
+        content  = gist_files[gist_name].get("content")
+        raw_url  = gist_files[gist_name].get("raw_url")
+        if not content and raw_url:
+            try:
+                req2 = urllib.request.Request(raw_url)
+                req2.add_header("Authorization", f"Bearer {token}")
+                with urllib.request.urlopen(req2, timeout=20) as r:
+                    content = r.read().decode()
+            except Exception:
+                continue
+        if not content:
+            continue
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError:
+            continue
+        _save_json_file(local_path, data)
+        restored.append(gist_name)
+
+    return jsonify({"ok": True, "restored": restored})
+
+
 _warmup()
 
 if __name__ == "__main__":

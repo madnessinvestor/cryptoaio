@@ -1057,6 +1057,37 @@ main {
   color: #000;
 }
 .settings-toggle-btn:active { opacity: 0.75; }
+
+/* Gist sync */
+.settings-row-col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.settings-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.82rem;
+  padding: 7px 11px;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+}
+.settings-input:focus { border-color: var(--accent); }
+.settings-row-col .settings-toggle-btn { align-self: flex-end; }
+.gist-status {
+  font-size: 0.75rem;
+  min-height: 18px;
+  padding: 2px 0 4px;
+  text-align: center;
+  transition: color 0.2s;
+}
+.gist-status-ok      { color: var(--accent); }
+.gist-status-error   { color: #f44; }
+.gist-status-loading { color: var(--muted2); }
+.gist-status-info    { color: var(--muted2); }
 #btn-theme {
   display: flex;
   align-items: center;

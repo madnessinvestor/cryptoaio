@@ -377,6 +377,25 @@
         </div>
       </div>
 
+      <!-- GitHub Gist Sync -->
+      <div class="settings-title" style="margin-top:10px;" data-i18n="set_gist_title">Sync GitHub Gist</div>
+
+      <div class="settings-row settings-row-col">
+        <input type="password" id="gist-token-input" class="settings-input"
+               placeholder="ghp_…" data-i18n-placeholder="set_gist_token_ph" autocomplete="off">
+        <button class="settings-toggle-btn" onclick="gistSaveToken()" data-i18n="set_gist_save">Salvar token</button>
+      </div>
+
+      <div class="settings-row">
+        <span class="settings-row-label" data-i18n="set_gist_data">Dados</span>
+        <div class="settings-toggle-group">
+          <button class="settings-toggle-btn" onclick="gistBackup()" data-i18n="set_gist_backup">☁️ Backup</button>
+          <button class="settings-toggle-btn" onclick="gistRestore()" data-i18n="set_gist_restore">⬇️ Restaurar</button>
+        </div>
+      </div>
+
+      <div id="gist-status" class="gist-status"></div>
+
     </div>
   </div>
 
@@ -876,5 +895,6 @@
   <script src="/static/madai.js?v=7"></script>
   <script src="/static/dashboard.js?v=19"></script>
   <script src="/static/widget.js?v=6"></script>
+  <script src="/static/gist.js?v=1"></script>
 </body>
 </html>
