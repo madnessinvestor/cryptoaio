@@ -147,6 +147,8 @@ function shortAddr(addr) {
   return addr.slice(0, 6) + "…" + addr.slice(-4);
 }
 
+const _CHART_PERIODS = ["1D","1W","1M"];
+
 async function loadDashboard() {
   const [wr, mr, hr] = await Promise.all([
     fetch("/api/dashboard/wallets"),
@@ -159,27 +161,34 @@ async function loadDashboard() {
   dashLoaded  = true;
   // Save snapshot in background — don't block render
   fetch("/api/dashboard/snapshot", { method: "POST" }).catch(() => {});
+  // Pre-mark all periods as loading so the spinner shows on the first render
+  _CHART_PERIODS.forEach(p => { if (!_chartCache[p]) _chartLoading.add(p); });
   renderDashboard();
-  // Kick off historical chart fetch for the active period (non-blocking)
-  _fetchChart(_portfolioPeriod);
+  // Fetch all periods in parallel (non-blocking)
+  _CHART_PERIODS.forEach(p => _fetchChartData(p));
 }
 
-/** Fetch chart data for a period from the server; re-render when ready. */
-async function _fetchChart(period) {
-  if (_chartLoading.has(period)) return;
-  _chartLoading.add(period);
+/** Low-level fetch — assumes period is already in _chartLoading. */
+async function _fetchChartData(period) {
   try {
     const r = await fetch(`/api/dashboard/chart?period=${period}`);
     if (r.ok) {
       const d = await r.json();
       if (Array.isArray(d.points) && d.points.length >= 2) {
         _chartCache[period] = d.points;
-        // Only re-render if this is still the active period
-        if (period === _portfolioPeriod) renderDashboard();
       }
     }
   } catch { /* silent */ }
   _chartLoading.delete(period);
+  // Re-render whenever the active period finishes loading
+  if (period === _portfolioPeriod) renderDashboard();
+}
+
+/** Public entry point — guards against duplicate in-flight requests. */
+async function _fetchChart(period) {
+  if (_chartLoading.has(period) || _chartCache[period]) return;
+  _chartLoading.add(period);
+  await _fetchChartData(period);
 }
 
 function renderDashboard() {
