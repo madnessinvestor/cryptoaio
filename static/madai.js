@@ -120,6 +120,8 @@ async function _aiTranscribeAndSend(blob) {
   try {
     const form = new FormData();
     form.append("audio", blob, "audio.webm");
+    const uiLang = localStorage.getItem("lang") || "pt";
+    form.append("language", uiLang);
 
     const res  = await fetch("/api/ai/transcribe", { method: "POST", body: form });
     const data = await res.json();

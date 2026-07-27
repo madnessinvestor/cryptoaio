@@ -2955,45 +2955,31 @@ def ai_transcribe():
     if not audio_file:
         return jsonify({"error": "Nenhum áudio enviado."}), 400
 
+    # Language sent by the frontend (matches the app UI language: "pt" or "en")
+    lang = (request.form.get("language") or "pt").strip().lower()
+    # Groq Whisper accepts ISO-639-1 codes; map app lang codes to full codes
+    whisper_lang = "en" if lang == "en" else "pt"
+
     try:
-        import urllib.request as _ur
-        boundary = b"----GWhisperBoundary7x"
+        import requests as _req
         filename = audio_file.filename or "audio.webm"
         audio_bytes = audio_file.read()
 
-        body = (
-            b"--" + boundary + b"\r\n"
-            b'Content-Disposition: form-data; name="model"\r\n\r\n'
-            b"whisper-large-v3-turbo\r\n"
-            b"--" + boundary + b"\r\n"
-            b'Content-Disposition: form-data; name="language"\r\n\r\n'
-            b"pt\r\n"
-            b"--" + boundary + b"\r\n"
-            b'Content-Disposition: form-data; name="response_format"\r\n\r\n'
-            b"json\r\n"
-            b"--" + boundary + b"\r\n" +
-            b'Content-Disposition: form-data; name="file"; filename="' + filename.encode() + b'"\r\n'
-            b"Content-Type: audio/webm\r\n\r\n" +
-            audio_bytes + b"\r\n"
-            b"--" + boundary + b"--\r\n"
-        )
-
-        req = _ur.Request(
+        resp = _req.post(
             "https://api.groq.com/openai/v1/audio/transcriptions",
-            data=body,
-            headers={
-                "Authorization": f"Bearer {groq_key}",
-                "Content-Type": f"multipart/form-data; boundary={boundary.decode()}",
+            headers={"Authorization": f"Bearer {groq_key}"},
+            files={"file": (filename, audio_bytes, "audio/webm")},
+            data={
+                "model": "whisper-large-v3-turbo",
+                "language": whisper_lang,
+                "response_format": "json",
             },
-            method="POST",
+            timeout=30,
         )
-        with _ur.urlopen(req, timeout=20) as resp:
-            result = json.loads(resp.read().decode())
-        transcript = (result.get("text") or "").strip()
+        if not resp.ok:
+            return jsonify({"error": f"Groq Whisper erro {resp.status_code}: {resp.text}"}), 502
+        transcript = (resp.json().get("text") or "").strip()
         return jsonify({"transcript": transcript})
-    except urllib.error.HTTPError as e:
-        body_err = e.read().decode(errors="replace")
-        return jsonify({"error": f"Groq Whisper erro {e.code}: {body_err}"}), 502
     except Exception as e:
         return jsonify({"error": f"Erro na transcrição: {str(e)}"}), 502
 
