@@ -3575,6 +3575,113 @@ def _dedup_tokens(tokens, defi, perps):
         deduped.append(tok)
     return deduped
 
+# ── BlockScout testnet fetcher ────────────────────────────────────────────────
+# Fetches native + ERC-20 token balances from public BlockScout instances for
+# each supported testnet.  No API key required.  Results are merged with whatever
+# Jumper already returned so there are no duplicates.
+
+_BLOCKSCOUT_TESTNETS = [
+    ("sep",     "Ethereum Sepolia",   "https://eth-sepolia.blockscout.com/api",        "ETH",  18),
+    ("arb-sep", "Arbitrum Sepolia",   "https://arbitrum-sepolia.blockscout.com/api",   "ETH",  18),
+    ("opt-sep", "OP Sepolia",         "https://optimism-sepolia.blockscout.com/api",   "ETH",  18),
+    ("bast",    "Base Sepolia",       "https://base-sepolia.blockscout.com/api",       "ETH",  18),
+    ("scr-sep", "Scroll Sepolia",     "https://sepolia-blockscout.scroll.io/api",      "ETH",  18),
+]
+
+def _blockscout_get(base_url, params, timeout=10):
+    url = f"{base_url}?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode())
+
+def _fetch_blockscout_testnet(address):
+    """Fetch native + ERC-20 balances from all supported testnet BlockScout instances.
+    Returns a list of token entries in our standard format."""
+    results = []
+
+    def _fetch_chain(chain_key, chain_name, base_url, native_sym, native_decimals):
+        tokens = []
+        # Native balance
+        try:
+            d = _blockscout_get(base_url, {"module": "account", "action": "balance", "address": address})
+            if d.get("status") == "1":
+                raw = int(d.get("result", 0) or 0)
+                bal = raw / (10 ** native_decimals)
+                if bal > 0:
+                    pr = fetch_price(native_sym)
+                    price_usd = float((pr or {}).get("price", 0) or 0)
+                    tokens.append({
+                        "symbol":     native_sym,
+                        "name":       f"{native_sym} ({chain_name})",
+                        "network":    chain_key,
+                        "chain_type": "EVM",
+                        "balance":    bal,
+                        "price_usd":  price_usd,
+                        "value_usd":  bal * price_usd,
+                        "thumbnail":  "",
+                        "contract":   "",
+                    })
+        except Exception:
+            pass
+        # ERC-20 tokens
+        try:
+            d = _blockscout_get(base_url, {"module": "account", "action": "tokenlist", "address": address})
+            if d.get("status") == "1":
+                for t in (d.get("result") or []):
+                    if t.get("type") not in ("ERC-20", "ERC20"):
+                        continue
+                    try:
+                        decimals = int(t.get("decimals", 18) or 18)
+                        raw      = int(t.get("balance", 0) or 0)
+                        bal      = raw / (10 ** decimals)
+                    except (ValueError, TypeError):
+                        continue
+                    if bal <= 0:
+                        continue
+                    sym = (t.get("symbol") or "").strip()
+                    if not sym:
+                        continue
+                    pr = fetch_price(sym)
+                    price_usd = float((pr or {}).get("price", 0) or 0)
+                    tokens.append({
+                        "symbol":     sym,
+                        "name":       t.get("name", sym),
+                        "network":    chain_key,
+                        "chain_type": "EVM",
+                        "balance":    bal,
+                        "price_usd":  price_usd,
+                        "value_usd":  bal * price_usd,
+                        "thumbnail":  "",
+                        "contract":   (t.get("contractAddress") or "").lower(),
+                    })
+        except Exception:
+            pass
+        return tokens
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(_BLOCKSCOUT_TESTNETS)) as ex:
+        futures = {ex.submit(_fetch_chain, *cfg): cfg[0] for cfg in _BLOCKSCOUT_TESTNETS}
+        for fut in concurrent.futures.as_completed(futures):
+            try:
+                results.extend(fut.result())
+            except Exception:
+                pass
+
+    results.sort(key=lambda x: x["symbol"])
+    return results
+
+def _merge_testnet_tokens(jumper_tokens, blockscout_tokens):
+    """Merge BlockScout testnet tokens with Jumper testnet tokens.
+    Deduplicates by (symbol, network) — Jumper entry wins if it exists."""
+    seen = {(t["symbol"].upper(), t["network"].lower()) for t in jumper_tokens}
+    merged = list(jumper_tokens)
+    for t in blockscout_tokens:
+        key = (t["symbol"].upper(), t["network"].lower())
+        if key not in seen:
+            seen.add(key)
+            merged.append(t)
+    merged.sort(key=lambda x: x["symbol"])
+    return merged
+
 def _save_wallet_result(wallets, address, tokens, defi, perps, testnet_tokens=None):
     from datetime import datetime
     for w in wallets:
@@ -3615,6 +3722,12 @@ def _refresh_evm(wallet, wallets, address):
         tokens, defi, perps = _apply_live_prices(tokens, defi if pos_ok else [], perps if pos_ok else [])
     if tok_ok:
         tokens = _dedup_tokens(tokens, defi if pos_ok else [], perps if pos_ok else [])
+    # Supplement with BlockScout testnet data (Jumper only returns bast reliably)
+    try:
+        bs_testnet = _fetch_blockscout_testnet(address)
+        testnet_tokens = _merge_testnet_tokens(testnet_tokens, bs_testnet)
+    except Exception as ex:
+        errors.append(f"blockscout_testnet: {ex}")
     _save_wallet_result(wallets, address, tokens, defi, perps, testnet_tokens)
     return jsonify({"ok": True, "tokens": len(tokens), "defi": len(defi),
                     "perps": len(perps), "testnet": len(testnet_tokens), "errors": errors})
