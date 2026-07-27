@@ -1,0 +1,44 @@
+name: Build Android APK
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: System deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip \
+            autoconf libtool pkg-config zlib1g-dev libncurses5-dev \
+            libffi-dev libssl-dev ccache lld
+      - name: Install Buildozer
+        run: pip install buildozer cython==0.29.37
+      - uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-${{ hashFiles('buildozer.spec') }}
+      - name: Build APK
+        run: buildozer -v android debug
+      - name: Rename APK
+        run: cp $(find bin/ -name "*.apk" | head -1) CryptoAIO-Android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CryptoAIO-Android
+          path: CryptoAIO-Android.apk
+      - name: Attach to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: CryptoAIO-Android.apk
