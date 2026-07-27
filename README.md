@@ -86,6 +86,22 @@ A standalone ticker widget (`/widget`) that can be embedded in any page.
 
 ---
 
+### ☁️ GitHub Gist Sync
+Sync your data automatically across devices (desktop app, APK, and web) using a private GitHub Gist — no server, no account beyond GitHub.
+
+- **Auto-sync**: every change to Watchlist, Trades, or Dashboard is uploaded to your Gist automatically (3 s debounce)
+- **Restore**: pull your data onto any new device in one click
+- Each user connects their **own** GitHub token — data is fully private and isolated
+- Token stored only in `localStorage` — never sent to any server other than GitHub
+
+#### Setup
+1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**
+2. Generate a token with only the **`gist`** scope
+3. Open the app → **Config** tab → paste token → **Save**
+4. Click **☁️ Backup** once to create the Gist — from then on, everything is automatic
+
+---
+
 ### 📱 Progressive Web App (PWA)
 Install CryptoAIO directly on your home screen on Android, iPhone, Windows, macOS or Linux.
 - Offline shell
@@ -122,7 +138,7 @@ Install CryptoAIO directly on your home screen on Android, iPhone, Windows, macO
 | Frontend | HTML5 · CSS3 · Vanilla JS (ES6+) |
 | AI | Groq (Whisper + LLaMA) · Gemini · OpenRouter |
 | Market Data | Hyperliquid, MEXC, KuCoin, Gate.io, OKX, Kraken, Bitfinex, CoinGecko, CoinCap, CryptoCompare, brapi.dev, Frankfurter |
-| Storage | Local JSON + localStorage |
+| Storage | Local JSON + localStorage + GitHub Gist (optional sync) |
 
 ---
 
@@ -144,6 +160,7 @@ cryptoaio/
 │   ├── dashboard.js        # Wallet dashboard & manual assets
 │   ├── alerts.js           # Price alerts
 │   ├── widget.js           # Configurable SPA widget
+│   ├── gist.js             # GitHub Gist sync (auto-backup & restore)
 │   ├── i18n.js             # Internationalisation (pt / en)
 │   ├── manifest.json       # PWA manifest
 │   ├── sw.js               # Service Worker
@@ -205,7 +222,7 @@ Dependencies are installed automatically. Just press **Run**.
 - [x] Embeddable widget with 2-column / 2-row layouts
 - [ ] Historical price charts
 - [ ] Multiple watchlists
-- [ ] Data export / import
+- [x] Data sync via GitHub Gist (auto-backup across devices)
 
 ---
 
