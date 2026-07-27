@@ -2241,13 +2241,13 @@ section.hidden { display: none; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.dash-hero-now {
+.dash-hero-past {
   font-size: 0.78rem;
   color: var(--muted2);
   margin-bottom: 4px;
   margin-top: -2px;
 }
-.dash-hero-now strong {
+.dash-hero-past strong {
   color: var(--text);
   font-weight: 700;
 }

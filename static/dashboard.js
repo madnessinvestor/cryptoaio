@@ -521,28 +521,24 @@ function _portfolioHeroHtml(grandTotal) {
     chartHtml = `<div class="dash-hero-no-data">${hint}</div>`;
   }
 
-  // Main displayed value: start-of-period value when available, current total otherwise
-  const periodLabel = { "1D": "24h", "1W": "7d", "1M": "30d" }[_portfolioPeriod] || _portfolioPeriod;
-  let heroValue, heroSub;
+  // Historical value at start of the selected period
+  const periodLabel = { "1D": "24h", "1W": "7 dias", "1M": "30 dias" }[_portfolioPeriod] || _portfolioPeriod;
+  let heroPast;
   if (chartPts && chartPts.length >= 2) {
-    heroValue = fmtDashUsd(chartPts[0].v);
-    heroSub   = `<div class="dash-hero-now">Agora: <strong>${fmtDashUsd(grandTotal)}</strong></div>`;
+    heroPast = `<div class="dash-hero-past">há ${periodLabel}: <strong>${fmtDashUsd(chartPts[0].v)}</strong></div>`;
   } else if (_chartLoading.has(_portfolioPeriod)) {
-    heroValue = `<span class="dash-hero-val-loading">⟳</span>`;
-    heroSub   = `<div class="dash-hero-now">Agora: <strong>${fmtDashUsd(grandTotal)}</strong></div>`;
+    heroPast = `<div class="dash-hero-past">há ${periodLabel}: <span class="dash-hero-val-loading">⟳</span></div>`;
   } else {
-    heroValue = fmtDashUsd(grandTotal);
-    heroSub   = "";
+    heroPast = "";
   }
 
   return `<div class="dash-hero">
     <div class="dash-hero-top">
       <div class="dash-hero-header">
         <span class="dash-hero-title">Portfólio</span>
-        <span class="dash-hero-period-label">há ${periodLabel}</span>
       </div>
-      <div class="dash-hero-value">${heroValue}</div>
-      ${heroSub}
+      <div class="dash-hero-value">${fmtDashUsd(grandTotal)}</div>
+      ${heroPast}
       <div class="dash-hero-change ${cls}">${changeLine}</div>
       <div class="dash-hero-periods">${btnHtml}</div>
     </div>
