@@ -63,7 +63,7 @@ async function _gistDoSync() {
       _gistUpdateBadge();
       _gistSetStatus('ok', `☁️ ${_gt('set_gist_synced')}`);
     } else {
-      _gistSetStatus('error', d.error || _gt('set_gist_err_generic'));
+      _gistSetStatus('error', d.error_key ? _gt(d.error_key) : (d.error || _gt('set_gist_err_generic')));
     }
   } catch {
     _gistSetStatus('error', _gt('set_gist_err_conn'));
@@ -89,7 +89,7 @@ async function gistBackup() {
       _gistUpdateBadge();
       _gistSetStatus('ok', `✅ ${_gt('set_gist_backup_ok')} ${d.gist_id.slice(0, 8)}…`);
     } else {
-      _gistSetStatus('error', d.error || _gt('set_gist_err_generic'));
+      _gistSetStatus('error', d.error_key ? _gt(d.error_key) : (d.error || _gt('set_gist_err_generic')));
     }
   } catch {
     _gistSetStatus('error', _gt('set_gist_err_conn'));
@@ -115,7 +115,7 @@ async function gistRestore() {
       _gistSetStatus('ok', `✅ ${_gt('set_gist_restore_ok')}`);
       setTimeout(() => location.reload(), 1500);
     } else {
-      _gistSetStatus('error', d.error || _gt('set_gist_err_generic'));
+      _gistSetStatus('error', d.error_key ? _gt(d.error_key) : (d.error || _gt('set_gist_err_generic')));
     }
   } catch {
     _gistSetStatus('error', _gt('set_gist_err_conn'));
@@ -136,7 +136,7 @@ async function gistSaveToken() {
     });
     const d = await r.json();
     if (!d.ok) {
-      _gistSetStatus('error', d.error || 'Token inválido.');
+      _gistSetStatus('error', d.error_key ? _gt(d.error_key) : (d.error || _gt('set_gist_err_generic')));
       return;
     }
     localStorage.setItem(GIST_TOKEN_KEY, token);
@@ -177,7 +177,7 @@ function _gistRenderSaved() {
 
   if (token) {
     const masked  = token.slice(0, 6) + '••••••••••••••••';
-    const gistLbl = gistId ? `Gist: ${gistId.slice(0, 8)}…` : 'Nenhum backup ainda';
+    const gistLbl = gistId ? `Gist: ${gistId.slice(0, 8)}…` : _gt('set_gist_no_backup');
     wrap.innerHTML = `
       <div class="ai-key-item active">
         <div class="ai-key-item-info">
@@ -212,10 +212,10 @@ function _gistUpdateBadge() {
     badge.textContent = `Gist ${gistId.slice(0, 6)}…`;
     badge.className   = 'ai-cfg-badge';
   } else if (token) {
-    badge.textContent = 'Token salvo';
+    badge.textContent = _gt('set_gist_badge_saved');
     badge.className   = 'ai-cfg-badge';
   } else {
-    badge.textContent = 'Sem token';
+    badge.textContent = _gt('set_gist_badge_none');
     badge.className   = 'ai-cfg-badge ai-cfg-badge-none';
   }
 }

@@ -5125,16 +5125,16 @@ def gist_test_token():
     body  = request.get_json(silent=True) or {}
     token = "".join((body.get("token") or "").split())
     if not token:
-        return jsonify({"ok": False, "error": "Token não informado"}), 400
+        return jsonify({"ok": False, "error_key": "set_gist_err_no_token_backend"}), 400
     result, status = _gist_req("GET", "https://api.github.com/user", token)
     if status == 200:
         login = result.get("login", "")
         return jsonify({"ok": True, "login": login})
     if status == 401:
-        return jsonify({"ok": False, "error": "Token inválido. Gere um PAT clássico em GitHub → Settings → Developer settings → Tokens (classic) com o escopo 'gist'."}), 400
+        return jsonify({"ok": False, "error_key": "set_gist_err_bad_token"}), 400
     if status == 403:
-        return jsonify({"ok": False, "error": "Sem permissão. Verifique se o token tem o escopo 'gist'."}), 400
-    return jsonify({"ok": False, "error": result.get("message", "Erro ao validar token")}), 400
+        return jsonify({"ok": False, "error_key": "set_gist_err_no_scope"}), 400
+    return jsonify({"ok": False, "error_key": "set_gist_err_generic"}), 400
 
 
 @app.route("/api/gist/backup", methods=["POST"])
@@ -5143,7 +5143,7 @@ def gist_backup():
     token   = "".join((body.get("token")   or "").split())
     gist_id = (body.get("gist_id") or "").strip()
     if not token:
-        return jsonify({"ok": False, "error": "Token não informado"}), 400
+        return jsonify({"ok": False, "error_key": "set_gist_err_no_token_backend"}), 400
 
     files = {}
     for gist_name, local_path in _GIST_FILES.items():
@@ -5166,12 +5166,13 @@ def gist_backup():
         result, status = _gist_req("POST", "https://api.github.com/gists", token, payload)
 
     if status not in (200, 201):
-        msg = result.get("message", "Erro desconhecido")
         if status == 401:
-            msg = "Token inválido (Bad credentials). Gere um PAT clássico em GitHub → Settings → Developer settings → Tokens (classic) com o escopo 'gist'."
+            error_key = "set_gist_err_bad_token"
         elif status == 403:
-            msg = "Sem permissão. Verifique se o token tem o escopo 'gist'."
-        return jsonify({"ok": False, "error": msg}), 400
+            error_key = "set_gist_err_no_scope"
+        else:
+            error_key = "set_gist_err_generic"
+        return jsonify({"ok": False, "error_key": error_key}), 400
 
     return jsonify({"ok": True, "gist_id": result["id"], "url": result["html_url"]})
 

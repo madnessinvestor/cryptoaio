@@ -366,13 +366,13 @@
         </div>
         <div>
           <div class="wgt-hero-title" data-i18n="set_title">Configurações</div>
-          <div class="wgt-hero-sub">Personalize o app</div>
+          <div class="wgt-hero-sub" data-i18n="set_subtitle">Personalize o app</div>
         </div>
       </div>
 
       <!-- General -->
       <div class="wgt-card">
-        <div class="wgt-card-title">GERAL</div>
+        <div class="wgt-card-title" data-i18n="set_section_general">GERAL</div>
         <div class="settings-row" style="border-top:none">
           <span class="settings-row-label" data-i18n="set_lang">Idioma</span>
           <div class="settings-toggle-group">
@@ -421,13 +421,13 @@
         <div id="ai-saved-keys"></div>
 
         <!-- Add form -->
-        <div class="ai-cfg-add-label">Adicionar provedor</div>
+        <div class="ai-cfg-add-label" data-i18n="set_ai_add_provider">Adicionar provedor</div>
 
         <!-- Provider select row -->
         <div class="settings-row" style="border-top:none;margin-bottom:6px">
-          <span class="settings-row-label">Provedor</span>
+          <span class="settings-row-label" data-i18n="set_ai_provider">Provedor</span>
           <select id="ai-prov-select" class="cfg-prov-select" onchange="aiConfigSetProvider(this.value)">
-            <option value="">Selecione…</option>
+            <option value="" data-i18n="set_select_ph">Selecione…</option>
             <option value="groq">Groq</option>
             <option value="gemini">Gemini</option>
             <option value="openrouter">OpenRouter</option>
@@ -446,7 +446,7 @@
           <div class="ai-cfg-input-wrap" id="ai-config-model-select-wrap">
             <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
             <select id="ai-config-model-select" class="ai-cfg-input ai-cfg-select" onchange="aiModelSelectChange()">
-              <option value="">Modelo padrão</option>
+              <option value="" data-i18n="set_ai_model_default">Modelo padrão</option>
             </select>
           </div>
           <!-- Custom model text -->
@@ -477,13 +477,13 @@
         <div class="wgt-card-title">SYNC GITHUB GIST</div>
         <div class="ai-cfg-card-header" style="margin-bottom:10px">
           <span class="ai-cfg-card-title" data-i18n="set_gist_title">Sync GitHub Gist</span>
-          <span id="gist-cfg-badge" class="ai-cfg-badge ai-cfg-badge-none">Sem token</span>
+          <span id="gist-cfg-badge" class="ai-cfg-badge ai-cfg-badge-none" data-i18n="set_gist_badge_none">Sem token</span>
         </div>
 
         <div id="gist-saved-token"></div>
 
         <div id="gist-add-form">
-          <div class="ai-cfg-add-label">Adicionar token</div>
+          <div class="ai-cfg-add-label" data-i18n="set_gist_add_token">Adicionar token</div>
           <div class="ai-cfg-inputs">
             <div class="ai-cfg-input-wrap">
               <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
