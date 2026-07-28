@@ -245,15 +245,10 @@ function _gt(key) {
 let _oauthPopup = null;
 
 async function gistLoginWithGitHub() {
-  // Check if OAuth is configured on the server
-  try {
-    const r = await _origFetch('/auth/github/configured');
-    const d = await r.json();
-    if (!d.configured) {
-      _gistSetStatus('error', _gt('set_gist_oauth_not_cfg'));
-      return;
-    }
-  } catch { /* proceed anyway */ }
+  if (!_oauthConfigured) {
+    _gistSetStatus('error', _gt('set_gist_oauth_not_cfg'));
+    return;
+  }
 
   if (_oauthPopup && !_oauthPopup.closed) { _oauthPopup.focus(); return; }
 
@@ -306,17 +301,14 @@ window.addEventListener('message', function(event) {
   }
 });
 
-// Show/hide OAuth button based on server config
+// Check OAuth config — just stores the result, button is always visible
+let _oauthConfigured = false;
 async function _gistCheckOAuthAvailable() {
-  const btn = document.getElementById('gist-oauth-btn');
-  if (!btn) return;
   try {
     const r = await _origFetch('/auth/github/configured');
     const d = await r.json();
-    btn.style.display = d.configured ? '' : 'none';
-    const divider = document.querySelector('.gist-divider');
-    if (divider) divider.style.display = d.configured ? '' : 'none';
-  } catch { btn.style.display = 'none'; }
+    _oauthConfigured = !!d.configured;
+  } catch { _oauthConfigured = false; }
 }
 
 document.addEventListener('DOMContentLoaded', gistInit);

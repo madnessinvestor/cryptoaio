@@ -1,6 +1,6 @@
 // HTML pages are never cached — always fetched fresh from the server.
 // Only static assets (JS, CSS) are cached for offline performance.
-const CACHE = "cryptoaio-v4";
+const CACHE = "cryptoaio-v5";
 const STATIC = [
   "/static/style.css",
   "/static/app.js",
@@ -9,7 +9,8 @@ const STATIC = [
   "/static/alerts.js",
   "/static/madai.js",
   "/static/widget.js",
-  "/static/dashboard.js"
+  "/static/dashboard.js",
+  "/static/gist.js"
 ];
 
 self.addEventListener("install", e => {
