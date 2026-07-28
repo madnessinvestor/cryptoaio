@@ -2619,14 +2619,20 @@ def _gw_parse_openai(result, provider):
             text = tc.get("function", {}).get("arguments", "")
             if text:
                 break
+    finish = ch.get("finish_reason", "")
     if not text:
-        finish = ch.get("finish_reason", "")
+        if finish == "length":
+            raise RuntimeError(
+                "O modelo atingiu o limite de tokens e não conseguiu iniciar a resposta. "
+                "Tente uma pergunta mais curta ou troque para um modelo com contexto maior (ex: Gemini).")
         raise RuntimeError(
             f"O modelo não retornou resposta (finish_reason={finish!r}). "
             "Verifique se o modelo configurado existe e tem créditos disponíveis.")
+    if finish == "length":
+        text += "\n\n_(Resposta cortada — limite de tokens atingido. Para análises completas, use um modelo com mais capacidade, como Gemini ou GPT-4o-mini.)_"
     return {"provider": provider, "model": result.get("model", ""),
             "text": text,
-            "finish_reason": ch.get("finish_reason", "stop"),
+            "finish_reason": finish,
             "usage": {"prompt_tokens":     use.get("prompt_tokens", 0),
                       "completion_tokens": use.get("completion_tokens", 0),
                       "total_tokens":      use.get("total_tokens", 0)}}
@@ -3114,17 +3120,19 @@ def ai_chat():
     is_full_analysis = any(kw in user_message.lower() for kw in _analyze_keywords)
 
     if is_full_analysis:
-        # Full analysis: give trades and dashboard maximum space
-        wl_limit   = 1500
-        port_limit = 4000
-        dash_limit = 4000
-        max_tok    = 1024
+        # Full analysis: trades + dashboard get priority; watchlist reduced
+        # Total input kept under ~6 000 chars (~1 500 tokens) so Groq 8k models
+        # still have room for an 800-token reply.
+        wl_limit   = 800
+        port_limit = 2800
+        dash_limit = 2800
+        max_tok    = 800
     else:
         # Regular questions: balanced budget
         wl_limit   = 2000
-        port_limit = 2500
-        dash_limit = 3000
-        max_tok    = 700
+        port_limit = 2000
+        dash_limit = 2500
+        max_tok    = 600
 
     def _trunc(text, limit):
         if len(text) <= limit:
