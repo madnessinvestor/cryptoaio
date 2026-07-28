@@ -104,6 +104,574 @@ async function importAppData(input) {
   }
 }
 
+// ─── Share Report ─────────────────────────────────────────────────────────────
+// Combined Watchlist + Dashboard + Trade report in the same visual style
+// as exportDashboard() and exportTrades().
+
+function shareReport() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const ts  = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  const rate   = (typeof getRate  === "function") ? getRate()  : 1;
+  const sym    = (typeof currSym  === "function") ? currSym()  : "$";
+  const cnyName = sym === "R$" ? "BRL" : sym === "€" ? "EUR" : "USD";
+
+  // ── shared helpers ──────────────────────────────────────────────────────────
+  function fv(usd) {
+    if (usd == null || isNaN(usd)) return "—";
+    const v = Number(usd) * rate;
+    const abs = Math.abs(v), neg = v < 0;
+    let s;
+    if (abs >= 1e6)       s = sym + (abs/1e6).toFixed(2) + "M";
+    else if (abs >= 1e3)  s = sym + abs.toLocaleString("en-US", {minimumFractionDigits:2,maximumFractionDigits:2});
+    else if (abs >= 1)    s = sym + abs.toFixed(2);
+    else if (abs >= 1e-6) s = sym + abs.toFixed(6);
+    else                  s = sym + abs.toPrecision(4);
+    return neg ? "-" + s : s;
+  }
+  function fUsd(usd) {   // always USD (dashboard section)
+    if (usd == null || isNaN(usd)) return "—";
+    const abs = Math.abs(Number(usd)), neg = Number(usd) < 0;
+    let s;
+    if (abs >= 1e6)       s = "$" + (abs/1e6).toFixed(2) + "M";
+    else if (abs >= 1e3)  s = "$" + abs.toLocaleString("en-US", {minimumFractionDigits:2,maximumFractionDigits:2});
+    else if (abs >= 1)    s = "$" + abs.toFixed(2);
+    else if (abs >= 0.0001) s = "$" + abs.toFixed(6);
+    else                  s = "$" + abs.toPrecision(3);
+    return neg ? "-" + s : s;
+  }
+  function fq(n) {
+    const abs = Math.abs(Number(n));
+    if (abs >= 1e3)  return Number(n).toLocaleString("en-US", {maximumFractionDigits:4});
+    if (abs >= 1)    return Number(n).toFixed(6);
+    if (abs >= 1e-5) return Number(n).toFixed(8);
+    return Number(n).toPrecision(4);
+  }
+  function fQty(v) {
+    if (v == null || isNaN(v)) return "—";
+    const n = Number(v);
+    if (n >= 1000) return n.toLocaleString("en-US", {maximumFractionDigits:2});
+    if (n >= 1)    return n.toFixed(4);
+    if (n >= 0.0001) return n.toFixed(6);
+    return n.toPrecision(3);
+  }
+  function fp(v) {
+    if (v == null || isNaN(v)) return "—";
+    const sign = Number(v) >= 0 ? "+" : "";
+    return sign + Number(v).toFixed(2) + "%";
+  }
+  function fPct(v) {
+    if (v == null || isNaN(v)) return "—";
+    return (Number(v) >= 0 ? "+" : "") + Number(v).toFixed(2) + "%";
+  }
+  function pnlCls(v) {
+    if (!v || isNaN(v) || v === 0) return "neu";
+    return Number(v) > 0 ? "pos" : "neg";
+  }
+  function esc(s) {
+    return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // ── CSS (shared with existing reports) ─────────────────────────────────────
+  const css = `
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           font-size: 11px; color: #1a1a2e; background: #fff; padding: 28px 32px; }
+    .report-header { display:flex; align-items:center; justify-content:space-between;
+      border-bottom:2px solid #00c27c; padding-bottom:14px; margin-bottom:20px; }
+    .report-logo { font-size:20px; font-weight:900; letter-spacing:0.04em; color:#00c27c; }
+    .report-meta { text-align:right; color:#666; font-size:10px; line-height:1.7; }
+    .section-wrap { margin-bottom: 36px; }
+    .section-title { font-size:12px; font-weight:800; text-transform:uppercase;
+      letter-spacing:0.06em; color:#00a060;
+      border-bottom:1px solid #e0e0e0; padding-bottom:5px; margin-bottom:12px; margin-top:28px; }
+    .section-title:first-child { margin-top:0; }
+    .summary-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px; }
+    .sum-card { background:#f5f7fa; border-radius:8px; padding:12px 14px; border-left:3px solid #00c27c; }
+    .sum-card.grand     { background:#e8faf3; border-color:#00a060; }
+    .sum-card.grand-pos { background:#e8faf3; border-color:#059669; }
+    .sum-card.grand-neg { background:#fff0f0; border-color:#dc2626; }
+    .sum-label { font-size:9px; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.07em; color:#888; margin-bottom:4px; }
+    .sum-val { font-size:16px; font-weight:800; color:#1a1a2e; font-variant-numeric:tabular-nums; }
+    .sum-sub { font-size:11px; font-weight:600; margin-top:2px; }
+    .div-export-wrap { display:flex; align-items:flex-start; gap:24px; margin-bottom:20px; }
+    .div-table { width:auto; min-width:260px; }
+    .wallet-block { border:1px solid #e8e8e8; border-radius:8px;
+      margin-bottom:16px; overflow:hidden; page-break-inside:avoid; }
+    .wallet-header { display:flex; align-items:center; justify-content:space-between;
+      background:#f8f9fc; padding:9px 14px; border-bottom:1px solid #e8e8e8; }
+    .wallet-title-row { display:flex; flex-direction:column; gap:2px; }
+    .wallet-label { font-weight:700; font-size:12px; color:#1a1a2e; }
+    .wallet-addr  { font-family:monospace; font-size:9px; color:#999; }
+    .wallet-total { font-size:14px; font-weight:800; color:#1a1a2e; white-space:nowrap; }
+    .sub-label { font-size:9px; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.06em; color:#888; padding:8px 14px 4px;
+      background:#fafafa; border-bottom:1px solid #f0f0f0; }
+    .token-block { border:1px solid #e8e8e8; border-radius:8px;
+      margin-bottom:16px; overflow:hidden; page-break-inside:avoid; }
+    .token-header { background:#f8f9fc; padding:10px 14px;
+      border-bottom:1px solid #e8e8e8; display:flex; flex-direction:column; gap:6px; }
+    .token-title-row { display:flex; align-items:baseline; gap:10px; }
+    .token-ticker { font-size:14px; font-weight:800; color:#1a1a2e; }
+    .token-meta   { font-size:9px; color:#888; }
+    .token-totals { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .tsum-item  { display:flex; align-items:baseline; gap:4px; }
+    .tsum-label { font-size:9px; color:#aaa; text-transform:uppercase; letter-spacing:0.05em; }
+    .tsum-val   { font-size:12px; font-weight:700; color:#1a1a2e; }
+    .tsum-pct   { font-size:10px; font-weight:600; }
+    .tsum-sep   { color:#ddd; }
+    table { width:100%; border-collapse:collapse; }
+    table + .sub-label, table + table { border-top:1px solid #f0f0f0; }
+    th { background:#f5f7fa; font-size:9px; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.05em; color:#666; padding:5px 10px; text-align:left;
+      border-bottom:1px solid #e8e8e8; }
+    td { padding:5px 10px; border-bottom:1px solid #f5f5f5; vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tfoot td { background:#f8f9fc; font-size:10px;
+      border-top:1px solid #e0e0e0; border-bottom:none; padding:6px 10px; }
+    .r    { text-align:right; }
+    .mono { font-family:'Courier New',monospace; }
+    .bold { font-weight:700; }
+    .dim  { color:#888; }
+    .small { font-size:9px; }
+    .subtot-label { color:#666; font-size:9px; text-transform:uppercase; letter-spacing:0.05em; }
+    .subtot { color:#1a1a2e; }
+    .pos { color:#059669; }
+    .neg { color:#dc2626; }
+    .neu { color:#888; }
+    .type-badge { display:inline-block; font-size:8px; font-weight:700;
+      padding:2px 6px; border-radius:3px; white-space:nowrap; }
+    .badge-buy  { background:rgba(5,150,105,0.12); color:#059669; border:1px solid rgba(5,150,105,0.25); }
+    .badge-sell { background:rgba(220,38,38,0.10); color:#dc2626; border:1px solid rgba(220,38,38,0.20); }
+    .net-badge { display:inline-block; font-size:8px; font-weight:700;
+      padding:2px 5px; border-radius:3px;
+      background:color-mix(in srgb,var(--nc) 15%,transparent);
+      color:color-mix(in srgb,var(--nc) 70%,#000);
+      border:1px solid color-mix(in srgb,var(--nc) 30%,transparent); white-space:nowrap; }
+    .empty-note { color:#aaa; font-size:10px; padding:10px 14px; font-style:italic; }
+    .chg-up  { color:#059669; font-weight:600; }
+    .chg-dn  { color:#dc2626; font-weight:600; }
+    .chg-neu { color:#888; }
+    .report-footer { margin-top:28px; padding-top:10px;
+      border-top:1px solid #e0e0e0; font-size:9px; color:#bbb; text-align:center; }
+    @media print {
+      @page { margin:0; size:A4; }
+      body { padding:14mm 12mm; font-size:10px; }
+      .wallet-block, .token-block { page-break-inside:avoid; }
+      .no-print { display:none !important; }
+    }
+  `;
+
+  let body = "";
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // SECTION 1 — WATCHLIST
+  // ════════════════════════════════════════════════════════════════════════════
+  const wlAssets = (typeof cachedAssets !== "undefined") ? cachedAssets : [];
+
+  body += `<div class="section-title">Watchlist</div>`;
+
+  if (wlAssets.length) {
+    body += `<table>
+      <thead><tr>
+        <th>Asset</th>
+        <th>Type</th>
+        <th>Source</th>
+        <th class="r">Price (${cnyName})</th>
+        <th class="r">24h Change</th>
+      </tr></thead>
+      <tbody>`;
+
+    for (const a of wlAssets) {
+      const price = a.price != null ? (Number(a.price) * rate) : null;
+      const chg   = a.change24h;
+      let priceStr = "—";
+      if (price != null && !isNaN(price)) {
+        const abs = Math.abs(price);
+        if (abs >= 1e3)     priceStr = sym + abs.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+        else if (abs >= 1)  priceStr = sym + abs.toFixed(2);
+        else if (abs >= 0.0001) priceStr = sym + abs.toFixed(6);
+        else                priceStr = sym + abs.toPrecision(4);
+      }
+      let chgStr = "—", chgCls = "chg-neu";
+      if (chg != null && !isNaN(chg)) {
+        chgStr = (Number(chg) >= 0 ? "▲ +" : "▼ ") + Number(chg).toFixed(2) + "%";
+        chgCls = Number(chg) > 0 ? "chg-up" : Number(chg) < 0 ? "chg-dn" : "chg-neu";
+      }
+      body += `<tr>
+        <td><strong>${esc(a.symbol||"")}</strong></td>
+        <td class="dim">${esc(a.type||"crypto")}</td>
+        <td class="dim small">${esc(a.source||a.exchange||"")}</td>
+        <td class="r mono">${priceStr}</td>
+        <td class="r mono ${chgCls}">${chgStr}</td>
+      </tr>`;
+    }
+    body += `</tbody></table>`;
+  } else {
+    body += `<p class="empty-note">No assets in watchlist.</p>`;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // SECTION 2 — DASHBOARD
+  // ════════════════════════════════════════════════════════════════════════════
+  const dWallets = (typeof dashWallets !== "undefined") ? dashWallets : [];
+  const dManual  = (typeof dashManual  !== "undefined") ? dashManual  : [];
+
+  const totalWalletUsd = dWallets.reduce((s, w) =>
+    s + (w.tokens||[]).reduce((a,tk) => a + (tk.value_usd||0), 0)
+      + (w.defi  ||[]).reduce((a,d)  => a + (d.net_usd  ||0), 0)
+      + (w.perps ||[]).reduce((a,p)  => a + (p.net_usd  ||0), 0), 0);
+  const totalManualUsd = dManual.reduce((s,a) => s + (a.balance||0)*(a.price_usd||0), 0);
+  const grandDashTotal = totalWalletUsd + totalManualUsd;
+
+  body += `<div class="section-title" style="margin-top:36px">Dashboard</div>`;
+
+  if (dWallets.length || dManual.length) {
+    // Summary cards
+    body += `<div class="summary-grid">
+      <div class="sum-card"><div class="sum-label">On-Chain</div><div class="sum-val">${fUsd(totalWalletUsd)}</div></div>
+      <div class="sum-card"><div class="sum-label">Manual</div><div class="sum-val">${fUsd(totalManualUsd)}</div></div>
+      <div class="sum-card grand"><div class="sum-label">Total</div><div class="sum-val">${fUsd(grandDashTotal)}</div></div>
+    </div>`;
+
+    // Diversification donut
+    if (typeof _buildDivData === "function") {
+      const divItems = _buildDivData();
+      if (divItems.length >= 2) {
+        const PIE_COLORS = ["#00c27c","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#ec4899","#14b8a6","#f97316","#84cc16","#6366f1"];
+        const Rpie = 90, rpie = 50, GAP = divItems.length > 1 ? 1.5 : 0;
+        let svgPaths = "", angle = 0;
+        divItems.forEach((item, i) => {
+          const sweep = item.pct / 100 * 360;
+          const start = angle + GAP / 2;
+          const end   = angle + sweep - GAP / 2;
+          angle += sweep;
+          const path = _svgDonutArc(Rpie, rpie, start, end);
+          svgPaths += `<path d="${path}" fill="${PIE_COLORS[i % PIE_COLORS.length]}"/>`;
+        });
+        let divRows = "";
+        divItems.forEach((item, i) => {
+          const color = PIE_COLORS[i % PIE_COLORS.length];
+          divRows += `<tr>
+            <td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${color};vertical-align:middle"></span></td>
+            <td><strong>${esc(item.sym)}</strong></td>
+            <td class="r mono">${fUsd(item.val)}</td>
+            <td class="r mono">${item.pct.toFixed(1)}%</td>
+          </tr>`;
+        });
+        body += `<div class="div-export-wrap">
+          <svg viewBox="-100 -100 200 200" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
+            ${svgPaths}
+            <text x="0" y="-7" text-anchor="middle" style="font-size:8px;fill:#888;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">TOTAL</text>
+            <text x="0" y="11" text-anchor="middle" style="font-size:13px;fill:#1a1a2e;font-weight:800">${fUsd(grandDashTotal)}</text>
+          </svg>
+          <table class="div-table">
+            <thead><tr><th></th><th>Asset</th><th class="r">Value</th><th class="r">%</th></tr></thead>
+            <tbody>${divRows}</tbody>
+          </table>
+        </div>`;
+      }
+    }
+
+    // On-chain wallets
+    if (dWallets.length) {
+      body += `<div class="sub-label" style="background:transparent;padding:0 0 6px;border:none;font-size:10px">On-Chain Wallets</div>`;
+      for (const w of dWallets) {
+        const tokens = (w.tokens||[]).slice().sort((a,b) => (b.value_usd||0)-(a.value_usd||0));
+        const defi   = w.defi  || [];
+        const perps  = w.perps || [];
+        const label  = esc(w.label || (typeof shortAddr === "function" ? shortAddr(w.address) : w.address));
+        const addr   = esc(w.address || "");
+        const tokUsd  = tokens.reduce((s,tk) => s+(tk.value_usd||0), 0);
+        const defiUsd = defi.reduce((s,d) => s+(d.net_usd||0), 0);
+        const prpUsd  = perps.reduce((s,p) => s+(p.net_usd||0), 0);
+        const walTotal = tokUsd + defiUsd + prpUsd;
+
+        body += `<div class="wallet-block">
+          <div class="wallet-header">
+            <div class="wallet-title-row">
+              <span class="wallet-label">${label}</span>
+              <span class="wallet-addr">${addr}</span>
+            </div>
+            <span class="wallet-total">${fUsd(walTotal)}</span>
+          </div>`;
+
+        if (tokens.length) {
+          body += `<div class="sub-label">Tokens</div>
+            <table><thead><tr>
+              <th>Symbol</th><th>Name</th><th>Network</th>
+              <th class="r">Quantity</th><th class="r">Price</th><th class="r">Value</th>
+            </tr></thead><tbody>`;
+          for (const tk of tokens) {
+            const cm = (typeof chainMeta === "function") ? chainMeta(tk.network) : {name:tk.network||"",color:"#888"};
+            body += `<tr>
+              <td><strong>${esc(tk.symbol||"")}</strong></td>
+              <td class="dim">${esc(tk.name||"")}</td>
+              <td><span class="net-badge" style="--nc:${cm.color}">${esc(cm.name||tk.network||"")}</span></td>
+              <td class="r mono">${fQty(tk.balance)}</td>
+              <td class="r mono">${fUsd(tk.price_usd)}</td>
+              <td class="r mono bold">${fUsd(tk.value_usd)}</td>
+            </tr>`;
+          }
+          body += `</tbody><tfoot><tr>
+            <td colspan="5" class="r subtot-label">Subtotal Tokens</td>
+            <td class="r mono bold subtot">${fUsd(tokUsd)}</td>
+          </tr></tfoot></table>`;
+        }
+
+        if (defi.length) {
+          body += `<div class="sub-label">DeFi</div>
+            <table><thead><tr>
+              <th>Protocol</th><th>Type</th><th>Network</th><th>Position</th>
+              <th class="r">Net Value</th><th class="r">Debt</th>
+            </tr></thead><tbody>`;
+          for (const d of defi) {
+            const cm  = (typeof chainMeta === "function") ? chainMeta(d.network) : {name:d.network||"",color:"#888"};
+            const allT = [...(d.supply_tokens||[]),(d.reward_tokens||[])];
+            const pos  = allT.length ? allT.map(tk=>`${fQty(tk.balance)} ${esc(tk.symbol)}`).join(" + ") : esc(d.description||"");
+            body += `<tr>
+              <td><strong>${esc(d.protocol||"")}</strong></td>
+              <td class="dim">${esc(d.type||"")}</td>
+              <td><span class="net-badge" style="--nc:${cm.color}">${esc(cm.name||d.network||"")}</span></td>
+              <td class="mono small">${pos}</td>
+              <td class="r mono bold">${fUsd(d.net_usd)}</td>
+              <td class="r mono ${pnlCls(-(d.debt_usd||0))}">${d.debt_usd>0 ? fUsd(d.debt_usd) : "—"}</td>
+            </tr>`;
+          }
+          body += `</tbody><tfoot><tr>
+            <td colspan="4" class="r subtot-label">Subtotal DeFi</td>
+            <td class="r mono bold subtot">${fUsd(defiUsd)}</td><td></td>
+          </tr></tfoot></table>`;
+        }
+
+        if (perps.length) {
+          body += `<div class="sub-label">Perpetuals / Futures</div>
+            <table><thead><tr>
+              <th>Protocol</th><th>Type</th><th>Network</th><th>Description</th><th class="r">Net Value</th>
+            </tr></thead><tbody>`;
+          for (const p of perps) {
+            const cm = (typeof chainMeta === "function") ? chainMeta(p.network) : {name:p.network||"",color:"#888"};
+            body += `<tr>
+              <td><strong>${esc(p.protocol||"")}</strong></td>
+              <td class="dim">${esc(p.type||"")}</td>
+              <td><span class="net-badge" style="--nc:${cm.color}">${esc(cm.name||p.network||"")}</span></td>
+              <td class="dim">${esc(p.description||"")}</td>
+              <td class="r mono bold">${fUsd(p.net_usd)}</td>
+            </tr>`;
+          }
+          body += `</tbody><tfoot><tr>
+            <td colspan="4" class="r subtot-label">Subtotal Perps</td>
+            <td class="r mono bold subtot">${fUsd(prpUsd)}</td>
+          </tr></tfoot></table>`;
+        }
+
+        if (!tokens.length && !defi.length && !perps.length) {
+          body += `<p class="empty-note">No data for this wallet.</p>`;
+        }
+        body += `</div>`; // wallet-block
+      }
+    }
+
+    // Manual assets
+    if (dManual.length) {
+      body += `<div class="sub-label" style="background:transparent;padding:6px 0;border:none;font-size:10px;margin-top:8px">Manual Assets</div>
+        <table><thead><tr>
+          <th>Symbol</th><th>Source</th><th class="r">Quantity</th>
+          <th class="r">Avg Paid</th><th class="r">Cur Price</th>
+          <th class="r">Value</th><th class="r">Invested</th>
+          <th class="r">P&amp;L</th><th class="r">P&amp;L %</th><th>Date</th>
+        </tr></thead><tbody>`;
+      for (const a of dManual) {
+        const bal = a.balance||0, price = a.price_usd||0, invest = a.investment||0;
+        const curVal  = bal * price;
+        const avgPaid = (bal>0 && invest>0) ? invest/bal : null;
+        const pnl     = invest>0 ? curVal-invest : null;
+        const pnlPct  = (pnl!==null && invest>0) ? (pnl/invest*100) : null;
+        const date    = a.purchase_date ? a.purchase_date.replace("T"," ").slice(0,16) : "—";
+        body += `<tr>
+          <td><strong>${esc(a.symbol||"")}</strong></td>
+          <td class="dim">${esc(a.source||"")}</td>
+          <td class="r mono">${fQty(bal)}</td>
+          <td class="r mono">${avgPaid!=null ? fUsd(avgPaid) : "—"}</td>
+          <td class="r mono">${price>0 ? fUsd(price) : "—"}</td>
+          <td class="r mono bold">${fUsd(curVal)}</td>
+          <td class="r mono">${invest>0 ? fUsd(invest) : "—"}</td>
+          <td class="r mono ${pnlCls(pnl)}">${pnl!==null ? fUsd(pnl) : "—"}</td>
+          <td class="r mono ${pnlCls(pnlPct)}">${pnlPct!==null ? fPct(pnlPct) : "—"}</td>
+          <td class="dim small">${esc(date)}</td>
+        </tr>`;
+      }
+      body += `</tbody><tfoot><tr>
+        <td colspan="5" class="r subtot-label">Total Manual</td>
+        <td class="r mono bold subtot">${fUsd(totalManualUsd)}</td>
+        <td colspan="4"></td>
+      </tr></tfoot></table>`;
+    }
+
+    if (!dWallets.length && !dManual.length) {
+      body += `<p class="empty-note">No dashboard data.</p>`;
+    }
+  } else {
+    body += `<p class="empty-note">No dashboard data.</p>`;
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // SECTION 3 — TRADE / PORTFOLIO
+  // ════════════════════════════════════════════════════════════════════════════
+  const portfolio = (typeof cachedPortfolio !== "undefined") ? cachedPortfolio : [];
+
+  body += `<div class="section-title" style="margin-top:36px">Trade / Portfolio</div>`;
+
+  if (portfolio.length && typeof calcToken === "function") {
+    let grandInv = 0, grandVal = 0;
+    const calcs = portfolio.map(tok => {
+      const c = calcToken(tok);
+      grandInv += c.total_invested;
+      grandVal += c.cur_value;
+      return { tok, c };
+    });
+    const grandPnl    = grandVal - grandInv;
+    const grandPnlPct = grandInv > 0 ? (grandPnl / grandInv) * 100 : 0;
+
+    // Summary cards
+    body += `<div class="summary-grid">
+      <div class="sum-card"><div class="sum-label">Total Invested</div><div class="sum-val">${fv(grandInv)}</div></div>
+      <div class="sum-card"><div class="sum-label">Current Value</div><div class="sum-val">${fv(grandVal)}</div></div>
+      <div class="sum-card ${pnlCls(grandPnl)==="pos"?"grand-pos":pnlCls(grandPnl)==="neg"?"grand-neg":"grand"}">
+        <div class="sum-label">Total P&amp;L</div>
+        <div class="sum-val ${pnlCls(grandPnl)}">${fv(grandPnl)}</div>
+        <div class="sum-sub ${pnlCls(grandPnlPct)}">${fp(grandPnlPct)}</div>
+      </div>
+    </div>`;
+
+    // Summary table per asset
+    body += `<div class="sub-label" style="background:transparent;padding:0 0 6px;border:none;font-size:10px">Summary by Asset</div>
+      <table><thead><tr>
+        <th>Ticker</th>
+        <th class="r">Total Qty</th><th class="r">Avg Paid</th><th class="r">Cur Price</th>
+        <th class="r">Invested</th><th class="r">Cur Value</th>
+        <th class="r">P&amp;L</th><th class="r">P&amp;L %</th>
+      </tr></thead><tbody>`;
+    for (const { tok, c } of calcs) {
+      const hasCur = tok.current_price != null;
+      body += `<tr>
+        <td><strong>${esc(tok.ticker)}</strong></td>
+        <td class="r mono">${fq(c.total_qty)}</td>
+        <td class="r mono">${fv(c.avg_price)}</td>
+        <td class="r mono">${hasCur ? fv(tok.current_price) : "—"}</td>
+        <td class="r mono">${fv(c.total_invested)}</td>
+        <td class="r mono bold">${hasCur ? fv(c.cur_value) : "—"}</td>
+        <td class="r mono bold ${pnlCls(c.pnl)}">${hasCur ? fv(c.pnl) : "—"}</td>
+        <td class="r mono ${pnlCls(c.pnl_pct)}">${hasCur ? fp(c.pnl_pct) : "—"}</td>
+      </tr>`;
+    }
+    body += `</tbody><tfoot><tr>
+      <td><strong>TOTAL</strong></td><td colspan="3"></td>
+      <td class="r mono bold subtot">${fv(grandInv)}</td>
+      <td class="r mono bold subtot">${fv(grandVal)}</td>
+      <td class="r mono bold subtot ${pnlCls(grandPnl)}">${fv(grandPnl)}</td>
+      <td class="r mono ${pnlCls(grandPnlPct)}">${fp(grandPnlPct)}</td>
+    </tr></tfoot></table>`;
+
+    // Detail per asset
+    body += `<div class="sub-label" style="background:transparent;padding:10px 0 6px;border:none;font-size:10px">Trade Detail</div>`;
+    for (const { tok, c } of calcs) {
+      const curPrice = tok.current_price;
+      const hasCur   = curPrice != null;
+      const trades   = (tok.trades||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+      if (!trades.length) continue;
+
+      body += `<div class="token-block">
+        <div class="token-header">
+          <div class="token-title-row">
+            <span class="token-ticker">${esc(tok.ticker)}</span>
+            <span class="token-meta">${fq(c.total_qty)} units · Avg ${fv(c.avg_price)} · Cur ${hasCur ? fv(curPrice) : "—"}</span>
+          </div>
+          <div class="token-totals">
+            <span class="tsum-item"><span class="tsum-label">Invested</span><span class="tsum-val">${fv(c.total_invested)}</span></span>
+            <span class="tsum-sep">·</span>
+            <span class="tsum-item"><span class="tsum-label">Value</span><span class="tsum-val">${hasCur ? fv(c.cur_value) : "—"}</span></span>
+            <span class="tsum-sep">·</span>
+            <span class="tsum-item"><span class="tsum-label">P&amp;L</span><span class="tsum-val ${pnlCls(c.pnl)}">${hasCur ? fv(c.pnl) : "—"}</span><span class="tsum-pct ${pnlCls(c.pnl_pct)}">${hasCur ? fp(c.pnl_pct) : ""}</span></span>
+          </div>
+        </div>
+        <table><thead><tr>
+          <th>Date</th><th>Type</th>
+          <th class="r">Qty</th><th class="r">Price Paid</th><th class="r">Total Paid</th>
+          <th class="r">Cur Value</th><th class="r">P&amp;L</th><th class="r">P&amp;L %</th>
+        </tr></thead><tbody>`;
+
+      for (const tr of trades) {
+        const isSell    = tr.qty < 0;
+        const absQty    = Math.abs(tr.qty);
+        const totalPaid = absQty * tr.price_paid;
+        let tradeVal = "—", tradePnl = "—", tradePct = "—", tradePnlCls = "neu";
+        if (!isSell && hasCur) {
+          const cv  = absQty * curPrice;
+          const pnl = cv - totalPaid;
+          const pp  = totalPaid > 0 ? (pnl / totalPaid) * 100 : 0;
+          tradeVal    = fv(cv);
+          tradePnl    = fv(pnl);
+          tradePct    = fp(pp);
+          tradePnlCls = pnlCls(pnl);
+        }
+        body += `<tr>
+          <td class="mono small">${esc(tr.date||"—")}</td>
+          <td><span class="type-badge ${isSell?"badge-sell":"badge-buy"}">${isSell?"SELL":"BUY"}</span></td>
+          <td class="r mono">${fq(absQty)}</td>
+          <td class="r mono">${fv(tr.price_paid)}</td>
+          <td class="r mono bold">${fv(isSell ? -totalPaid : totalPaid)}</td>
+          <td class="r mono">${tradeVal}</td>
+          <td class="r mono bold ${tradePnlCls}">${tradePnl}</td>
+          <td class="r mono ${tradePnlCls}">${tradePct}</td>
+        </tr>`;
+      }
+      body += `</tbody></table></div>`;
+    }
+  } else {
+    body += `<p class="empty-note">No portfolio data.</p>`;
+  }
+
+  // ── assemble full document ──────────────────────────────────────────────────
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CryptoAIO — Full Report</title>
+  <style>${css}</style>
+</head>
+<body>
+  <div class="report-header">
+    <div class="report-logo">CRYPTOAIO</div>
+    <div class="report-meta">
+      <div><strong>Full Portfolio Report · ${cnyName}</strong></div>
+      <div>Generated on ${ts}</div>
+    </div>
+  </div>
+
+  ${body}
+
+  <div class="report-footer">Generated by CryptoAIO · ${ts} · Values in ${cnyName}</div>
+
+  <div class="no-print" style="position:fixed;bottom:20px;right:20px;display:flex;gap:8px">
+    <button onclick="window.print()" style="background:#00c27c;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">⬇ Save PDF</button>
+    <button onclick="window.close()" style="background:#eee;color:#555;border:none;border-radius:8px;padding:10px 16px;font-size:13px;cursor:pointer">✕ Close</button>
+  </div>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) {
+    _backupSetStatus("error", "Allow pop-ups to generate the report.");
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function _backupSetStatus(type, msg) {

@@ -472,18 +472,24 @@
         <div id="ai-config-status" class="gist-status" style="margin-top:4px;"></div>
       </div>
 
-      <!-- Export / Import Data -->
+      <!-- Export / Import / Share -->
       <div class="wgt-card">
-        <div class="wgt-card-title" data-i18n="bkp_section">EXPORTAR / IMPORTAR</div>
+        <div class="wgt-card-title" data-i18n="bkp_section">EXPORTAR / IMPORTAR / COMPARTILHAR</div>
         <div class="ai-cfg-card-header" style="margin-bottom:10px">
           <span class="ai-cfg-card-title" data-i18n="bkp_title">Backup completo dos dados</span>
         </div>
-        <p class="gist-status" style="margin:0 0 10px;line-height:1.5" data-i18n="bkp_desc">
+        <p class="gist-status" style="margin:0 0 6px;line-height:1.5" data-i18n="bkp_desc">
           Exporta watchlist, trades, dashboard, alertas e configurações de IA num único arquivo <code>.json</code> que pode ser reimportado neste ou em outro dispositivo.
         </p>
-        <div class="ai-cfg-actions">
+        <div class="ai-cfg-actions" style="margin-bottom:6px">
           <button class="ai-cfg-save-btn gist-action-btn" onclick="exportAppData()" data-i18n="bkp_export_btn">⬇️ Exportar</button>
           <button class="ai-cfg-save-btn gist-action-btn" onclick="importAppDataPick()" data-i18n="bkp_import_btn">⬆️ Importar</button>
+        </div>
+        <p class="gist-status" style="margin:6px 0;line-height:1.5" data-i18n="bkp_share_desc">
+          Gera uma cartilha completa (Watchlist · Dashboard · Trade) no mesmo formato visual dos relatórios do app, pronta para salvar como PDF ou compartilhar.
+        </p>
+        <div class="ai-cfg-actions">
+          <button class="ai-cfg-save-btn gist-action-btn" onclick="shareReport()" data-i18n="bkp_share_btn">📤 Compartilhar</button>
         </div>
         <input type="file" id="backup-import-input" accept=".json" style="display:none" onchange="importAppData(this)">
         <div id="backup-status" class="gist-status" style="margin-top:8px"></div>
