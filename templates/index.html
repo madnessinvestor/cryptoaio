@@ -472,6 +472,23 @@
         <div id="ai-config-status" class="gist-status" style="margin-top:4px;"></div>
       </div>
 
+      <!-- Export / Import Data -->
+      <div class="wgt-card">
+        <div class="wgt-card-title" data-i18n="bkp_section">EXPORTAR / IMPORTAR</div>
+        <div class="ai-cfg-card-header" style="margin-bottom:10px">
+          <span class="ai-cfg-card-title" data-i18n="bkp_title">Backup completo dos dados</span>
+        </div>
+        <p class="gist-status" style="margin:0 0 10px;line-height:1.5" data-i18n="bkp_desc">
+          Exporta watchlist, trades, dashboard, alertas e configurações de IA num único arquivo <code>.json</code> que pode ser reimportado neste ou em outro dispositivo.
+        </p>
+        <div class="ai-cfg-actions">
+          <button class="ai-cfg-save-btn gist-action-btn" onclick="exportAppData()" data-i18n="bkp_export_btn">⬇️ Exportar</button>
+          <button class="ai-cfg-save-btn gist-action-btn" onclick="importAppDataPick()" data-i18n="bkp_import_btn">⬆️ Importar</button>
+        </div>
+        <input type="file" id="backup-import-input" accept=".json" style="display:none" onchange="importAppData(this)">
+        <div id="backup-status" class="gist-status" style="margin-top:8px"></div>
+      </div>
+
       <!-- GitHub Gist Sync -->
       <div class="wgt-card">
         <div class="wgt-card-title">SYNC GITHUB GIST</div>
@@ -1019,5 +1036,6 @@
   <script src="/static/dashboard.js?v=19"></script>
   <script src="/static/widget.js?v=6"></script>
   <script src="/static/gist.js?v=6"></script>
+  <script src="/static/backup.js?v=1"></script>
 </body>
 </html>

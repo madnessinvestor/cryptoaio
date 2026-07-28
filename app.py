@@ -5313,6 +5313,66 @@ def gist_restore():
     return jsonify({"ok": True, "restored": restored})
 
 
+@app.route("/api/data/export", methods=["GET"])
+def data_export():
+    import datetime
+    def _read(path):
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except Exception:
+            return []
+
+    payload = {
+        "_version":     1,
+        "_app":         "CryptoAIO",
+        "_exported_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "server": {
+            "assets":    _read(DATA_FILE),
+            "portfolio": _read(PORTFOLIO_FILE),
+            "wallets":   _read(DASH_WALLETS_FILE),
+            "manual":    _read(DASH_MANUAL_FILE),
+            "alerts":    _read(ALERTS_FILE),
+            "history":   _read(DASH_HISTORY_FILE),
+        }
+    }
+
+    response = app.response_class(
+        response=json.dumps(payload, ensure_ascii=False, indent=2),
+        status=200,
+        mimetype="application/json"
+    )
+    response.headers["Content-Disposition"] = 'attachment; filename="cryptoaio_backup.json"'
+    return response
+
+
+@app.route("/api/data/import", methods=["POST"])
+def data_import():
+    body = request.get_json(silent=True) or {}
+
+    if body.get("_app") != "CryptoAIO":
+        return jsonify({"ok": False, "error": "Arquivo inválido. Use um backup gerado pelo CryptoAIO."}), 400
+
+    server = body.get("server", {})
+    mapping = {
+        "assets":    DATA_FILE,
+        "portfolio": PORTFOLIO_FILE,
+        "wallets":   DASH_WALLETS_FILE,
+        "manual":    DASH_MANUAL_FILE,
+        "alerts":    ALERTS_FILE,
+        "history":   DASH_HISTORY_FILE,
+    }
+
+    restored = []
+    for key, path in mapping.items():
+        val = server.get(key)
+        if isinstance(val, list):
+            _save_json_file(path, val)
+            restored.append(key)
+
+    return jsonify({"ok": True, "restored": restored})
+
+
 _warmup()
 
 if __name__ == "__main__":
