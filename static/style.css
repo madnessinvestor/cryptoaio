@@ -1322,14 +1322,49 @@ main {
   max-width: 456px;
 }
 
+.settings-titlebar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.settings-titlebar-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.settings-titlebar-spacer {
+  flex: 1;
+}
+.settings-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0px;
+  cursor: pointer;
+  transition: filter 0.15s;
+  line-height: 1;
+  user-select: none;
+}
+.settings-dot-close {
+  background: #ff5f57;
+  border: 1px solid #e0443e;
+  color: #6d0902;
+}
+.settings-dot:hover {
+  filter: brightness(1.15);
+  font-size: 8px;
+}
 .settings-title {
+  flex: 1;
   font-size: 0.68rem;
   font-weight: 700;
   color: var(--muted2);
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-bottom: 10px;
 }
 
 .settings-row {
