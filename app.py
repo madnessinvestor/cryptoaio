@@ -3162,6 +3162,28 @@ def ai_chat():
         content = h.get("content", "")
         if role in ("user", "assistant") and content:
             messages.append({"role": role, "content": content})
+
+    # Detect user language and enforce it — injected right before the user turn
+    # so it overrides any bias introduced by the Portuguese system prompt.
+    _en_words = {"what","which","how","is","are","was","my","the","a","an",
+                 "does","do","did","has","have","had","best","worst","most",
+                 "total","give","show","tell","analyze","analyse","explain",
+                 "compare","list","who","where","when","why","can","could",
+                 "should","would","will","profit","loss","portfolio","market",
+                 "asset","trade","wallet","balance","value","rate","today"}
+    _words = set(user_message.lower().split())
+    _is_english = len(_words & _en_words) >= 2
+
+    if _is_english:
+        messages.append({
+            "role": "system",
+            "content": (
+                "IMPORTANT — LANGUAGE RULE: The user's message is in English. "
+                "You MUST reply entirely in English. Do NOT use Portuguese. "
+                "Every single word of your response must be in English."
+            )
+        })
+
     messages.append({"role": "user", "content": user_message})
 
     try:
