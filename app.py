@@ -3106,8 +3106,26 @@ def ai_chat():
         portfolio_ctx = f_portfolio.result()
         dashboard_ctx = f_dashboard.result()
 
-    # Truncate each block to keep total input within ~3 500 tokens (Groq free-tier safe).
-    # Watchlist is the most useful for market questions → larger budget.
+    # Detect full portfolio analysis requests → expand all budgets
+    _analyze_keywords = [
+        "análise completa", "analisar meu portfólio", "analyze my portfolio",
+        "complete analysis", "como estou posicionado", "conclusão geral"
+    ]
+    is_full_analysis = any(kw in user_message.lower() for kw in _analyze_keywords)
+
+    if is_full_analysis:
+        # Full analysis: give trades and dashboard maximum space
+        wl_limit   = 1500
+        port_limit = 4000
+        dash_limit = 4000
+        max_tok    = 1024
+    else:
+        # Regular questions: balanced budget
+        wl_limit   = 2000
+        port_limit = 2500
+        dash_limit = 3000
+        max_tok    = 700
+
     def _trunc(text, limit):
         if len(text) <= limit:
             return text
@@ -3115,9 +3133,9 @@ def ai_chat():
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "system", "content": _trunc(watchlist_ctx, 2000)},
-        {"role": "system", "content": f"TRADES (aba Trade — entradas/saídas, P&L por operação):\n{_trunc(portfolio_ctx, 1800)}"},
-        {"role": "system", "content": f"PORTFÓLIO (aba Dashboard — patrimônio total, wallets on-chain, ativos manuais):\n{_trunc(dashboard_ctx, 2500)}"},
+        {"role": "system", "content": _trunc(watchlist_ctx, wl_limit)},
+        {"role": "system", "content": f"TRADES (aba Trade — entradas/saídas, P&L por operação):\n{_trunc(portfolio_ctx, port_limit)}"},
+        {"role": "system", "content": f"PORTFÓLIO (aba Dashboard — patrimônio total, wallets on-chain, ativos manuais):\n{_trunc(dashboard_ctx, dash_limit)}"},
     ]
     for h in history[-6:]:
         role    = h.get("role")
@@ -3128,9 +3146,10 @@ def ai_chat():
 
     try:
         if has_user_cfg:
-            result = _ask_ai_user(messages, u_provider, u_key, u_model, u_url)
+            result = _ask_ai_user(messages, u_provider, u_key, u_model, u_url,
+                                  max_tokens=max_tok)
         else:
-            result = ask_ai(messages, temperature=0.5, max_tokens=512)
+            result = ask_ai(messages, temperature=0.5, max_tokens=max_tok)
         return jsonify({"reply": result["text"], "provider": result["provider"]})
     except RuntimeError as ex:
         return jsonify({"error": str(ex)}), 502
