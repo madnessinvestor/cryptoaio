@@ -1482,6 +1482,23 @@ main {
 }
 .settings-toggle-btn:active { opacity: 0.75; }
 
+/* Config page — provider select */
+.cfg-prov-select {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+  flex-shrink: 0;
+  max-width: 200px;
+}
+.cfg-prov-select:focus { border-color: var(--accent); }
+.cfg-prov-select option { background: #1a1a1a; color: var(--text); }
+
 /* Gist sync */
 .settings-row-col {
   flex-direction: column;

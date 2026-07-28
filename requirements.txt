@@ -5,3 +5,6 @@ flask
 gunicorn
 kivy
 requests
+flask
+gunicorn
+requests

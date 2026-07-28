@@ -334,6 +334,7 @@ function switchTab(tab) {
   const isAi        = tab === "ai";
   const isDashboard = tab === "dashboard";
   const isWidget    = tab === "widget";
+  const isConfig    = tab === "config";
 
   document.getElementById("section-tracker").classList.toggle("hidden", !isTracker);
   document.getElementById("section-trade").classList.toggle("hidden",   !isTrade);
@@ -343,6 +344,8 @@ function switchTab(tab) {
   if (dashSection) dashSection.classList.toggle("hidden", !isDashboard);
   const widgetSection = document.getElementById("section-widget");
   if (widgetSection) widgetSection.classList.toggle("hidden", !isWidget);
+  const configSection = document.getElementById("section-config");
+  if (configSection) configSection.classList.toggle("hidden", !isConfig);
 
   document.getElementById("tab-tracker").classList.toggle("active", isTracker);
   document.getElementById("tab-trade").classList.toggle("active",   isTrade);
@@ -352,6 +355,8 @@ function switchTab(tab) {
   if (dashTab) dashTab.classList.toggle("active", isDashboard);
   const widgetTab = document.getElementById("tab-widget");
   if (widgetTab) widgetTab.classList.toggle("active", isWidget);
+  const configTab = document.getElementById("tab-config");
+  if (configTab) configTab.classList.toggle("active", isConfig);
 
   if (isAi && typeof _aiUpdateConfiguredState === "function") _aiUpdateConfiguredState();
   if (isWidget) widgetOnEnter();

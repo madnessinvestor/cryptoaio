@@ -117,7 +117,7 @@
           <div class="ai-not-cfg-icon">🤖</div>
           <p class="ai-not-cfg-title" data-i18n="ai_not_cfg_title">Mad AI não configurado</p>
           <p class="ai-not-cfg-sub" data-i18n="ai_not_cfg_sub">Escolha um provedor e adicione sua API key nas configurações para começar.</p>
-          <button class="ai-not-cfg-btn" onclick="openSettingsPanel()" data-i18n="ai_not_cfg_btn">Abrir Configurações →</button>
+          <button class="ai-not-cfg-btn" onclick="switchTab('config')" data-i18n="ai_not_cfg_btn">Abrir Configurações →</button>
         </div>
       </div>
 
@@ -352,59 +352,68 @@
   </section>
 
   <!-- Settings panel (sheet) -->
-  <div id="settings-panel" class="settings-panel hidden" onclick="if(event.target===this)closeSettingsPanel()">
-    <div class="settings-box">
-      <div class="settings-titlebar">
-        <div class="settings-titlebar-dots">
-          <span class="settings-dot settings-dot-close" onclick="closeSettingsPanel()" title="Fechar"></span>
-        </div>
-        <div class="settings-title" data-i18n="set_title">Configurações</div>
-        <div class="settings-titlebar-spacer"></div>
-      </div>
+  <!-- Config section -->
+  <section id="section-config" class="hidden">
+    <div class="wgt-page">
 
-      <div class="settings-row">
-        <span class="settings-row-label" data-i18n="set_lang">Idioma</span>
-        <div class="settings-toggle-group">
-          <button id="btn-lang-pt" onclick="setLang('pt')" class="settings-toggle-btn lang-btn active">PT</button>
-          <button id="btn-lang-en" onclick="setLang('en')" class="settings-toggle-btn lang-btn">EN</button>
+      <!-- Hero -->
+      <div class="wgt-hero">
+        <div class="wgt-hero-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <path stroke="#00e676" stroke-width="1.5" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+            <circle cx="12" cy="12" r="3" stroke="#00e676" stroke-width="1.5"/>
+          </svg>
         </div>
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row-label" data-i18n="set_theme">Tema</span>
-        <div class="settings-toggle-group">
-          <button id="btn-theme" onclick="toggleTheme()" class="settings-toggle-btn"></button>
+        <div>
+          <div class="wgt-hero-title" data-i18n="set_title">Configurações</div>
+          <div class="wgt-hero-sub">Personalize o app</div>
         </div>
       </div>
 
-      <div class="settings-row">
-        <span class="settings-row-label" data-i18n="set_currency">Moeda</span>
-        <div class="settings-toggle-group">
-          <button class="settings-toggle-btn cur-btn" data-cur="BRL" onclick="setCurrency('BRL')">R$</button>
-          <button class="settings-toggle-btn cur-btn active" data-cur="USD" onclick="setCurrency('USD')">$</button>
-          <button class="settings-toggle-btn cur-btn" data-cur="EUR" onclick="setCurrency('EUR')">€</button>
+      <!-- General -->
+      <div class="wgt-card">
+        <div class="wgt-card-title">GERAL</div>
+        <div class="settings-row" style="border-top:none">
+          <span class="settings-row-label" data-i18n="set_lang">Idioma</span>
+          <div class="settings-toggle-group">
+            <button id="btn-lang-pt" onclick="setLang('pt')" class="settings-toggle-btn lang-btn active">PT</button>
+            <button id="btn-lang-en" onclick="setLang('en')" class="settings-toggle-btn lang-btn">EN</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="set_theme">Tema</span>
+          <div class="settings-toggle-group">
+            <button id="btn-theme" onclick="toggleTheme()" class="settings-toggle-btn"></button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="set_currency">Moeda</span>
+          <div class="settings-toggle-group">
+            <button class="settings-toggle-btn cur-btn" data-cur="BRL" onclick="setCurrency('BRL')">R$</button>
+            <button class="settings-toggle-btn cur-btn active" data-cur="USD" onclick="setCurrency('USD')">$</button>
+            <button class="settings-toggle-btn cur-btn" data-cur="EUR" onclick="setCurrency('EUR')">€</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="set_show_testnet">Exibir Testnets</span>
+          <div class="settings-toggle-group">
+            <button class="settings-toggle-btn testnet-toggle-btn" id="testnet-toggle-on" onclick="setShowTestnets(true)" data-i18n="set_on">ON</button>
+            <button class="settings-toggle-btn testnet-toggle-btn active" id="testnet-toggle-off" onclick="setShowTestnets(false)" data-i18n="set_off">OFF</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label">Donate</span>
+          <div class="settings-toggle-group">
+            <button class="settings-toggle-btn" onclick="openDonateModal()">❤️ Donate</button>
+          </div>
         </div>
       </div>
 
-      <div class="settings-row">
-        <span class="settings-row-label" data-i18n="set_show_testnet">Exibir Testnets</span>
-        <div class="settings-toggle-group">
-          <button class="settings-toggle-btn testnet-toggle-btn" id="testnet-toggle-on" onclick="setShowTestnets(true)" data-i18n="set_on">ON</button>
-          <button class="settings-toggle-btn testnet-toggle-btn active" id="testnet-toggle-off" onclick="setShowTestnets(false)" data-i18n="set_off">OFF</button>
-        </div>
-      </div>
-
-      <div class="settings-row">
-        <span class="settings-row-label">Donate</span>
-        <div class="settings-toggle-group">
-          <button class="settings-toggle-btn" onclick="openDonateModal()">❤️ Donate</button>
-        </div>
-      </div>
-
-      <!-- Mad AI Config -->
-      <div class="ai-cfg-card">
-        <div class="ai-cfg-card-header">
-          <span class="ai-cfg-card-title" data-i18n="set_ai_title">Mad AI — Configurar IA</span>
+      <!-- Mad AI -->
+      <div class="wgt-card">
+        <div class="wgt-card-title">MAD AI</div>
+        <div class="ai-cfg-card-header" style="margin-bottom:10px">
+          <span class="ai-cfg-card-title" data-i18n="set_ai_title">Configurar IA</span>
           <span id="ai-cfg-badge" class="ai-cfg-badge ai-cfg-badge-none" data-i18n="set_ai_badge_none">Sem API key</span>
         </div>
 
@@ -414,50 +423,17 @@
         <!-- Add form -->
         <div class="ai-cfg-add-label">Adicionar provedor</div>
 
-        <!-- Provider cards grid -->
-        <div class="ai-prov-grid">
-          <button class="ai-prov-card" data-prov="groq" onclick="aiConfigSetProvider('groq')">
-            <div class="ai-prov-card-logo ai-prov-logo-groq">G</div>
-            <div class="ai-prov-card-info">
-              <span class="ai-prov-card-name">Groq</span>
-              <span class="ai-prov-card-desc">Rápido · LLaMA</span>
-            </div>
-            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          </button>
-          <button class="ai-prov-card" data-prov="gemini" onclick="aiConfigSetProvider('gemini')">
-            <div class="ai-prov-card-logo ai-prov-logo-gemini">✦</div>
-            <div class="ai-prov-card-info">
-              <span class="ai-prov-card-name">Gemini</span>
-              <span class="ai-prov-card-desc">Google · Flash</span>
-            </div>
-            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          </button>
-          <button class="ai-prov-card" data-prov="openrouter" onclick="aiConfigSetProvider('openrouter')">
-            <div class="ai-prov-card-logo ai-prov-logo-openrouter">OR</div>
-            <div class="ai-prov-card-info">
-              <span class="ai-prov-card-name">OpenRouter</span>
-              <span class="ai-prov-card-desc">Multi-modelo</span>
-            </div>
-            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          </button>
-          <button class="ai-prov-card" data-prov="cloudflare" onclick="aiConfigSetProvider('cloudflare')">
-            <div class="ai-prov-card-logo ai-prov-logo-cloudflare">CF</div>
-            <div class="ai-prov-card-info">
-              <span class="ai-prov-card-name">Cloudflare</span>
-              <span class="ai-prov-card-desc">Workers AI</span>
-            </div>
-            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          </button>
-          <button class="ai-prov-card ai-prov-card-full" data-prov="custom" onclick="aiConfigSetProvider('custom')">
-            <div class="ai-prov-card-logo ai-prov-logo-custom">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-3.3-6.7-2.1 2.1M7.4 16.6l-2.1 2.1M16.6 16.6l2.1 2.1M7.4 7.4 5.3 5.3"/></svg>
-            </div>
-            <div class="ai-prov-card-info">
-              <span class="ai-prov-card-name">Custom / OpenAI-compatible</span>
-              <span class="ai-prov-card-desc">Qualquer endpoint compatível</span>
-            </div>
-            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          </button>
+        <!-- Provider select row -->
+        <div class="settings-row" style="border-top:none;margin-bottom:6px">
+          <span class="settings-row-label">Provedor</span>
+          <select id="ai-prov-select" class="cfg-prov-select" onchange="aiConfigSetProvider(this.value)">
+            <option value="">Selecione…</option>
+            <option value="groq">Groq</option>
+            <option value="gemini">Gemini</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="cloudflare">Cloudflare</option>
+            <option value="custom">Custom / OpenAI-compatible</option>
+          </select>
         </div>
 
         <!-- Fields (shown after selecting a provider) -->
@@ -473,7 +449,7 @@
               <option value="">Modelo padrão</option>
             </select>
           </div>
-          <!-- Custom model text (shown when "custom" option selected in dropdown) -->
+          <!-- Custom model text -->
           <div class="ai-cfg-input-wrap" id="ai-config-model-custom-wrap" style="display:none">
             <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             <input type="text" id="ai-config-model" class="ai-cfg-input" placeholder="ex: gpt-4o-mini" autocomplete="off">
@@ -497,16 +473,15 @@
       </div>
 
       <!-- GitHub Gist Sync -->
-      <div class="ai-cfg-card" style="margin-top:10px;">
-        <div class="ai-cfg-card-header">
+      <div class="wgt-card">
+        <div class="wgt-card-title">SYNC GITHUB GIST</div>
+        <div class="ai-cfg-card-header" style="margin-bottom:10px">
           <span class="ai-cfg-card-title" data-i18n="set_gist_title">Sync GitHub Gist</span>
           <span id="gist-cfg-badge" class="ai-cfg-badge ai-cfg-badge-none">Sem token</span>
         </div>
 
-        <!-- Token salvo (renderizado via JS, igual ao ai-saved-keys) -->
         <div id="gist-saved-token"></div>
 
-        <!-- Formulário de adição (oculto quando já há token) -->
         <div id="gist-add-form">
           <div class="ai-cfg-add-label">Adicionar token</div>
           <div class="ai-cfg-inputs">
@@ -521,7 +496,6 @@
           </div>
         </div>
 
-        <!-- Ações de dados (visível só quando há token) -->
         <div id="gist-data-section" style="display:none;">
           <div class="ai-cfg-add-label" data-i18n="set_gist_data">Dados</div>
           <div class="ai-cfg-actions">
@@ -534,7 +508,7 @@
       </div>
 
     </div>
-  </div>
+  </section>
 
   <!-- Donate modal -->
   <div id="donate-modal" class="donate-modal hidden" onclick="if(event.target===this)closeDonateModal()">
@@ -639,7 +613,7 @@
       </span>
       <span data-i18n="tab_widget">Widget</span>
     </button>
-    <button class="nav-item" id="nav-settings" onclick="openSettingsPanel()">
+    <button class="nav-item" id="tab-config" onclick="switchTab('config')">
       <span class="nav-icon-wrap">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
       </span>

@@ -96,18 +96,14 @@ function toggleCurrency() {
 }
 
 function openSettingsPanel() {
-  document.getElementById("settings-panel").classList.remove("hidden");
-  // Mark settings nav item active
-  document.getElementById("nav-settings").classList.add("active");
+  if (typeof switchTab === "function") switchTab("config");
 }
 
 function closeSettingsPanel() {
-  document.getElementById("settings-panel").classList.add("hidden");
-  document.getElementById("nav-settings").classList.remove("active");
+  if (typeof switchTab === "function") switchTab("tracker");
 }
 
 function openDonateModal() {
-  closeSettingsPanel();
   document.getElementById("donate-modal").classList.remove("hidden");
 }
 
@@ -1186,10 +1182,7 @@ function _aiSetKeys(obj) { localStorage.setItem("madai_keys", JSON.stringify(obj
 function _aiGetActive() { return localStorage.getItem("madai_active") || ""; }
 
 function aiConfigSetProvider(prov) {
-  // Update card active states
-  document.querySelectorAll(".ai-prov-card").forEach(b =>
-    b.classList.toggle("active", b.dataset.prov === prov)
-  );
+  if (!prov) return;
 
   // Show form fields and save button
   const formFields  = document.getElementById("ai-cfg-form-fields");
@@ -1271,7 +1264,7 @@ function _aiReadModel() {
 }
 
 function aiConfigSave() {
-  const prov      = document.querySelector(".ai-prov-card.active")?.dataset.prov || "";
+  const prov      = (document.getElementById("ai-prov-select")?.value || "").trim();
   const key       = (document.getElementById("ai-config-key")?.value       || "").trim();
   const model     = _aiReadModel();
   const url       = (document.getElementById("ai-config-url")?.value       || "").trim();
@@ -1299,7 +1292,8 @@ function aiConfigSave() {
   if (urlEl) urlEl.value = "";
   if (inp)   inp.value   = "";
   if (sel)   sel.value   = "";
-  document.querySelectorAll(".ai-prov-card").forEach(b => b.classList.remove("active"));
+  const provSel = document.getElementById("ai-prov-select");
+  if (provSel) provSel.value = "";
   const formFields  = document.getElementById("ai-cfg-form-fields");
   const saveActions = document.getElementById("ai-cfg-save-actions");
   if (formFields)  formFields.style.display  = "none";
