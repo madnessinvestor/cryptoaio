@@ -123,14 +123,31 @@ async function gistRestore() {
 }
 
 // ── Token save (button) ───────────────────────────────────────────────────────
-function gistSaveToken() {
+async function gistSaveToken() {
   const token = (document.getElementById('gist-token-input')?.value || '').replace(/\s+/g, '');
   if (!token) { _gistSetStatus('error', _gt('set_gist_err_no_token')); return; }
-  localStorage.setItem(GIST_TOKEN_KEY, token);
-  const inp = document.getElementById('gist-token-input');
-  if (inp) inp.value = '';
-  _gistRenderSaved();
-  _gistSetStatus('ok', _gt('set_gist_token_saved'));
+
+  _gistSetStatus('loading', 'Validando token…');
+  try {
+    const r = await _origFetch('/api/gist/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const d = await r.json();
+    if (!d.ok) {
+      _gistSetStatus('error', d.error || 'Token inválido.');
+      return;
+    }
+    localStorage.setItem(GIST_TOKEN_KEY, token);
+    const inp = document.getElementById('gist-token-input');
+    if (inp) inp.value = '';
+    _gistRenderSaved();
+    const login = d.login ? ` (${d.login})` : '';
+    _gistSetStatus('ok', `✓ Token válido${login} — salvo!`);
+  } catch {
+    _gistSetStatus('error', 'Erro de conexão ao validar o token.');
+  }
 }
 
 // ── Token delete ──────────────────────────────────────────────────────────────

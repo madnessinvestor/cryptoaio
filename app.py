@@ -5095,6 +5095,23 @@ def _gist_req(method, url, token, body=None):
         except Exception:
             return {"message": str(e)}, e.code
 
+@app.route("/api/gist/test", methods=["POST"])
+def gist_test_token():
+    body  = request.get_json(silent=True) or {}
+    token = "".join((body.get("token") or "").split())
+    if not token:
+        return jsonify({"ok": False, "error": "Token não informado"}), 400
+    result, status = _gist_req("GET", "https://api.github.com/user", token)
+    if status == 200:
+        login = result.get("login", "")
+        return jsonify({"ok": True, "login": login})
+    if status == 401:
+        return jsonify({"ok": False, "error": "Token inválido. Gere um PAT clássico em GitHub → Settings → Developer settings → Tokens (classic) com o escopo 'gist'."}), 400
+    if status == 403:
+        return jsonify({"ok": False, "error": "Sem permissão. Verifique se o token tem o escopo 'gist'."}), 400
+    return jsonify({"ok": False, "error": result.get("message", "Erro ao validar token")}), 400
+
+
 @app.route("/api/gist/backup", methods=["POST"])
 def gist_backup():
     body    = request.get_json(silent=True) or {}
@@ -5124,7 +5141,12 @@ def gist_backup():
         result, status = _gist_req("POST", "https://api.github.com/gists", token, payload)
 
     if status not in (200, 201):
-        return jsonify({"ok": False, "error": result.get("message", "Erro desconhecido")}), 400
+        msg = result.get("message", "Erro desconhecido")
+        if status == 401:
+            msg = "Token inválido (Bad credentials). Gere um PAT clássico em GitHub → Settings → Developer settings → Tokens (classic) com o escopo 'gist'."
+        elif status == 403:
+            msg = "Sem permissão. Verifique se o token tem o escopo 'gist'."
+        return jsonify({"ok": False, "error": msg}), 400
 
     return jsonify({"ok": True, "gist_id": result["id"], "url": result["html_url"]})
 
@@ -5139,7 +5161,12 @@ def gist_restore():
 
     result, status = _gist_req("GET", f"https://api.github.com/gists/{gist_id}", token)
     if status != 200:
-        return jsonify({"ok": False, "error": result.get("message", "Gist não encontrado")}), 400
+        msg = result.get("message", "Gist não encontrado")
+        if status == 401:
+            msg = "Token inválido (Bad credentials). Gere um PAT clássico em GitHub → Settings → Developer settings → Tokens (classic) com o escopo 'gist'."
+        elif status == 403:
+            msg = "Sem permissão. Verifique se o token tem o escopo 'gist'."
+        return jsonify({"ok": False, "error": msg}), 400
 
     gist_files = result.get("files", {})
     restored   = []
