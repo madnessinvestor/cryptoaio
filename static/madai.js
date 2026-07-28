@@ -28,13 +28,7 @@ function aiToggleAutoSpeak() {
   _aiUpdateTtsBtn();
   // If turning off while speaking, stop
   if (!_aiAutoSpeak && _aiSpeaking) {
-    window.speechSynthesis?.cancel();
-    _aiSpeaking = false;
-    document.querySelectorAll(".ai-speak-btn.speaking").forEach(b => {
-      b.classList.remove("speaking");
-      b.title = "Ouvir resposta";
-      b.innerHTML = _aiSpeakerIcon();
-    });
+    _aiStopSpeech();
   }
 }
 
@@ -246,19 +240,32 @@ async function _aiTranscribeAndSend(blob) {
 let _aiSpeaking = false;
 let _aiCurrentUtterance = null;
 
+function _aiStopSpeech() {
+  if (_aiCurrentUtterance) {
+    // Null out callbacks first so they don't fire after cancel
+    _aiCurrentUtterance.onstart = null;
+    _aiCurrentUtterance.onend   = null;
+    _aiCurrentUtterance.onerror = null;
+    _aiCurrentUtterance = null;
+  }
+  // pause() before cancel() forces Chrome to stop immediately
+  window.speechSynthesis.pause();
+  window.speechSynthesis.cancel();
+  _aiSpeaking = false;
+  document.querySelectorAll(".ai-speak-btn.speaking").forEach(b => {
+    b.classList.remove("speaking");
+    b.title = "Ouvir esta resposta";
+    b.innerHTML = _aiSpeakerIcon() + `<span class="ai-speak-label">Ouvir</span>`;
+  });
+}
+
 function aiSpeak(text, btn) {
   if (!window.speechSynthesis) return;
 
   // Stop if already speaking
   if (_aiSpeaking) {
-    window.speechSynthesis.cancel();
-    _aiSpeaking = false;
-    document.querySelectorAll(".ai-speak-btn.speaking").forEach(b => {
-      b.classList.remove("speaking");
-      b.title = "Ouvir resposta";
-      b.innerHTML = _aiSpeakerIcon();
-    });
-    if (btn?.dataset.target === _aiCurrentUtterance?.text?.slice(0,20)) return;
+    _aiStopSpeech();
+    return;
   }
 
   // Strip markdown/html tags for clean speech
