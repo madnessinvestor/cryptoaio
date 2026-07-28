@@ -315,6 +315,22 @@ function _aiStopIcon() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
 }
 
+// ─── Reset chat ───────────────────────────────────────────────────────────────
+
+function aiClearChat() {
+  _aiHistory = [];
+  if (_aiSpeaking) _aiStopSpeech();
+  const chat = document.getElementById("ai-chat");
+  if (chat) {
+    // Remove all bubbles, keep only the empty-state and not-configured divs
+    Array.from(chat.children).forEach(el => {
+      if (el.id !== "ai-empty" && el.id !== "ai-not-configured") el.remove();
+    });
+  }
+  const empty = document.getElementById("ai-empty");
+  if (empty) empty.style.display = "";
+}
+
 // ─── Preset chips ─────────────────────────────────────────────────────────────
 
 function aiAskPreset(btn) {

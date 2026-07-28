@@ -1322,6 +1322,10 @@ function aiConfigDelete(prov) {
     const remaining = Object.keys(keys);
     localStorage.setItem("madai_active", remaining[0] || "");
   }
+  // If no keys remain, wipe the chat so it doesn't show stale messages
+  if (Object.keys(keys).length === 0 && typeof aiClearChat === "function") {
+    aiClearChat();
+  }
   _aiRenderSavedKeys();
   _aiUpdateConfiguredState();
   _aiUpdateConfigBadge();
