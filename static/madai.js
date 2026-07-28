@@ -327,8 +327,8 @@ function aiAskPreset(btn) {
 function aiAnalyzeTrades() {
   const lang = typeof currentLang !== "undefined" ? currentLang : "pt";
   const msg = lang === "pt"
-    ? "Faça uma análise completa e objetiva do meu portfólio considerando TODOS os dados disponíveis — Dashboard (patrimônio total, wallets, ativos) e Trades (operações, P&L, win rate). Estruture assim: 1) Como estou posicionado (diversificação, exposição, concentração); 2) Desempenho operacional (trades, lucros/perdas, padrões); 3) Pontos de atenção ou destaques; 4) Conclusão geral — em uma frase direta, como você avalia minha situação atual."
-    : "Give me a complete and objective analysis of my portfolio using ALL available data — Dashboard (total assets, wallets) and Trades (operations, P&L, win rate). Structure it as: 1) How I'm positioned (diversification, exposure, concentration); 2) Operational performance (trades, P&L, patterns); 3) Key highlights or concerns; 4) Overall conclusion — in one direct sentence, how do you assess my current situation.";
+    ? "Analise meu portfólio de forma objetiva e curta: posicionamento, P&L, destaque positivo e negativo, e uma conclusão direta em uma frase."
+    : "Briefly analyze my portfolio: positioning, P&L, top positive and negative highlight, and one direct conclusion sentence.";
   aiSendMessage(msg);
 }
 

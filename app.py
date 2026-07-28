@@ -3120,19 +3120,18 @@ def ai_chat():
     is_full_analysis = any(kw in user_message.lower() for kw in _analyze_keywords)
 
     if is_full_analysis:
-        # Full analysis: trades + dashboard get priority; watchlist reduced
-        # Total input kept under ~6 000 chars (~1 500 tokens) so Groq 8k models
-        # still have room for an 800-token reply.
-        wl_limit   = 800
-        port_limit = 2800
-        dash_limit = 2800
-        max_tok    = 800
+        # Compact analysis: keep total input under ~3 500 chars to leave
+        # plenty of headroom for a concise reply on Groq free-tier models.
+        wl_limit   = 400
+        port_limit = 1600
+        dash_limit = 1600
+        max_tok    = 500
     else:
         # Regular questions: balanced budget
         wl_limit   = 2000
-        port_limit = 2000
-        dash_limit = 2500
-        max_tok    = 600
+        port_limit = 1800
+        dash_limit = 2000
+        max_tok    = 500
 
     def _trunc(text, limit):
         if len(text) <= limit:
