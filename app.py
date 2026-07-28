@@ -2858,7 +2858,8 @@ SYSTEM_PROMPT = """Você é Mad AI, assistente financeiro do CryptoAIO. Regras:
    - TRADES (aba Trade): registro de entradas e saídas em operações, com P&L por ativo. Quando o usuário falar em "trades", "operações", "lucro/prejuízo" ou "win rate", use ESTE bloco.
 4. NUNCA confunda PORTFÓLIO com TRADES — são abas diferentes do app.
 5. Para perguntas de mercado em geral, use os preços da WATCHLIST.
-6. Nunca invente números. Se os dados não tiverem a informação pedida, diga claramente."""
+6. Nunca invente números. Se os dados não tiverem a informação pedida, diga claramente.
+7. Quando responder sobre qual ativo subiu mais ou caiu mais (ou perguntas similares de melhor/pior desempenho), SEMPRE inclua para o ativo em destaque: o preço atual, a variação em % e a variação em valor absoluto (USD). Exemplo de formato: "BTC subiu mais: $63.500 | +2,30% | +$1.430 nas últimas 24h"."""
 
 def _build_watchlist_context():
     """Build a compact price table for all watchlist assets (live prices)."""
@@ -2877,8 +2878,14 @@ def _build_watchlist_context():
     lines = ["WATCHLIST (preços ao vivo):"]
     for sym, r in results:
         if r:
-            chg = f"{r['change24h']:+.2f}%" if r.get("change24h") is not None else "n/a"
-            lines.append(f"  {sym}: ${r['price']:.6g}  ({chg} 24h)  fonte:{r.get('source','?')}")
+            price = r['price']
+            chg_pct = r.get("change24h")
+            if chg_pct is not None:
+                chg_abs = price * chg_pct / 100
+                chg_str = f"{chg_pct:+.2f}% ({chg_abs:+.6g} USD)"
+            else:
+                chg_str = "n/a"
+            lines.append(f"  {sym}: ${price:.6g}  variação 24h: {chg_str}  fonte:{r.get('source','?')}")
         else:
             lines.append(f"  {sym}: preço indisponível")
     return "\n".join(lines)
