@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>CryptoAIO</title>
   <link rel="manifest" href="/static/manifest.json" />
-  <link rel="stylesheet" href="/static/style.css?v=12" />
+  <link rel="stylesheet" href="/static/style.css?v=13" />
 </head>
 <body>
   <header>
@@ -412,46 +412,85 @@
         <div id="ai-saved-keys"></div>
 
         <!-- Add form -->
-        <div class="ai-cfg-add-label">Adicionar chave</div>
+        <div class="ai-cfg-add-label">Adicionar provedor</div>
 
-        <div class="ai-cfg-providers">
-          <button class="ai-prov-pill" data-prov="groq"       onclick="aiConfigSetProvider('groq')">
-            <span class="ai-prov-dot"></span>Groq
+        <!-- Provider cards grid -->
+        <div class="ai-prov-grid">
+          <button class="ai-prov-card" data-prov="groq" onclick="aiConfigSetProvider('groq')">
+            <div class="ai-prov-card-logo ai-prov-logo-groq">G</div>
+            <div class="ai-prov-card-info">
+              <span class="ai-prov-card-name">Groq</span>
+              <span class="ai-prov-card-desc">Rápido · LLaMA</span>
+            </div>
+            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
-          <button class="ai-prov-pill" data-prov="openrouter" onclick="aiConfigSetProvider('openrouter')">
-            <span class="ai-prov-dot"></span>OpenRouter
+          <button class="ai-prov-card" data-prov="gemini" onclick="aiConfigSetProvider('gemini')">
+            <div class="ai-prov-card-logo ai-prov-logo-gemini">✦</div>
+            <div class="ai-prov-card-info">
+              <span class="ai-prov-card-name">Gemini</span>
+              <span class="ai-prov-card-desc">Google · Flash</span>
+            </div>
+            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
-          <button class="ai-prov-pill" data-prov="gemini"     onclick="aiConfigSetProvider('gemini')">
-            <span class="ai-prov-dot"></span>Gemini
+          <button class="ai-prov-card" data-prov="openrouter" onclick="aiConfigSetProvider('openrouter')">
+            <div class="ai-prov-card-logo ai-prov-logo-openrouter">OR</div>
+            <div class="ai-prov-card-info">
+              <span class="ai-prov-card-name">OpenRouter</span>
+              <span class="ai-prov-card-desc">Multi-modelo</span>
+            </div>
+            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
-          <button class="ai-prov-pill" data-prov="cloudflare" onclick="aiConfigSetProvider('cloudflare')">
-            <span class="ai-prov-dot"></span>Cloudflare
+          <button class="ai-prov-card" data-prov="cloudflare" onclick="aiConfigSetProvider('cloudflare')">
+            <div class="ai-prov-card-logo ai-prov-logo-cloudflare">CF</div>
+            <div class="ai-prov-card-info">
+              <span class="ai-prov-card-name">Cloudflare</span>
+              <span class="ai-prov-card-desc">Workers AI</span>
+            </div>
+            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
-          <button class="ai-prov-pill" data-prov="custom"     onclick="aiConfigSetProvider('custom')" data-i18n="set_ai_custom">
-            <span class="ai-prov-dot"></span>Custom
+          <button class="ai-prov-card ai-prov-card-full" data-prov="custom" onclick="aiConfigSetProvider('custom')">
+            <div class="ai-prov-card-logo ai-prov-logo-custom">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-3.3-6.7-2.1 2.1M7.4 16.6l-2.1 2.1M16.6 16.6l2.1 2.1M7.4 7.4 5.3 5.3"/></svg>
+            </div>
+            <div class="ai-prov-card-info">
+              <span class="ai-prov-card-name">Custom / OpenAI-compatible</span>
+              <span class="ai-prov-card-desc">Qualquer endpoint compatível</span>
+            </div>
+            <svg class="ai-prov-card-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
         </div>
 
-        <div class="ai-cfg-inputs">
+        <!-- Fields (shown after selecting a provider) -->
+        <div class="ai-cfg-inputs" id="ai-cfg-form-fields" style="display:none">
           <div class="ai-cfg-input-wrap">
             <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <input type="password" id="ai-config-key" class="ai-cfg-input" placeholder="API Key…" autocomplete="off">
           </div>
-          <div class="ai-cfg-input-wrap">
+          <!-- Model select -->
+          <div class="ai-cfg-input-wrap" id="ai-config-model-select-wrap">
             <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
-            <input type="text" id="ai-config-model" class="ai-cfg-input" placeholder="Modelo (opcional)" autocomplete="off">
+            <select id="ai-config-model-select" class="ai-cfg-input ai-cfg-select" onchange="aiModelSelectChange()">
+              <option value="">Modelo padrão</option>
+            </select>
           </div>
+          <!-- Custom model text (shown when "custom" option selected in dropdown) -->
+          <div class="ai-cfg-input-wrap" id="ai-config-model-custom-wrap" style="display:none">
+            <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <input type="text" id="ai-config-model" class="ai-cfg-input" placeholder="ex: gpt-4o-mini" autocomplete="off">
+          </div>
+          <!-- URL for custom provider -->
           <div class="ai-cfg-input-wrap" id="ai-config-url-wrap" style="display:none">
             <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/></svg>
             <input type="text" id="ai-config-url" class="ai-cfg-input" placeholder="Base URL (ex: https://api.openai.com/v1)" autocomplete="off">
           </div>
+          <!-- Account ID for Cloudflare -->
           <div class="ai-cfg-input-wrap" id="ai-config-accountid-wrap" style="display:none">
             <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
             <input type="text" id="ai-config-accountid" class="ai-cfg-input" placeholder="Account ID (Cloudflare)" autocomplete="off">
           </div>
         </div>
 
-        <div class="ai-cfg-actions">
+        <div class="ai-cfg-actions" id="ai-cfg-save-actions" style="display:none">
           <button class="ai-cfg-save-btn" onclick="aiConfigSave()" data-i18n="set_ai_save">Salvar</button>
         </div>
         <div id="ai-config-status" class="gist-status" style="margin-top:4px;"></div>
@@ -987,12 +1026,12 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="/static/i18n.js?v=5"></script>
-  <script src="/static/app.js?v=7"></script>
+  <script src="/static/app.js?v=8"></script>
   <script src="/static/trade.js?v=8"></script>
   <script src="/static/alerts.js?v=3"></script>
   <script src="/static/madai.js?v=10"></script>
   <script src="/static/dashboard.js?v=19"></script>
   <script src="/static/widget.js?v=6"></script>
-  <script src="/static/gist.js?v=3"></script>
+  <script src="/static/gist.js?v=5"></script>
 </body>
 </html>

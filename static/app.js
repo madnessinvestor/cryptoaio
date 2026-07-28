@@ -1148,6 +1148,37 @@ function detailCreateAlert() {
 
 const _AI_PROV_LABELS = { groq: "Groq", openrouter: "OpenRouter", gemini: "Gemini", cloudflare: "Cloudflare", custom: "Custom" };
 
+// Model presets per provider
+const _AI_MODEL_PRESETS = {
+  groq: [
+    { value: "llama-3.3-70b-versatile",   label: "LLaMA 3.3 70B · Versatile" },
+    { value: "llama-3.1-8b-instant",      label: "LLaMA 3.1 8B · Instant" },
+    { value: "mixtral-8x7b-32768",        label: "Mixtral 8x7B · 32k ctx" },
+    { value: "gemma2-9b-it",              label: "Gemma 2 9B" },
+  ],
+  gemini: [
+    { value: "gemini-2.0-flash",          label: "Gemini 2.0 Flash" },
+    { value: "gemini-2.0-flash-lite",     label: "Gemini 2.0 Flash Lite" },
+    { value: "gemini-1.5-flash",          label: "Gemini 1.5 Flash" },
+    { value: "gemini-1.5-pro",            label: "Gemini 1.5 Pro" },
+  ],
+  openrouter: [
+    { value: "mistralai/mistral-7b-instruct:free",          label: "Mistral 7B · Free" },
+    { value: "meta-llama/llama-3.1-8b-instruct:free",       label: "LLaMA 3.1 8B · Free" },
+    { value: "google/gemma-3-27b-it:free",                  label: "Gemma 3 27B · Free" },
+    { value: "deepseek/deepseek-r1:free",                   label: "DeepSeek R1 · Free" },
+    { value: "anthropic/claude-3.5-sonnet",                 label: "Claude 3.5 Sonnet" },
+    { value: "openai/gpt-4o-mini",                          label: "GPT-4o Mini" },
+  ],
+  cloudflare: [
+    { value: "@cf/meta/llama-3.1-8b-instruct",             label: "LLaMA 3.1 8B" },
+    { value: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",   label: "LLaMA 3.3 70B Fast" },
+    { value: "@cf/google/gemma-7b-it",                     label: "Gemma 7B" },
+    { value: "@cf/mistral/mistral-7b-instruct-v0.1",       label: "Mistral 7B" },
+  ],
+  custom: [],
+};
+
 function _aiGetKeys() {
   try { return JSON.parse(localStorage.getItem("madai_keys") || "{}"); } catch { return {}; }
 }
@@ -1155,42 +1186,94 @@ function _aiSetKeys(obj) { localStorage.setItem("madai_keys", JSON.stringify(obj
 function _aiGetActive() { return localStorage.getItem("madai_active") || ""; }
 
 function aiConfigSetProvider(prov) {
-  document.querySelectorAll(".ai-prov-pill").forEach(b =>
+  // Update card active states
+  document.querySelectorAll(".ai-prov-card").forEach(b =>
     b.classList.toggle("active", b.dataset.prov === prov)
   );
+
+  // Show form fields and save button
+  const formFields  = document.getElementById("ai-cfg-form-fields");
+  const saveActions = document.getElementById("ai-cfg-save-actions");
+  if (formFields)  formFields.style.display  = "";
+  if (saveActions) saveActions.style.display = "";
+
+  // Show/hide provider-specific fields
   const urlWrap       = document.getElementById("ai-config-url-wrap");
   const accountIdWrap = document.getElementById("ai-config-accountid-wrap");
-  const modelField    = document.getElementById("ai-config-model");
+  if (urlWrap)       urlWrap.style.display       = (prov === "custom")      ? "" : "none";
+  if (accountIdWrap) accountIdWrap.style.display = (prov === "cloudflare")  ? "" : "none";
 
-  if (urlWrap)       urlWrap.style.display       = (prov === "custom") ? "" : "none";
-  if (accountIdWrap) accountIdWrap.style.display = (prov === "cloudflare") ? "" : "none";
+  // Populate model select dropdown
+  const modelSelect     = document.getElementById("ai-config-model-select");
+  const modelSelectWrap = document.getElementById("ai-config-model-select-wrap");
+  const modelCustomWrap = document.getElementById("ai-config-model-custom-wrap");
+  const presets = _AI_MODEL_PRESETS[prov] || [];
 
-  if (modelField) {
-    const hints = {
-      groq:        "llama-3.3-70b-versatile",
-      gemini:      "gemini-2.0-flash",
-      openrouter:  "mistralai/mistral-7b-instruct:free",
-      cloudflare:  "@cf/meta/llama-3.1-8b-instruct",
-      custom:      "gpt-4o"
-    };
-    modelField.placeholder = `Modelo (ex: ${hints[prov] || "gpt-4o"})`;
+  if (prov === "custom") {
+    // Custom: hide select, show text input directly
+    if (modelSelectWrap) modelSelectWrap.style.display = "none";
+    if (modelCustomWrap) modelCustomWrap.style.display = "";
+  } else if (modelSelect) {
+    if (modelSelectWrap) modelSelectWrap.style.display = "";
+    modelSelect.innerHTML =
+      `<option value="">Modelo padrão</option>` +
+      presets.map(p => `<option value="${p.value}">${p.label}</option>`).join("") +
+      `<option value="__custom__">Personalizado…</option>`;
+    aiModelSelectChange();   // sync custom wrap visibility
   }
-  // Pre-fill fields if key already saved for this provider
-  const saved = _aiGetKeys()[prov] || {};
+
+  // Pre-fill from saved data
+  const saved       = _aiGetKeys()[prov] || {};
   const keyEl       = document.getElementById("ai-config-key");
   const modelEl     = document.getElementById("ai-config-model");
   const urlEl       = document.getElementById("ai-config-url");
   const accountIdEl = document.getElementById("ai-config-accountid");
   if (keyEl)       keyEl.value       = saved.key       || "";
-  if (modelEl)     modelEl.value     = saved.model     || "";
   if (urlEl)       urlEl.value       = saved.url       || "";
   if (accountIdEl) accountIdEl.value = saved.accountId || "";
+
+  // Try to match saved model to a preset option, else use custom
+  if (modelSelect && prov !== "custom") {
+    const savedModel = saved.model || "";
+    const matchOpt = Array.from(modelSelect.options).find(o => o.value === savedModel);
+    if (savedModel && !matchOpt) {
+      modelSelect.value = "__custom__";
+      if (modelEl) modelEl.value = savedModel;
+    } else {
+      modelSelect.value = savedModel;
+    }
+    aiModelSelectChange();
+  } else if (modelEl && prov === "custom") {
+    modelEl.value = saved.model || "";
+  }
+}
+
+// Sync model custom input visibility based on select choice
+function aiModelSelectChange() {
+  const sel  = document.getElementById("ai-config-model-select");
+  const wrap = document.getElementById("ai-config-model-custom-wrap");
+  const inp  = document.getElementById("ai-config-model");
+  if (!sel || !wrap) return;
+  const isCustom = sel.value === "__custom__";
+  wrap.style.display = isCustom ? "" : "none";
+  if (!isCustom && inp) inp.value = "";
+}
+
+function _aiReadModel() {
+  const sel = document.getElementById("ai-config-model-select");
+  const inp = document.getElementById("ai-config-model");
+  if (!sel || sel.closest("#ai-config-model-select-wrap")?.style.display === "none") {
+    // custom provider — use text input directly
+    return (inp?.value || "").trim();
+  }
+  if (sel.value === "__custom__") return (inp?.value || "").trim();
+  return sel.value;
 }
 
 function aiConfigSave() {
-  const prov      = document.querySelector(".ai-prov-pill.active")?.dataset.prov || "";
+  const prov      = document.querySelector(".ai-prov-card.active")?.dataset.prov || "";
   const key       = (document.getElementById("ai-config-key")?.value       || "").trim();
-  const model     = (document.getElementById("ai-config-model")?.value     || "").trim();
+  const model     = _aiReadModel();
   const url       = (document.getElementById("ai-config-url")?.value       || "").trim();
   const accountId = (document.getElementById("ai-config-accountid")?.value || "").trim();
 
@@ -1207,14 +1290,22 @@ function aiConfigSave() {
   // If no active yet, make this one active
   if (!_aiGetActive()) localStorage.setItem("madai_active", prov);
 
-  // Clear form
+  // Reset form
   const keyEl = document.getElementById("ai-config-key");
-  const modelEl = document.getElementById("ai-config-model");
-  const urlEl   = document.getElementById("ai-config-url");
-  if (keyEl)   keyEl.value   = "";
-  if (modelEl) modelEl.value = "";
-  if (urlEl)   urlEl.value   = "";
-  document.querySelectorAll(".ai-prov-pill").forEach(b => b.classList.remove("active"));
+  const urlEl = document.getElementById("ai-config-url");
+  const inp   = document.getElementById("ai-config-model");
+  const sel   = document.getElementById("ai-config-model-select");
+  if (keyEl) keyEl.value = "";
+  if (urlEl) urlEl.value = "";
+  if (inp)   inp.value   = "";
+  if (sel)   sel.value   = "";
+  document.querySelectorAll(".ai-prov-card").forEach(b => b.classList.remove("active"));
+  const formFields  = document.getElementById("ai-cfg-form-fields");
+  const saveActions = document.getElementById("ai-cfg-save-actions");
+  if (formFields)  formFields.style.display  = "none";
+  if (saveActions) saveActions.style.display = "none";
+  const modelCustomWrap = document.getElementById("ai-config-model-custom-wrap");
+  if (modelCustomWrap) modelCustomWrap.style.display = "none";
 
   _setAiConfigStatus("✓ Chave salva!", "ok");
   _aiRenderSavedKeys();

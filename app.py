@@ -5098,7 +5098,7 @@ def _gist_req(method, url, token, body=None):
 @app.route("/api/gist/backup", methods=["POST"])
 def gist_backup():
     body    = request.get_json(silent=True) or {}
-    token   = (body.get("token")   or "").strip()
+    token   = "".join((body.get("token")   or "").split())
     gist_id = (body.get("gist_id") or "").strip()
     if not token:
         return jsonify({"ok": False, "error": "Token não informado"}), 400
@@ -5132,7 +5132,7 @@ def gist_backup():
 @app.route("/api/gist/restore", methods=["POST"])
 def gist_restore():
     body    = request.get_json(silent=True) or {}
-    token   = (body.get("token")   or "").strip()
+    token   = "".join((body.get("token")   or "").split())
     gist_id = (body.get("gist_id") or "").strip()
     if not token or not gist_id:
         return jsonify({"ok": False, "error": "Token e Gist ID são obrigatórios"}), 400

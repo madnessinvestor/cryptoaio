@@ -218,44 +218,101 @@ html { font-size: 114%; }
   border-color: var(--border);
 }
 
-/* provider pills */
-.ai-cfg-providers {
-  display: flex;
-  flex-wrap: wrap;
+/* provider card grid */
+.ai-prov-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
-.ai-prov-pill {
+.ai-prov-card {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 9px;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 5px 13px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--muted2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 11px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+  position: relative;
 }
-.ai-prov-pill:hover {
+.ai-prov-card-full {
+  grid-column: 1 / -1;
+}
+.ai-prov-card:hover {
   border-color: var(--accent);
+}
+/* active states per provider */
+.ai-prov-card[data-prov="groq"].active       { border-color: #FF6B00; background: rgba(255,107,0,0.07); }
+.ai-prov-card[data-prov="gemini"].active     { border-color: #4285F4; background: rgba(66,133,244,0.07); }
+.ai-prov-card[data-prov="openrouter"].active { border-color: #7C3AED; background: rgba(124,58,237,0.07); }
+.ai-prov-card[data-prov="cloudflare"].active { border-color: #F6821F; background: rgba(246,130,31,0.07); }
+.ai-prov-card[data-prov="custom"].active     { border-color: var(--accent); background: rgba(0,230,118,0.07); }
+
+.ai-prov-card-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+.ai-prov-logo-groq       { background: rgba(255,107,0,0.15);  color: #FF6B00; }
+.ai-prov-logo-gemini     { background: rgba(66,133,244,0.15); color: #4285F4; font-size: 1rem; }
+.ai-prov-logo-openrouter { background: rgba(124,58,237,0.15); color: #7C3AED; font-size: 0.65rem; }
+.ai-prov-logo-cloudflare { background: rgba(246,130,31,0.15); color: #F6821F; font-size: 0.65rem; }
+.ai-prov-logo-custom     { background: rgba(150,150,150,0.12); color: var(--muted2); }
+
+.ai-prov-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.ai-prov-card-name {
+  font-size: 0.76rem;
+  font-weight: 700;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.ai-prov-pill.active {
-  background: rgba(0,230,118,0.12);
-  border-color: var(--accent);
-  color: var(--accent);
+.ai-prov-card-desc {
+  font-size: 0.63rem;
+  color: var(--muted2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.ai-prov-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--border);
-  transition: background 0.15s;
+.ai-prov-card-check {
+  color: var(--muted2);
+  opacity: 0;
+  transition: opacity 0.15s;
   flex-shrink: 0;
 }
-.ai-prov-pill.active .ai-prov-dot { background: var(--accent); }
+.ai-prov-card[data-prov="groq"].active       .ai-prov-card-check { opacity: 1; color: #FF6B00; }
+.ai-prov-card[data-prov="gemini"].active     .ai-prov-card-check { opacity: 1; color: #4285F4; }
+.ai-prov-card[data-prov="openrouter"].active .ai-prov-card-check { opacity: 1; color: #7C3AED; }
+.ai-prov-card[data-prov="cloudflare"].active .ai-prov-card-check { opacity: 1; color: #F6821F; }
+.ai-prov-card[data-prov="custom"].active     .ai-prov-card-check { opacity: 1; color: var(--accent); }
+
+/* model select dropdown */
+.ai-cfg-select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  padding-right: 20px;
+}
+.ai-cfg-select option { background: #1a1a1a; color: var(--text); }
 
 /* inputs */
 .ai-cfg-inputs {

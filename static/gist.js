@@ -3,6 +3,9 @@
 const GIST_TOKEN_KEY = 'cryptoaio_gist_token';
 const GIST_ID_KEY    = 'cryptoaio_gist_id';
 
+// Remove all whitespace from a stored token (handles paste-with-newline issues)
+function _gistCleanToken(raw) { return (raw || '').replace(/\s+/g, ''); }
+
 // API prefixes that should trigger an auto-sync when written
 const _GIST_WATCH = [
   '/api/assets',
@@ -44,7 +47,7 @@ function _gistScheduleAutoSync() {
 }
 
 async function _gistDoSync() {
-  const token  = localStorage.getItem(GIST_TOKEN_KEY) || '';
+  const token  = _gistCleanToken(localStorage.getItem(GIST_TOKEN_KEY));
   const gistId = localStorage.getItem(GIST_ID_KEY)    || '';
   if (!token) return;
   _gistSetStatus('loading', _gt('set_gist_sending'));
@@ -69,7 +72,7 @@ async function _gistDoSync() {
 
 // ── Manual backup (button) ─────────────────────────────────────────────────────
 async function gistBackup() {
-  const token  = localStorage.getItem(GIST_TOKEN_KEY) || '';
+  const token  = _gistCleanToken(localStorage.getItem(GIST_TOKEN_KEY));
   const gistId = localStorage.getItem(GIST_ID_KEY)    || '';
   if (!token) { _gistSetStatus('error', _gt('set_gist_err_no_token')); return; }
   clearTimeout(_gistSyncTimer);
@@ -95,7 +98,7 @@ async function gistBackup() {
 
 // ── Restore (button) ──────────────────────────────────────────────────────────
 async function gistRestore() {
-  const token  = localStorage.getItem(GIST_TOKEN_KEY) || '';
+  const token  = _gistCleanToken(localStorage.getItem(GIST_TOKEN_KEY));
   const gistId = localStorage.getItem(GIST_ID_KEY)    || '';
   if (!token)  { _gistSetStatus('error', _gt('set_gist_err_no_token')); return; }
   if (!gistId) { _gistSetStatus('error', _gt('set_gist_err_no_gist'));  return; }
@@ -121,7 +124,7 @@ async function gistRestore() {
 
 // ── Token save (button) ───────────────────────────────────────────────────────
 function gistSaveToken() {
-  const token = (document.getElementById('gist-token-input')?.value || '').trim();
+  const token = (document.getElementById('gist-token-input')?.value || '').replace(/\s+/g, '');
   if (!token) { _gistSetStatus('error', _gt('set_gist_err_no_token')); return; }
   localStorage.setItem(GIST_TOKEN_KEY, token);
   const inp = document.getElementById('gist-token-input');
@@ -147,7 +150,7 @@ function gistInit() {
 
 // Renders the saved-token card (or clears it) and toggles the add form / data section
 function _gistRenderSaved() {
-  const token   = localStorage.getItem(GIST_TOKEN_KEY) || '';
+  const token   = _gistCleanToken(localStorage.getItem(GIST_TOKEN_KEY));
   const gistId  = localStorage.getItem(GIST_ID_KEY)    || '';
   const wrap    = document.getElementById('gist-saved-token');
   const addForm = document.getElementById('gist-add-form');
