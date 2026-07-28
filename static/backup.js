@@ -108,7 +108,26 @@ async function importAppData(input) {
 // Combined Watchlist + Dashboard + Trade report in the same visual style
 // as exportDashboard() and exportTrades().
 
-function shareReport() {
+async function shareReport() {
+  // ── 1. Pre-load all section data in parallel ────────────────────────────────
+  _backupSetStatus("loading", _bgt("rpt_share_loading"));
+  try {
+    const [assetsRes, portfolioRes, walletsRes, manualRes] = await Promise.all([
+      fetch("/api/assets"),
+      fetch("/api/portfolio"),
+      fetch("/api/dashboard/wallets"),
+      fetch("/api/dashboard/manual"),
+    ]);
+    if (assetsRes.ok)    cachedAssets    = await assetsRes.json();
+    if (portfolioRes.ok) cachedPortfolio = await portfolioRes.json();
+    if (walletsRes.ok)   dashWallets     = await walletsRes.json();
+    if (manualRes.ok)    dashManual      = await manualRes.json();
+  } catch (e) {
+    console.warn("[shareReport] pre-load error", e);
+    // Proceed with whatever data is already in memory
+  }
+  _backupSetStatus("", "");
+
   const now = new Date();
   const pad = n => String(n).padStart(2, "0");
   const ts  = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
@@ -271,16 +290,16 @@ function shareReport() {
   // ════════════════════════════════════════════════════════════════════════════
   const wlAssets = (typeof cachedAssets !== "undefined") ? cachedAssets : [];
 
-  body += `<div class="section-title">Watchlist</div>`;
+  body += `<div class="section-title">${_bgt("rpt_share_section_wl")}</div>`;
 
   if (wlAssets.length) {
     body += `<table>
       <thead><tr>
-        <th>Asset</th>
-        <th>Type</th>
-        <th>Source</th>
-        <th class="r">Price (${cnyName})</th>
-        <th class="r">24h Change</th>
+        <th>${_bgt("rpt_col_asset")}</th>
+        <th>${_bgt("rpt_col_type")}</th>
+        <th>${_bgt("rpt_col_source")}</th>
+        <th class="r">${_bgt("rpt_col_price")} (${cnyName})</th>
+        <th class="r">${_bgt("rpt_col_change24h")}</th>
       </tr></thead>
       <tbody>`;
 
@@ -310,7 +329,7 @@ function shareReport() {
     }
     body += `</tbody></table>`;
   } else {
-    body += `<p class="empty-note">No assets in watchlist.</p>`;
+    body += `<p class="empty-note">${_bgt("rpt_share_wl_empty")}</p>`;
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -326,14 +345,14 @@ function shareReport() {
   const totalManualUsd = dManual.reduce((s,a) => s + (a.balance||0)*(a.price_usd||0), 0);
   const grandDashTotal = totalWalletUsd + totalManualUsd;
 
-  body += `<div class="section-title" style="margin-top:36px">Dashboard</div>`;
+  body += `<div class="section-title" style="margin-top:36px">${_bgt("rpt_share_section_dash")}</div>`;
 
   if (dWallets.length || dManual.length) {
     // Summary cards
     body += `<div class="summary-grid">
-      <div class="sum-card"><div class="sum-label">On-Chain</div><div class="sum-val">${fUsd(totalWalletUsd)}</div></div>
-      <div class="sum-card"><div class="sum-label">Manual</div><div class="sum-val">${fUsd(totalManualUsd)}</div></div>
-      <div class="sum-card grand"><div class="sum-label">Total</div><div class="sum-val">${fUsd(grandDashTotal)}</div></div>
+      <div class="sum-card"><div class="sum-label">${_bgt("rpt_total_onchain")}</div><div class="sum-val">${fUsd(totalWalletUsd)}</div></div>
+      <div class="sum-card"><div class="sum-label">${_bgt("rpt_total_manual")}</div><div class="sum-val">${fUsd(totalManualUsd)}</div></div>
+      <div class="sum-card grand"><div class="sum-label">${_bgt("rpt_grand_total")}</div><div class="sum-val">${fUsd(grandDashTotal)}</div></div>
     </div>`;
 
     // Diversification donut
@@ -364,11 +383,11 @@ function shareReport() {
         body += `<div class="div-export-wrap">
           <svg viewBox="-100 -100 200 200" width="170" height="170" xmlns="http://www.w3.org/2000/svg">
             ${svgPaths}
-            <text x="0" y="-7" text-anchor="middle" style="font-size:8px;fill:#888;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">TOTAL</text>
+            <text x="0" y="-7" text-anchor="middle" style="font-size:8px;fill:#888;font-weight:700;letter-spacing:0.08em;text-transform:uppercase">${_bgt("rpt_grand_total")}</text>
             <text x="0" y="11" text-anchor="middle" style="font-size:13px;fill:#1a1a2e;font-weight:800">${fUsd(grandDashTotal)}</text>
           </svg>
           <table class="div-table">
-            <thead><tr><th></th><th>Asset</th><th class="r">Value</th><th class="r">%</th></tr></thead>
+            <thead><tr><th></th><th>${_bgt("rpt_col_asset")}</th><th class="r">${_bgt("rpt_col_value")}</th><th class="r">${_bgt("rpt_col_allocation")}</th></tr></thead>
             <tbody>${divRows}</tbody>
           </table>
         </div>`;
@@ -377,7 +396,7 @@ function shareReport() {
 
     // On-chain wallets
     if (dWallets.length) {
-      body += `<div class="sub-label" style="background:transparent;padding:0 0 6px;border:none;font-size:10px">On-Chain Wallets</div>`;
+      body += `<div class="sub-label" style="background:transparent;padding:0 0 6px;border:none;font-size:10px">${_bgt("rpt_share_onchain_wallets")}</div>`;
       for (const w of dWallets) {
         const tokens = (w.tokens||[]).slice().sort((a,b) => (b.value_usd||0)-(a.value_usd||0));
         const defi   = w.defi  || [];
@@ -401,8 +420,8 @@ function shareReport() {
         if (tokens.length) {
           body += `<div class="sub-label">Tokens</div>
             <table><thead><tr>
-              <th>Symbol</th><th>Name</th><th>Network</th>
-              <th class="r">Quantity</th><th class="r">Price</th><th class="r">Value</th>
+              <th>${_bgt("rpt_col_symbol")}</th><th>${_bgt("rpt_col_name")}</th><th>${_bgt("rpt_col_network")}</th>
+              <th class="r">${_bgt("rpt_col_quantity")}</th><th class="r">${_bgt("rpt_col_price")}</th><th class="r">${_bgt("rpt_col_value")}</th>
             </tr></thead><tbody>`;
           for (const tk of tokens) {
             const cm = (typeof chainMeta === "function") ? chainMeta(tk.network) : {name:tk.network||"",color:"#888"};
@@ -416,7 +435,7 @@ function shareReport() {
             </tr>`;
           }
           body += `</tbody><tfoot><tr>
-            <td colspan="5" class="r subtot-label">Subtotal Tokens</td>
+            <td colspan="5" class="r subtot-label">${_bgt("rpt_subtotal_tokens")}</td>
             <td class="r mono bold subtot">${fUsd(tokUsd)}</td>
           </tr></tfoot></table>`;
         }
@@ -424,8 +443,8 @@ function shareReport() {
         if (defi.length) {
           body += `<div class="sub-label">DeFi</div>
             <table><thead><tr>
-              <th>Protocol</th><th>Type</th><th>Network</th><th>Position</th>
-              <th class="r">Net Value</th><th class="r">Debt</th>
+              <th>${_bgt("rpt_col_protocol")}</th><th>${_bgt("rpt_col_type")}</th><th>${_bgt("rpt_col_network")}</th><th>${_bgt("rpt_col_position")}</th>
+              <th class="r">${_bgt("rpt_col_net_value")}</th><th class="r">${_bgt("rpt_col_debt")}</th>
             </tr></thead><tbody>`;
           for (const d of defi) {
             const cm  = (typeof chainMeta === "function") ? chainMeta(d.network) : {name:d.network||"",color:"#888"};
@@ -441,15 +460,15 @@ function shareReport() {
             </tr>`;
           }
           body += `</tbody><tfoot><tr>
-            <td colspan="4" class="r subtot-label">Subtotal DeFi</td>
+            <td colspan="4" class="r subtot-label">${_bgt("rpt_subtotal_defi")}</td>
             <td class="r mono bold subtot">${fUsd(defiUsd)}</td><td></td>
           </tr></tfoot></table>`;
         }
 
         if (perps.length) {
-          body += `<div class="sub-label">Perpetuals / Futures</div>
+          body += `<div class="sub-label">${_bgt("rpt_perps_futures")}</div>
             <table><thead><tr>
-              <th>Protocol</th><th>Type</th><th>Network</th><th>Description</th><th class="r">Net Value</th>
+              <th>${_bgt("rpt_col_protocol")}</th><th>${_bgt("rpt_col_type")}</th><th>${_bgt("rpt_col_network")}</th><th>${_bgt("rpt_col_description")}</th><th class="r">${_bgt("rpt_col_net_value")}</th>
             </tr></thead><tbody>`;
           for (const p of perps) {
             const cm = (typeof chainMeta === "function") ? chainMeta(p.network) : {name:p.network||"",color:"#888"};
@@ -462,13 +481,13 @@ function shareReport() {
             </tr>`;
           }
           body += `</tbody><tfoot><tr>
-            <td colspan="4" class="r subtot-label">Subtotal Perps</td>
+            <td colspan="4" class="r subtot-label">${_bgt("rpt_subtotal_perps")}</td>
             <td class="r mono bold subtot">${fUsd(prpUsd)}</td>
           </tr></tfoot></table>`;
         }
 
         if (!tokens.length && !defi.length && !perps.length) {
-          body += `<p class="empty-note">No data for this wallet.</p>`;
+          body += `<p class="empty-note">${_bgt("rpt_no_wallet_data")}</p>`;
         }
         body += `</div>`; // wallet-block
       }
@@ -476,12 +495,12 @@ function shareReport() {
 
     // Manual assets
     if (dManual.length) {
-      body += `<div class="sub-label" style="background:transparent;padding:6px 0;border:none;font-size:10px;margin-top:8px">Manual Assets</div>
+      body += `<div class="sub-label" style="background:transparent;padding:6px 0;border:none;font-size:10px;margin-top:8px">${_bgt("rpt_manual_section")}</div>
         <table><thead><tr>
-          <th>Symbol</th><th>Source</th><th class="r">Quantity</th>
-          <th class="r">Avg Paid</th><th class="r">Cur Price</th>
-          <th class="r">Value</th><th class="r">Invested</th>
-          <th class="r">P&amp;L</th><th class="r">P&amp;L %</th><th>Date</th>
+          <th>${_bgt("rpt_col_symbol")}</th><th>${_bgt("rpt_col_source")}</th><th class="r">${_bgt("rpt_col_quantity")}</th>
+          <th class="r">${_bgt("rpt_col_avg_paid")}</th><th class="r">${_bgt("rpt_col_cur_price")}</th>
+          <th class="r">${_bgt("rpt_col_value")}</th><th class="r">${_bgt("rpt_col_invested")}</th>
+          <th class="r">${_bgt("rpt_col_pnl")}</th><th class="r">${_bgt("rpt_col_pnl_pct")}</th><th>${_bgt("rpt_col_date_purchase")}</th>
         </tr></thead><tbody>`;
       for (const a of dManual) {
         const bal = a.balance||0, price = a.price_usd||0, invest = a.investment||0;
@@ -504,17 +523,17 @@ function shareReport() {
         </tr>`;
       }
       body += `</tbody><tfoot><tr>
-        <td colspan="5" class="r subtot-label">Total Manual</td>
+        <td colspan="5" class="r subtot-label">${_bgt("rpt_total_manual_foot")}</td>
         <td class="r mono bold subtot">${fUsd(totalManualUsd)}</td>
         <td colspan="4"></td>
       </tr></tfoot></table>`;
     }
 
     if (!dWallets.length && !dManual.length) {
-      body += `<p class="empty-note">No dashboard data.</p>`;
+      body += `<p class="empty-note">${_bgt("rpt_share_dash_empty")}</p>`;
     }
   } else {
-    body += `<p class="empty-note">No dashboard data.</p>`;
+    body += `<p class="empty-note">${_bgt("rpt_share_dash_empty")}</p>`;
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -522,7 +541,7 @@ function shareReport() {
   // ════════════════════════════════════════════════════════════════════════════
   const portfolio = (typeof cachedPortfolio !== "undefined") ? cachedPortfolio : [];
 
-  body += `<div class="section-title" style="margin-top:36px">Trade / Portfolio</div>`;
+  body += `<div class="section-title" style="margin-top:36px">${_bgt("rpt_share_section_trade")}</div>`;
 
   if (portfolio.length && typeof calcToken === "function") {
     let grandInv = 0, grandVal = 0;
@@ -537,22 +556,22 @@ function shareReport() {
 
     // Summary cards
     body += `<div class="summary-grid">
-      <div class="sum-card"><div class="sum-label">Total Invested</div><div class="sum-val">${fv(grandInv)}</div></div>
-      <div class="sum-card"><div class="sum-label">Current Value</div><div class="sum-val">${fv(grandVal)}</div></div>
+      <div class="sum-card"><div class="sum-label">${_bgt("rpt_total_invested")}</div><div class="sum-val">${fv(grandInv)}</div></div>
+      <div class="sum-card"><div class="sum-label">${_bgt("rpt_cur_value_card")}</div><div class="sum-val">${fv(grandVal)}</div></div>
       <div class="sum-card ${pnlCls(grandPnl)==="pos"?"grand-pos":pnlCls(grandPnl)==="neg"?"grand-neg":"grand"}">
-        <div class="sum-label">Total P&amp;L</div>
+        <div class="sum-label">${_bgt("rpt_pnl_total_label")}</div>
         <div class="sum-val ${pnlCls(grandPnl)}">${fv(grandPnl)}</div>
         <div class="sum-sub ${pnlCls(grandPnlPct)}">${fp(grandPnlPct)}</div>
       </div>
     </div>`;
 
     // Summary table per asset
-    body += `<div class="sub-label" style="background:transparent;padding:0 0 6px;border:none;font-size:10px">Summary by Asset</div>
+    body += `<div class="sub-label" style="background:transparent;padding:0 0 6px;border:none;font-size:10px">${_bgt("rpt_summary_asset")}</div>
       <table><thead><tr>
-        <th>Ticker</th>
-        <th class="r">Total Qty</th><th class="r">Avg Paid</th><th class="r">Cur Price</th>
-        <th class="r">Invested</th><th class="r">Cur Value</th>
-        <th class="r">P&amp;L</th><th class="r">P&amp;L %</th>
+        <th>${_bgt("rpt_col_ticker")}</th>
+        <th class="r">${_bgt("rpt_col_total_qty")}</th><th class="r">${_bgt("rpt_col_avg_paid")}</th><th class="r">${_bgt("rpt_col_cur_price")}</th>
+        <th class="r">${_bgt("rpt_col_invested")}</th><th class="r">${_bgt("rpt_col_cur_value")}</th>
+        <th class="r">${_bgt("rpt_col_pnl")}</th><th class="r">${_bgt("rpt_col_pnl_pct")}</th>
       </tr></thead><tbody>`;
     for (const { tok, c } of calcs) {
       const hasCur = tok.current_price != null;
@@ -576,7 +595,7 @@ function shareReport() {
     </tr></tfoot></table>`;
 
     // Detail per asset
-    body += `<div class="sub-label" style="background:transparent;padding:10px 0 6px;border:none;font-size:10px">Trade Detail</div>`;
+    body += `<div class="sub-label" style="background:transparent;padding:10px 0 6px;border:none;font-size:10px">${_bgt("rpt_trade_detail")}</div>`;
     for (const { tok, c } of calcs) {
       const curPrice = tok.current_price;
       const hasCur   = curPrice != null;
@@ -587,20 +606,20 @@ function shareReport() {
         <div class="token-header">
           <div class="token-title-row">
             <span class="token-ticker">${esc(tok.ticker)}</span>
-            <span class="token-meta">${fq(c.total_qty)} units · Avg ${fv(c.avg_price)} · Cur ${hasCur ? fv(curPrice) : "—"}</span>
+            <span class="token-meta">${fq(c.total_qty)} ${_bgt("rpt_units")} · ${_bgt("rpt_share_avg_abbr")} ${fv(c.avg_price)} · ${_bgt("rpt_share_cur_abbr")} ${hasCur ? fv(curPrice) : "—"}</span>
           </div>
           <div class="token-totals">
-            <span class="tsum-item"><span class="tsum-label">Invested</span><span class="tsum-val">${fv(c.total_invested)}</span></span>
+            <span class="tsum-item"><span class="tsum-label">${_bgt("rpt_col_invested")}</span><span class="tsum-val">${fv(c.total_invested)}</span></span>
             <span class="tsum-sep">·</span>
-            <span class="tsum-item"><span class="tsum-label">Value</span><span class="tsum-val">${hasCur ? fv(c.cur_value) : "—"}</span></span>
+            <span class="tsum-item"><span class="tsum-label">${_bgt("rpt_col_value")}</span><span class="tsum-val">${hasCur ? fv(c.cur_value) : "—"}</span></span>
             <span class="tsum-sep">·</span>
-            <span class="tsum-item"><span class="tsum-label">P&amp;L</span><span class="tsum-val ${pnlCls(c.pnl)}">${hasCur ? fv(c.pnl) : "—"}</span><span class="tsum-pct ${pnlCls(c.pnl_pct)}">${hasCur ? fp(c.pnl_pct) : ""}</span></span>
+            <span class="tsum-item"><span class="tsum-label">${_bgt("rpt_col_pnl")}</span><span class="tsum-val ${pnlCls(c.pnl)}">${hasCur ? fv(c.pnl) : "—"}</span><span class="tsum-pct ${pnlCls(c.pnl_pct)}">${hasCur ? fp(c.pnl_pct) : ""}</span></span>
           </div>
         </div>
         <table><thead><tr>
-          <th>Date</th><th>Type</th>
-          <th class="r">Qty</th><th class="r">Price Paid</th><th class="r">Total Paid</th>
-          <th class="r">Cur Value</th><th class="r">P&amp;L</th><th class="r">P&amp;L %</th>
+          <th>${_bgt("rpt_col_date")}</th><th>${_bgt("rpt_col_type")}</th>
+          <th class="r">${_bgt("rpt_col_qty")}</th><th class="r">${_bgt("rpt_col_price_paid")}</th><th class="r">${_bgt("rpt_col_total_paid")}</th>
+          <th class="r">${_bgt("rpt_col_cur_val_trade")}</th><th class="r">${_bgt("rpt_col_pnl_trade")}</th><th class="r">${_bgt("rpt_col_pnl_pct")}</th>
         </tr></thead><tbody>`;
 
       for (const tr of trades) {
@@ -619,7 +638,7 @@ function shareReport() {
         }
         body += `<tr>
           <td class="mono small">${esc(tr.date||"—")}</td>
-          <td><span class="type-badge ${isSell?"badge-sell":"badge-buy"}">${isSell?"SELL":"BUY"}</span></td>
+          <td><span class="type-badge ${isSell?"badge-sell":"badge-buy"}">${isSell ? _bgt("rpt_badge_sell") : _bgt("rpt_badge_buy")}</span></td>
           <td class="r mono">${fq(absQty)}</td>
           <td class="r mono">${fv(tr.price_paid)}</td>
           <td class="r mono bold">${fv(isSell ? -totalPaid : totalPaid)}</td>
@@ -631,41 +650,42 @@ function shareReport() {
       body += `</tbody></table></div>`;
     }
   } else {
-    body += `<p class="empty-note">No portfolio data.</p>`;
+    body += `<p class="empty-note">${_bgt("rpt_share_trade_empty")}</p>`;
   }
 
   // ── assemble full document ──────────────────────────────────────────────────
+  const lang = (typeof currentLang !== "undefined") ? currentLang : "pt";
   const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>CryptoAIO — Full Report</title>
+  <title>${_bgt("rpt_share_doc_title")}</title>
   <style>${css}</style>
 </head>
 <body>
   <div class="report-header">
     <div class="report-logo">CRYPTOAIO</div>
     <div class="report-meta">
-      <div><strong>Full Portfolio Report · ${cnyName}</strong></div>
-      <div>Generated on ${ts}</div>
+      <div><strong>${_bgt("rpt_share_heading_full")} · ${cnyName}</strong></div>
+      <div>${_bgt("rpt_generated_on")} ${ts}</div>
     </div>
   </div>
 
   ${body}
 
-  <div class="report-footer">Generated by CryptoAIO · ${ts} · Values in ${cnyName}</div>
+  <div class="report-footer">${_bgt("rpt_generated_by")} · ${ts} · ${_bgt("rpt_values_in")} ${cnyName}</div>
 
   <div class="no-print" style="position:fixed;bottom:20px;right:20px;display:flex;gap:8px">
-    <button onclick="window.print()" style="background:#00c27c;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">⬇ Save PDF</button>
-    <button onclick="window.close()" style="background:#eee;color:#555;border:none;border-radius:8px;padding:10px 16px;font-size:13px;cursor:pointer">✕ Close</button>
+    <button onclick="window.print()" style="background:#00c27c;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">${_bgt("rpt_save_pdf")}</button>
+    <button onclick="window.close()" style="background:#eee;color:#555;border:none;border-radius:8px;padding:10px 16px;font-size:13px;cursor:pointer">✕ ${_bgt("rpt_close")}</button>
   </div>
 </body>
 </html>`;
 
   const win = window.open("", "_blank");
   if (!win) {
-    _backupSetStatus("error", "Allow pop-ups to generate the report.");
+    _backupSetStatus("error", _bgt("rpt_allow_popups"));
     return;
   }
   win.document.write(html);
