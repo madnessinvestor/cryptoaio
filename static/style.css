@@ -69,9 +69,24 @@ html { font-size: 114%; }
 
 .ai-suggestions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
   padding-bottom: 2px;
+}
+.ai-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.ai-chip-label {
+  font-size: 0.63rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding-right: 2px;
+  white-space: nowrap;
 }
 .ai-chip {
   background: var(--surface2);

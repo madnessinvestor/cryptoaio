@@ -2852,9 +2852,13 @@ def _build_portfolio_context():
 SYSTEM_PROMPT = """Você é Mad AI, assistente financeiro do CryptoAIO. Regras:
 1. Responda no idioma da pergunta (PT ou EN).
 2. Seja direto e objetivo — respostas curtas (até 5 linhas). Se pedirem análise completa, pode expandir.
-3. Você tem acesso a três blocos de dados do usuário: WATCHLIST (preços ao vivo dos ativos monitorados), TRADE (portfólio com P&L), DASHBOARD (wallets on-chain e ativos manuais). Use esses dados para responder — nunca invente números.
-4. Para perguntas sobre mercado em geral, use os preços da WATCHLIST como referência de mercado atual.
-5. Se os dados não tiverem a informação pedida, diga claramente."""
+3. Você tem acesso a três blocos de dados:
+   - WATCHLIST: preços ao vivo dos ativos monitorados pelo usuário.
+   - PORTFÓLIO (aba Dashboard): valor total dos ativos do usuário — wallets on-chain e ativos manuais. Quando o usuário falar em "portfólio", "patrimônio" ou "quanto tenho", use ESTE bloco.
+   - TRADES (aba Trade): registro de entradas e saídas em operações, com P&L por ativo. Quando o usuário falar em "trades", "operações", "lucro/prejuízo" ou "win rate", use ESTE bloco.
+4. NUNCA confunda PORTFÓLIO com TRADES — são abas diferentes do app.
+5. Para perguntas de mercado em geral, use os preços da WATCHLIST.
+6. Nunca invente números. Se os dados não tiverem a informação pedida, diga claramente."""
 
 def _build_watchlist_context():
     """Build a compact price table for all watchlist assets (live prices)."""
@@ -2881,104 +2885,72 @@ def _build_watchlist_context():
 
 
 def _build_dashboard_context():
-    """Build a text summary of the user's dashboard wallets (tokens, DeFi, perps)."""
+    """Build a compact summary of ALL dashboard wallets — totals first, top tokens per wallet.
+
+    Kept short on purpose so every wallet fits within the AI token budget even
+    when the user has many wallets with many tokens.
+    """
     wallets = load_dash_wallets() if os.path.exists(DASH_WALLETS_FILE) else []
     manual  = _load_json_file(DASH_MANUAL_FILE) if os.path.exists(DASH_MANUAL_FILE) else []
 
     if not wallets and not manual:
         return "O usuário não possui wallets configuradas no Dashboard."
 
-    lines = ["=== DASHBOARD — WALLETS ON-CHAIN ===\n"]
-    grand_total = 0.0
-
-    def _fmt_position(p, label):
-        """Format a DeFi or Perp position entry."""
-        protocol    = p.get("protocol", "?")
-        ptype       = p.get("type", "?")
-        desc        = p.get("description", "")
-        net_usd     = p.get("net_usd", 0)
-        asset_usd   = p.get("asset_usd", 0)
-        debt_usd    = p.get("debt_usd", 0)
-        supply_toks = p.get("supply_tokens", [])
-        borrow_toks = p.get("borrow_tokens", [])
-        reward_toks = p.get("reward_tokens", [])
-
-        header = f"    [{label}] {protocol} — {ptype}"
-        if desc:
-            header += f" ({desc})"
-        header += f": net=${net_usd:,.2f}"
-        if debt_usd:
-            header += f" | asset=${asset_usd:,.2f} | dívida=${debt_usd:,.2f}"
-        out = [header]
-
-        for t in supply_toks:
-            sym = t.get("symbol", "?")
-            bal = t.get("balance", 0)
-            val = t.get("value_usd", 0)
-            out.append(f"      supply: {bal:.4g} {sym} = ${val:,.2f}")
-        for t in borrow_toks:
-            sym = t.get("symbol", "?")
-            bal = t.get("balance", 0)
-            val = t.get("value_usd", 0)
-            out.append(f"      borrow: {bal:.4g} {sym} = ${val:,.2f}")
-        for t in reward_toks:
-            sym = t.get("symbol", "?")
-            bal = t.get("balance", 0)
-            val = t.get("value_usd", 0)
-            out.append(f"      reward: {bal:.4g} {sym} = ${val:,.2f}")
-        return out
+    grand_total   = 0.0
+    wallet_rows   = []   # one summary line per wallet
+    token_details = []   # top-3 tokens per wallet
 
     for w in wallets:
-        label   = w.get("label") or w.get("address", "")[:10] + "..."
-        network = w.get("network_type", "")
-        tokens  = w.get("tokens", [])
-        defi    = w.get("defi", [])
-        perps   = w.get("perps", [])
-        updated = w.get("last_updated", "")
-
-        token_total = sum(t.get("value_usd", 0) for t in tokens)
-        defi_total  = sum(p.get("net_usd", 0)   for p in defi)
-        perp_total  = sum(p.get("net_usd", 0)   for p in perps)
+        label        = w.get("label") or (w.get("address", "")[:8] + "…")
+        tokens       = w.get("tokens", [])
+        defi         = w.get("defi",   [])
+        perps        = w.get("perps",  [])
+        token_total  = sum(t.get("value_usd", 0) for t in tokens)
+        defi_total   = sum(p.get("net_usd",   0) for p in defi)
+        perp_total   = sum(p.get("net_usd",   0) for p in perps)
         wallet_total = token_total + defi_total + perp_total
         grand_total += wallet_total
 
-        lines.append(f"Wallet: {label} ({network})" + (f" — atualizado: {updated}" if updated else ""))
-        lines.append(f"  Total: ${wallet_total:,.2f}  (tokens: ${token_total:,.2f} | DeFi: ${defi_total:,.2f} | Perps/outros: ${perp_total:,.2f})")
+        parts = [f"tokens:${token_total:,.0f}"]
+        if defi_total:  parts.append(f"DeFi:${defi_total:,.0f}")
+        if perp_total:  parts.append(f"Perps:${perp_total:,.0f}")
+        wallet_rows.append(f"  {label}: ${wallet_total:,.2f} ({' | '.join(parts)})")
 
-        if tokens:
-            lines.append("  Tokens:")
-            for t in sorted(tokens, key=lambda x: x.get("value_usd", 0), reverse=True):
-                sym = t.get("symbol", "?")
-                bal = t.get("balance", 0)
-                px  = t.get("price_usd", 0)
-                val = t.get("value_usd", 0)
-                net = t.get("network", "")
-                lines.append(f"    {sym} ({net}): {bal:.4g} × ${px:,.4g} = ${val:,.2f}")
+        # Top-3 tokens by value
+        top = sorted(tokens, key=lambda x: x.get("value_usd", 0), reverse=True)[:3]
+        for t in top:
+            sym = t.get("symbol", "?")
+            val = t.get("value_usd", 0)
+            bal = t.get("balance", 0)
+            token_details.append(f"    {label} → {sym}: {bal:.4g} = ${val:,.2f}")
+        # DeFi/perps summary (one line each, no token breakdown)
+        for p in sorted(defi + perps, key=lambda x: x.get("net_usd", 0), reverse=True)[:3]:
+            proto = p.get("protocol", "?")
+            net   = p.get("net_usd", 0)
+            token_details.append(f"    {label} → {proto}: net=${net:,.2f}")
 
-        if defi:
-            lines.append(f"  Posições DeFi ({len(defi)}):")
-            for p in sorted(defi, key=lambda x: x.get("net_usd", 0), reverse=True):
-                lines.extend(_fmt_position(p, "DeFi"))
+    manual_total = 0.0
+    manual_lines = []
+    for m in manual:
+        sym = m.get("symbol", "?")
+        qty = m.get("qty", 0)
+        px  = m.get("price_usd", 0)
+        val = qty * px
+        grand_total  += val
+        manual_total += val
+        manual_lines.append(f"  {sym}: {qty:.4g} × ${px:,.4g} = ${val:,.2f}")
 
-        if perps:
-            lines.append(f"  Posições Perp/Depósito ({len(perps)}):")
-            for p in sorted(perps, key=lambda x: x.get("net_usd", 0), reverse=True):
-                lines.extend(_fmt_position(p, "Perp"))
+    lines = [f"PORTFÓLIO TOTAL (Dashboard): ${grand_total:,.2f}",
+             f"  ({len(wallets)} wallet(s) on-chain" +
+             (f" + ativos manuais: ${manual_total:,.2f}" if manual_total else "") + ")",
+             "",
+             "Resumo por wallet:"]
+    lines += wallet_rows
 
-        lines.append("")
+    if manual_lines:
+        lines += ["", "Ativos manuais:"] + manual_lines
 
-    if manual:
-        lines.append("=== ATIVOS MANUAIS ===")
-        for m in manual:
-            sym = m.get("symbol", "?")
-            qty = m.get("qty", 0)
-            px  = m.get("price_usd", 0)
-            val = qty * px
-            grand_total += val
-            lines.append(f"  {sym}: {qty} × ${px:,.4g} = ${val:,.2f}")
-        lines.append("")
-
-    lines.append(f"=== TOTAL GERAL DO DASHBOARD: ${grand_total:,.2f} ===")
+    lines += ["", "Top tokens/posições por wallet:"] + token_details
     return "\n".join(lines)
 
 
@@ -3123,8 +3095,8 @@ def ai_chat():
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "system", "content": _trunc(watchlist_ctx, 2000)},
-        {"role": "system", "content": f"TRADE/PORTFÓLIO:\n{_trunc(portfolio_ctx, 1800)}"},
-        {"role": "system", "content": f"DASHBOARD (wallets on-chain):\n{_trunc(dashboard_ctx, 1200)}"},
+        {"role": "system", "content": f"TRADES (aba Trade — entradas/saídas, P&L por operação):\n{_trunc(portfolio_ctx, 1800)}"},
+        {"role": "system", "content": f"PORTFÓLIO (aba Dashboard — patrimônio total, wallets on-chain, ativos manuais):\n{_trunc(dashboard_ctx, 2500)}"},
     ]
     for h in history[-6:]:
         role    = h.get("role")
