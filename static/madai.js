@@ -240,6 +240,13 @@ async function _aiTranscribeAndSend(blob) {
 let _aiSpeaking = false;
 let _aiCurrentUtterance = null;
 
+function _aiCurrentLang() {
+  return localStorage.getItem("lang") === "en" ? "en" : "pt";
+}
+function _aiLabel(ptText, enText) {
+  return _aiCurrentLang() === "en" ? enText : ptText;
+}
+
 function _aiStopSpeech() {
   if (_aiCurrentUtterance) {
     // Null out callbacks first so they don't fire after cancel
@@ -254,8 +261,8 @@ function _aiStopSpeech() {
   _aiSpeaking = false;
   document.querySelectorAll(".ai-speak-btn.speaking").forEach(b => {
     b.classList.remove("speaking");
-    b.title = "Ouvir esta resposta";
-    b.innerHTML = _aiSpeakerIcon() + `<span class="ai-speak-label">Ouvir</span>`;
+    b.title = _aiLabel("Ouvir esta resposta", "Listen to this response");
+    b.innerHTML = _aiSpeakerIcon() + `<span class="ai-speak-label">${_aiLabel("Ouvir", "Listen")}</span>`;
   });
 }
 
@@ -275,19 +282,29 @@ function aiSpeak(text, btn) {
     .replace(/\s+/g, " ").trim();
 
   const utter = new SpeechSynthesisUtterance(clean);
-  utter.lang  = document.documentElement.lang === "en" ? "en-US" : "pt-BR";
+  utter.lang  = _aiCurrentLang() === "en" ? "en-US" : "pt-BR";
   utter.rate  = 1.05;
   _aiCurrentUtterance = utter;
 
   utter.onstart = () => {
     _aiSpeaking = true;
-    if (btn) { btn.classList.add("speaking"); btn.title = "Parar"; btn.innerHTML = _aiStopIcon() + `<span class="ai-speak-label">Parar</span>`; }
+    if (btn) {
+      btn.classList.add("speaking");
+      btn.title = _aiLabel("Parar", "Stop");
+      btn.innerHTML = _aiStopIcon() + `<span class="ai-speak-label">${_aiLabel("Parar", "Stop")}</span>`;
+    }
   };
   utter.onend = utter.onerror = () => {
     _aiSpeaking = false;
-    if (btn) { btn.classList.remove("speaking"); btn.title = "Ouvir esta resposta"; btn.innerHTML = _aiSpeakerIcon() + `<span class="ai-speak-label">Ouvir</span>`; }
+    if (btn) {
+      btn.classList.remove("speaking");
+      btn.title = _aiLabel("Ouvir esta resposta", "Listen to this response");
+      btn.innerHTML = _aiSpeakerIcon() + `<span class="ai-speak-label">${_aiLabel("Ouvir", "Listen")}</span>`;
+    }
   };
 
+  // resume() ensures synthesis isn't stuck in a paused state from a previous stop
+  window.speechSynthesis.resume();
   window.speechSynthesis.speak(utter);
 }
 
@@ -455,8 +472,8 @@ function _aiAppendBubble(role, text) {
     footer.className = "ai-bubble-footer";
     const speakBtn = document.createElement("button");
     speakBtn.className = "ai-speak-btn";
-    speakBtn.title = "Ouvir esta resposta";
-    speakBtn.innerHTML = _aiSpeakerIcon() + `<span class="ai-speak-label">Ouvir</span>`;
+    speakBtn.title = _aiLabel("Ouvir esta resposta", "Listen to this response");
+    speakBtn.innerHTML = _aiSpeakerIcon() + `<span class="ai-speak-label">${_aiLabel("Ouvir", "Listen")}</span>`;
     speakBtn.onclick = () => aiSpeak(text, speakBtn);
     footer.appendChild(speakBtn);
     div.appendChild(footer);
