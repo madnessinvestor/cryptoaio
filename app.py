@@ -1,8 +1,13 @@
-from flask import Flask, render_template, jsonify, request, send_file
-import json, os, uuid, urllib.request, urllib.error, urllib.parse, concurrent.futures, time, threading, time as _time
+from flask import Flask, render_template, jsonify, request, send_file, session, redirect
+import json, os, uuid, urllib.request, urllib.error, urllib.parse, concurrent.futures, time, threading, time as _time, secrets as _secrets_mod
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-change-me")
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+
+# ── GitHub OAuth App credentials (set in Replit Secrets) ─────────────────────
+_GH_CLIENT_ID     = os.environ.get("GITHUB_CLIENT_ID", "")
+_GH_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 
 @app.after_request
 def no_cache_static(response):
@@ -5091,6 +5096,93 @@ def refresh_dash_manual():
         list(ex.map(_update_one, manual))
     save_dash_manual(manual)
     return jsonify({"ok": True, "updated": len(manual)})
+
+
+# ── GitHub OAuth ─────────────────────────────────────────────────────────────
+
+@app.route("/auth/github")
+def github_oauth_start():
+    if not _GH_CLIENT_ID:
+        return "<p>GITHUB_CLIENT_ID não configurado nos Secrets do Replit.</p>", 503
+    state = _secrets_mod.token_urlsafe(16)
+    session["gh_oauth_state"] = state
+    params = urllib.parse.urlencode({
+        "client_id":    _GH_CLIENT_ID,
+        "scope":        "gist",
+        "state":        state,
+        "allow_signup": "true",
+    })
+    return redirect(f"https://github.com/login/oauth/authorize?{params}")
+
+
+@app.route("/auth/github/callback")
+def github_oauth_callback():
+    error = request.args.get("error", "")
+    if error:
+        return _gh_popup_page(error=request.args.get("error_description", error))
+
+    code  = request.args.get("code",  "")
+    state = request.args.get("state", "")
+    if not code or state != session.pop("gh_oauth_state", None):
+        return _gh_popup_page(error="Estado inválido — tente novamente.")
+
+    # Exchange code → access token
+    try:
+        req = urllib.request.Request(
+            "https://github.com/login/oauth/access_token",
+            data=urllib.parse.urlencode({
+                "client_id":     _GH_CLIENT_ID,
+                "client_secret": _GH_CLIENT_SECRET,
+                "code":          code,
+            }).encode(),
+            headers={"Accept": "application/json", "User-Agent": "CryptoAIO"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except Exception as exc:
+        return _gh_popup_page(error=str(exc))
+
+    access_token = data.get("access_token", "")
+    if not access_token:
+        return _gh_popup_page(error=data.get("error_description", "Token não retornado pelo GitHub."))
+
+    user_data, _ = _gist_req("GET", "https://api.github.com/user", access_token)
+    login = user_data.get("login", "")
+    return _gh_popup_page(token=access_token, login=login)
+
+
+def _gh_popup_page(token="", login="", error=""):
+    if token:
+        payload = json.dumps({"type": "github_oauth", "token": token, "login": login})
+        body = f"<p class='icon'>✅</p><p>Conectado como <b>{login}</b>.<br>Fechando…</p>"
+    else:
+        payload = json.dumps({"type": "github_oauth", "error": error})
+        body = f"<p class='icon'>❌</p><p>{error}</p>"
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>GitHub Auth — CryptoAIO</title>
+<style>
+  body{{font-family:sans-serif;background:#0d1117;color:#c9d1d9;
+       display:flex;align-items:center;justify-content:center;height:100vh;margin:0}}
+  .box{{text-align:center;padding:2rem}} .icon{{font-size:2.5rem;margin-bottom:.5rem}}
+</style></head>
+<body><div class="box">{body}</div>
+<script>
+(function(){{
+  var p={payload};
+  if(window.opener&&!window.opener.closed){{
+    window.opener.postMessage(p,window.location.origin);
+    setTimeout(function(){{window.close();}},1400);
+  }}else{{window.location.href='/';}}
+}})();
+</script></body></html>"""
+
+
+@app.route("/auth/github/configured")
+def github_oauth_configured():
+    """Returns whether the OAuth App credentials are set."""
+    return jsonify({"configured": bool(_GH_CLIENT_ID and _GH_CLIENT_SECRET)})
 
 
 # ── GitHub Gist Sync ──────────────────────────────────────────────────────────

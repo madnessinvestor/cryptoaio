@@ -468,6 +468,44 @@ html { font-size: 114%; }
   border: 1px solid var(--border);
 }
 .gist-action-btn:hover { opacity: 1; border-color: var(--accent); color: var(--accent); }
+
+/* GitHub OAuth login button */
+.github-login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: #238636;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  margin-bottom: 2px;
+}
+.github-login-btn:hover  { background: #2ea043; }
+.github-login-btn:active { opacity: 0.8; }
+
+/* Divider "ou" between OAuth and manual token */
+.gist-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 8px;
+  color: var(--muted2);
+  font-size: 0.72rem;
+}
+.gist-divider::before,
+.gist-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
 .ai-cfg-remove-btn {
   background: transparent;
   border: 1px solid var(--border);

@@ -240,4 +240,84 @@ function _gt(key) {
   try { return (TRANSLATIONS[currentLang || 'pt'] || {})[key] || key; } catch { return key; }
 }
 
+// ── GitHub OAuth Login ────────────────────────────────────────────────────────
+
+let _oauthPopup = null;
+
+async function gistLoginWithGitHub() {
+  // Check if OAuth is configured on the server
+  try {
+    const r = await _origFetch('/auth/github/configured');
+    const d = await r.json();
+    if (!d.configured) {
+      _gistSetStatus('error', _gt('set_gist_oauth_not_cfg'));
+      return;
+    }
+  } catch { /* proceed anyway */ }
+
+  if (_oauthPopup && !_oauthPopup.closed) { _oauthPopup.focus(); return; }
+
+  _gistSetStatus('loading', _gt('set_gist_oauth_pending'));
+
+  const w = 620, h = 720;
+  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth  - w) / 2));
+  const top  = Math.max(0, Math.round(window.screenY + (window.outerHeight - h) / 2));
+  _oauthPopup = window.open(
+    '/auth/github',
+    'github_oauth',
+    `width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes`
+  );
+
+  if (!_oauthPopup) {
+    _gistSetStatus('error', _gt('set_gist_err_popup'));
+    return;
+  }
+
+  // Poll for popup close without message (user closed it manually)
+  const poll = setInterval(() => {
+    if (_oauthPopup && _oauthPopup.closed) {
+      clearInterval(poll);
+      // Only clear "loading" status — success/error messages are set by the message handler
+      const el = document.getElementById('gist-status');
+      if (el && el.className.includes('loading')) _gistSetStatus('info', '');
+    }
+  }, 600);
+}
+
+// Receive OAuth result from popup
+window.addEventListener('message', function(event) {
+  if (event.origin !== window.location.origin) return;
+  const data = event.data;
+  if (!data || data.type !== 'github_oauth') return;
+
+  if (_oauthPopup && !_oauthPopup.closed) _oauthPopup.close();
+  _oauthPopup = null;
+
+  if (data.error) {
+    _gistSetStatus('error', data.error);
+    return;
+  }
+
+  if (data.token) {
+    localStorage.setItem(GIST_TOKEN_KEY, data.token);
+    _gistRenderSaved();
+    const login = data.login ? ` (@${data.login})` : '';
+    _gistSetStatus('ok', `✓ ${_gt('set_gist_oauth_ok')}${login}`);
+  }
+});
+
+// Show/hide OAuth button based on server config
+async function _gistCheckOAuthAvailable() {
+  const btn = document.getElementById('gist-oauth-btn');
+  if (!btn) return;
+  try {
+    const r = await _origFetch('/auth/github/configured');
+    const d = await r.json();
+    btn.style.display = d.configured ? '' : 'none';
+    const divider = document.querySelector('.gist-divider');
+    if (divider) divider.style.display = d.configured ? '' : 'none';
+  } catch { btn.style.display = 'none'; }
+}
+
 document.addEventListener('DOMContentLoaded', gistInit);
+document.addEventListener('DOMContentLoaded', _gistCheckOAuthAvailable);
