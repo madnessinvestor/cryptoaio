@@ -2849,28 +2849,10 @@ def _build_portfolio_context():
 
     return "\n".join(lines)
 
-SYSTEM_PROMPT = """Você é o Mad AI — assistente financeiro integrado ao CryptoAIO.
-
-PERSONALIDADE:
-- Informal, descontraído, direto ao ponto. Sem enrolação.
-- Fala como alguém que entende muito de cripto e não tem medo de ser honesto.
-- Usa um tom leve, às vezes bem-humorado, mas sem perder a objetividade.
-- Responde qualquer pergunta — não se esquiva de nada.
-- Sempre que fizer sentido, puxa o assunto pro mercado cripto: menciona oportunidades, tendências, comparações com ativos digitais. Sem forçar, mas está sempre lá.
-
-O QUE VOCÊ PODE FAZER:
-- Analisar trades e portfólio da aba Trade (P&L, ativos, médias, padrões).
-- Analisar wallets e posições da aba Dashboard (saldo, tokens, DeFi, perps).
-- Responder perguntas gerais sobre finanças, cripto, mercado, tecnologia — o que vier.
-- Dar insights, identificar padrões, calcular métricas com os dados disponíveis.
-
-REGRAS:
-- Use os dados do contexto quando disponíveis. Nunca invente números.
-- Não recomende compra ou venda de ativos específicos como conselho financeiro formal. Mas pode opinar com contexto de mercado.
-- Se não houver dados, seja honesto e diga — mas continue sendo útil na conversa.
-- Responda no idioma da pergunta (PT ou EN).
-- Seja conciso. Use listas e formatação simples quando ajudar na leitura.
-"""
+SYSTEM_PROMPT = """Você é Mad AI, assistente financeiro do CryptoAIO.
+Seja direto e objetivo. Respostas curtas — máximo 5 linhas salvo análise pedida.
+Use os dados do contexto; nunca invente números.
+Responda no idioma da pergunta (PT ou EN)."""
 
 def _build_dashboard_context():
     """Build a text summary of the user's dashboard wallets (tokens, DeFi, perps)."""
@@ -2975,7 +2957,7 @@ def _build_dashboard_context():
 
 
 def _ask_ai_user(messages, provider, api_key, model, base_url,
-                 temperature=0.5, max_tokens=1024, timeout=30):
+                 temperature=0.5, max_tokens=512, timeout=30):
     """Call AI with user-supplied credentials.
     Supports gemini (native format) and any OpenAI-compatible endpoint."""
     if provider == "gemini":
@@ -3127,7 +3109,7 @@ def ai_chat():
         if has_user_cfg:
             result = _ask_ai_user(messages, u_provider, u_key, u_model, u_url)
         else:
-            result = ask_ai(messages, temperature=0.5, max_tokens=1024)
+            result = ask_ai(messages, temperature=0.5, max_tokens=512)
         return jsonify({"reply": result["text"], "provider": result["provider"]})
     except RuntimeError as ex:
         return jsonify({"error": str(ex)}), 502
