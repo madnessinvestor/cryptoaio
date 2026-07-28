@@ -2993,6 +2993,7 @@ def _ask_ai_user(messages, provider, api_key, model, base_url,
             _HTTP_HINTS = {
                 401: "API key inválida ou expirada.",
                 403: "Acesso negado (403) — verifique se a API key está correta e tem saldo/permissão.",
+                413: "Contexto muito grande (413) — seu portfólio/dashboard tem muitos dados. Tente uma pergunta mais simples ou remova trades antigos.",
                 429: "Limite de requisições atingido (429) — aguarde um momento e tente novamente.",
                 402: "Saldo insuficiente na conta do provedor.",
                 404: "Modelo não encontrado — verifique o nome do modelo.",
@@ -3031,12 +3032,20 @@ def ai_chat():
         portfolio_ctx = f_portfolio.result()
         dashboard_ctx = f_dashboard.result()
 
+    # Truncate contexts to stay within Groq free-tier TPM (6 000 tokens/min).
+    # ~4 chars ≈ 1 token; 3 000 chars ≈ 750 tokens per context block.
+    _MAX_CTX_CHARS = 3000
+    def _trunc(text, limit=_MAX_CTX_CHARS):
+        if len(text) <= limit:
+            return text
+        return text[:limit] + "\n... [contexto truncado para caber no limite de tokens]"
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "system", "content": f"DADOS DA ABA TRADE (portfólio):\n{portfolio_ctx}"},
-        {"role": "system", "content": f"DADOS DA ABA DASHBOARD (wallets on-chain):\n{dashboard_ctx}"},
+        {"role": "system", "content": f"DADOS DA ABA TRADE (portfólio):\n{_trunc(portfolio_ctx)}"},
+        {"role": "system", "content": f"DADOS DA ABA DASHBOARD (wallets on-chain):\n{_trunc(dashboard_ctx)}"},
     ]
-    for h in history[-10:]:
+    for h in history[-6:]:
         role    = h.get("role")
         content = h.get("content", "")
         if role in ("user", "assistant") and content:
