@@ -1163,7 +1163,7 @@ function aiConfigSetProvider(prov) {
   if (urlWrap) urlWrap.style.display = (prov === "custom") ? "" : "none";
   if (modelField) {
     const hints = { groq: "llama-3.3-70b-versatile", gemini: "gemini-2.0-flash",
-                    openrouter: "meta-llama/llama-3.1-8b-instruct:free", custom: "gpt-4o" };
+                    openrouter: "mistralai/mistral-7b-instruct:free", custom: "gpt-4o" };
     modelField.placeholder = `Modelo (ex: ${hints[prov] || "gpt-4o"})`;
   }
   // Pre-fill fields if key already saved for this provider
