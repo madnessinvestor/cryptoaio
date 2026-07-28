@@ -2501,6 +2501,72 @@ _GW_LOG_MAX   = 500
 # Rough cost per 1 K tokens (USD) — free tiers = 0
 _GW_COST_PER_1K = {"groq": 0.0, "gemini": 0.0, "openrouter": 0.001}
 
+# ── OpenRouter: dynamic free-model picker ─────────────────────────────────────
+# Caches the list of free models for 1 h so we don't hit /api/v1/models on
+# every chat message.  Falls back to a hard-coded safe default on any error.
+
+_OR_FREE_CACHE: dict = {"model": None, "until": 0}
+_OR_FREE_LOCK  = threading.Lock()
+_OR_FREE_TTL   = 3600   # seconds
+_OR_FREE_FALLBACK = "mistralai/mistral-7b-instruct:free"
+
+# Preferred models in priority order — if any is in the free list, use it first
+_OR_PREFERRED = [
+    "google/gemini-2.0-flash-exp:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "microsoft/phi-3-mini-128k-instruct:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+]
+
+def _or_pick_free_model(api_key: str = "") -> str:
+    """Return the best currently-available free model on OpenRouter.
+
+    Results are cached for _OR_FREE_TTL seconds.  On any fetch error the last
+    cached value (or the hard-coded fallback) is returned so chat keeps working.
+    """
+    with _OR_FREE_LOCK:
+        if _OR_FREE_CACHE["model"] and _time.time() < _OR_FREE_CACHE["until"]:
+            return _OR_FREE_CACHE["model"]
+
+    key = api_key or _gw_openrouter_key()
+    try:
+        req = urllib.request.Request(
+            "https://openrouter.ai/api/v1/models",
+            headers={"Authorization": f"Bearer {key}",
+                     "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read().decode())
+
+        free_ids: set[str] = set()
+        for m in data.get("data", []):
+            p = m.get("pricing", {})
+            try:
+                if float(p.get("prompt", 1)) == 0 and float(p.get("completion", 1)) == 0:
+                    free_ids.add(m["id"])
+            except (TypeError, ValueError):
+                pass
+
+        chosen = _OR_FREE_FALLBACK
+        for pref in _OR_PREFERRED:
+            if pref in free_ids:
+                chosen = pref
+                break
+        else:
+            # None of our preferred ones matched — pick the first free model alphabetically
+            if free_ids:
+                chosen = sorted(free_ids)[0]
+
+        with _OR_FREE_LOCK:
+            _OR_FREE_CACHE["model"] = chosen
+            _OR_FREE_CACHE["until"] = _time.time() + _OR_FREE_TTL
+        return chosen
+
+    except Exception:
+        # Return whatever we had before (or fallback)
+        with _OR_FREE_LOCK:
+            return _OR_FREE_CACHE.get("model") or _OR_FREE_FALLBACK
+
 # ── Per-provider build / parse helpers ───────────────────────────────────────
 
 def _gw_build_groq(messages, model, temperature, max_tokens):
@@ -2533,7 +2599,7 @@ def _gw_build_gemini(messages, model, temperature, max_tokens):
     return url, {"Content-Type": "application/json"}, payload, m
 
 def _gw_build_openrouter(messages, model, temperature, max_tokens):
-    m = model or "mistralai/mistral-7b-instruct:free"
+    m = model or _or_pick_free_model()
     payload = json.dumps({"model": m, "messages": messages,
                           "max_tokens": max_tokens, "temperature": temperature}).encode()
     headers = {"Authorization": f"Bearer {_gw_openrouter_key()}",
@@ -2963,7 +3029,7 @@ def _ask_ai_user(messages, provider, api_key, model, base_url,
             m   = model or "llama-3.1-8b-instant"
         elif provider == "openrouter":
             url = "https://openrouter.ai/api/v1/chat/completions"
-            m   = model or "mistralai/mistral-7b-instruct:free"
+            m   = model or _or_pick_free_model(api_key)
         else:
             base = (base_url or "https://api.openai.com/v1").rstrip("/")
             url  = f"{base}/chat/completions"
