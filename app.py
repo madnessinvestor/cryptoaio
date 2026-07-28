@@ -2849,10 +2849,36 @@ def _build_portfolio_context():
 
     return "\n".join(lines)
 
-SYSTEM_PROMPT = """Você é Mad AI, assistente financeiro do CryptoAIO.
-Seja direto e objetivo. Respostas curtas — máximo 5 linhas salvo análise pedida.
-Use os dados do contexto; nunca invente números.
-Responda no idioma da pergunta (PT ou EN)."""
+SYSTEM_PROMPT = """Você é Mad AI, assistente financeiro do CryptoAIO. Regras:
+1. Responda no idioma da pergunta (PT ou EN).
+2. Seja direto e objetivo — respostas curtas (até 5 linhas). Se pedirem análise completa, pode expandir.
+3. Você tem acesso a três blocos de dados do usuário: WATCHLIST (preços ao vivo dos ativos monitorados), TRADE (portfólio com P&L), DASHBOARD (wallets on-chain e ativos manuais). Use esses dados para responder — nunca invente números.
+4. Para perguntas sobre mercado em geral, use os preços da WATCHLIST como referência de mercado atual.
+5. Se os dados não tiverem a informação pedida, diga claramente."""
+
+def _build_watchlist_context():
+    """Build a compact price table for all watchlist assets (live prices)."""
+    assets = load_assets()
+    if not assets:
+        return "Watchlist vazia."
+
+    def _fetch(a):
+        sym = a.get("symbol", "").upper()
+        r = fetch_price(sym)
+        return sym, r
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(assets))) as ex:
+        results = list(ex.map(_fetch, assets))
+
+    lines = ["WATCHLIST (preços ao vivo):"]
+    for sym, r in results:
+        if r:
+            chg = f"{r['change24h']:+.2f}%" if r.get("change24h") is not None else "n/a"
+            lines.append(f"  {sym}: ${r['price']:.6g}  ({chg} 24h)  fonte:{r.get('source','?')}")
+        else:
+            lines.append(f"  {sym}: preço indisponível")
+    return "\n".join(lines)
+
 
 def _build_dashboard_context():
     """Build a text summary of the user's dashboard wallets (tokens, DeFi, perps)."""
@@ -3078,25 +3104,27 @@ def ai_chat():
     if not user_message:
         return jsonify({"error": "Mensagem vazia."}), 400
 
-    # Build both contexts in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+    # Build all three contexts in parallel
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+        f_watchlist   = ex.submit(_build_watchlist_context)
         f_portfolio   = ex.submit(_build_portfolio_context)
         f_dashboard   = ex.submit(_build_dashboard_context)
+        watchlist_ctx = f_watchlist.result()
         portfolio_ctx = f_portfolio.result()
         dashboard_ctx = f_dashboard.result()
 
-    # Truncate contexts to stay within Groq free-tier TPM (6 000 tokens/min).
-    # ~4 chars ≈ 1 token; 3 000 chars ≈ 750 tokens per context block.
-    _MAX_CTX_CHARS = 3000
-    def _trunc(text, limit=_MAX_CTX_CHARS):
+    # Truncate each block to keep total input within ~3 500 tokens (Groq free-tier safe).
+    # Watchlist is the most useful for market questions → larger budget.
+    def _trunc(text, limit):
         if len(text) <= limit:
             return text
-        return text[:limit] + "\n... [contexto truncado para caber no limite de tokens]"
+        return text[:limit] + "\n...[truncado]"
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "system", "content": f"DADOS DA ABA TRADE (portfólio):\n{_trunc(portfolio_ctx)}"},
-        {"role": "system", "content": f"DADOS DA ABA DASHBOARD (wallets on-chain):\n{_trunc(dashboard_ctx)}"},
+        {"role": "system", "content": _trunc(watchlist_ctx, 2000)},
+        {"role": "system", "content": f"TRADE/PORTFÓLIO:\n{_trunc(portfolio_ctx, 1800)}"},
+        {"role": "system", "content": f"DASHBOARD (wallets on-chain):\n{_trunc(dashboard_ctx, 1200)}"},
     ]
     for h in history[-6:]:
         role    = h.get("role")
