@@ -2533,7 +2533,7 @@ def _gw_build_gemini(messages, model, temperature, max_tokens):
     return url, {"Content-Type": "application/json"}, payload, m
 
 def _gw_build_openrouter(messages, model, temperature, max_tokens):
-    m = model or "openrouter/free"
+    m = model or "meta-llama/llama-3.1-8b-instruct:free"
     payload = json.dumps({"model": m, "messages": messages,
                           "max_tokens": max_tokens, "temperature": temperature}).encode()
     headers = {"Authorization": f"Bearer {_gw_openrouter_key()}",
@@ -2553,6 +2553,11 @@ def _gw_parse_openai(result, provider):
             text = tc.get("function", {}).get("arguments", "")
             if text:
                 break
+    if not text:
+        finish = ch.get("finish_reason", "")
+        raise RuntimeError(
+            f"O modelo não retornou resposta (finish_reason={finish!r}). "
+            "Verifique se o modelo configurado existe e tem créditos disponíveis.")
     return {"provider": provider, "model": result.get("model", ""),
             "text": text,
             "finish_reason": ch.get("finish_reason", "stop"),
@@ -2958,7 +2963,7 @@ def _ask_ai_user(messages, provider, api_key, model, base_url,
             m   = model or "llama-3.1-8b-instant"
         elif provider == "openrouter":
             url = "https://openrouter.ai/api/v1/chat/completions"
-            m   = model or "openrouter/auto"
+            m   = model or "meta-llama/llama-3.1-8b-instruct:free"
         else:
             base = (base_url or "https://api.openai.com/v1").rstrip("/")
             url  = f"{base}/chat/completions"
