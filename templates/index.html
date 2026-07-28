@@ -424,6 +424,9 @@
           <button class="ai-prov-pill" data-prov="gemini"     onclick="aiConfigSetProvider('gemini')">
             <span class="ai-prov-dot"></span>Gemini
           </button>
+          <button class="ai-prov-pill" data-prov="cloudflare" onclick="aiConfigSetProvider('cloudflare')">
+            <span class="ai-prov-dot"></span>Cloudflare
+          </button>
           <button class="ai-prov-pill" data-prov="custom"     onclick="aiConfigSetProvider('custom')" data-i18n="set_ai_custom">
             <span class="ai-prov-dot"></span>Custom
           </button>
@@ -441,6 +444,10 @@
           <div class="ai-cfg-input-wrap" id="ai-config-url-wrap" style="display:none">
             <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/></svg>
             <input type="text" id="ai-config-url" class="ai-cfg-input" placeholder="Base URL (ex: https://api.openai.com/v1)" autocomplete="off">
+          </div>
+          <div class="ai-cfg-input-wrap" id="ai-config-accountid-wrap" style="display:none">
+            <svg class="ai-cfg-input-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            <input type="text" id="ai-config-accountid" class="ai-cfg-input" placeholder="Account ID (Cloudflare)" autocomplete="off">
           </div>
         </div>
 

@@ -3089,10 +3089,19 @@ def ai_chat():
     history      = data.get("history") or []
 
     # User-supplied AI config (from localStorage, sent by the frontend)
-    u_key      = (data.get("ai_key")      or "").strip()
-    u_provider = (data.get("ai_provider") or "").strip().lower()
-    u_model    = (data.get("ai_model")    or "").strip()
-    u_url      = (data.get("ai_url")      or "").strip()
+    u_key        = (data.get("ai_key")        or "").strip()
+    u_provider   = (data.get("ai_provider")   or "").strip().lower()
+    u_model      = (data.get("ai_model")      or "").strip()
+    u_url        = (data.get("ai_url")        or "").strip()
+    u_account_id = (data.get("ai_account_id") or "").strip()
+
+    # Cloudflare Workers AI — OpenAI-compatible endpoint, build URL from account_id
+    if u_provider == "cloudflare" and u_account_id and not u_url:
+        u_url = f"https://api.cloudflare.com/client/v4/accounts/{u_account_id}/ai/v1"
+    if u_provider == "cloudflare":
+        u_provider = "custom"   # reuse the OpenAI-compatible path
+        if not u_model:
+            u_model = "@cf/meta/llama-3.1-8b-instruct"
 
     has_user_cfg = bool(u_key)
     has_env_cfg  = any([_gw_groq_key(), _gw_gemini_key(), _gw_openrouter_key()])

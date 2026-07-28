@@ -1146,7 +1146,7 @@ function detailCreateAlert() {
 // Storage: madai_keys = { groq:{key,model}, openrouter:{key,model}, gemini:{key,model}, custom:{key,model,url} }
 //          madai_active = "groq"
 
-const _AI_PROV_LABELS = { groq: "Groq", openrouter: "OpenRouter", gemini: "Gemini", custom: "Custom" };
+const _AI_PROV_LABELS = { groq: "Groq", openrouter: "OpenRouter", gemini: "Gemini", cloudflare: "Cloudflare", custom: "Custom" };
 
 function _aiGetKeys() {
   try { return JSON.parse(localStorage.getItem("madai_keys") || "{}"); } catch { return {}; }
@@ -1158,35 +1158,50 @@ function aiConfigSetProvider(prov) {
   document.querySelectorAll(".ai-prov-pill").forEach(b =>
     b.classList.toggle("active", b.dataset.prov === prov)
   );
-  const urlWrap    = document.getElementById("ai-config-url-wrap");
-  const modelField = document.getElementById("ai-config-model");
-  if (urlWrap) urlWrap.style.display = (prov === "custom") ? "" : "none";
+  const urlWrap       = document.getElementById("ai-config-url-wrap");
+  const accountIdWrap = document.getElementById("ai-config-accountid-wrap");
+  const modelField    = document.getElementById("ai-config-model");
+
+  if (urlWrap)       urlWrap.style.display       = (prov === "custom") ? "" : "none";
+  if (accountIdWrap) accountIdWrap.style.display = (prov === "cloudflare") ? "" : "none";
+
   if (modelField) {
-    const hints = { groq: "llama-3.3-70b-versatile", gemini: "gemini-2.0-flash",
-                    openrouter: "mistralai/mistral-7b-instruct:free", custom: "gpt-4o" };
+    const hints = {
+      groq:        "llama-3.3-70b-versatile",
+      gemini:      "gemini-2.0-flash",
+      openrouter:  "mistralai/mistral-7b-instruct:free",
+      cloudflare:  "@cf/meta/llama-3.1-8b-instruct",
+      custom:      "gpt-4o"
+    };
     modelField.placeholder = `Modelo (ex: ${hints[prov] || "gpt-4o"})`;
   }
   // Pre-fill fields if key already saved for this provider
   const saved = _aiGetKeys()[prov] || {};
-  const keyEl   = document.getElementById("ai-config-key");
-  const modelEl = document.getElementById("ai-config-model");
-  const urlEl   = document.getElementById("ai-config-url");
-  if (keyEl)   keyEl.value   = saved.key   || "";
-  if (modelEl) modelEl.value = saved.model || "";
-  if (urlEl)   urlEl.value   = saved.url   || "";
+  const keyEl       = document.getElementById("ai-config-key");
+  const modelEl     = document.getElementById("ai-config-model");
+  const urlEl       = document.getElementById("ai-config-url");
+  const accountIdEl = document.getElementById("ai-config-accountid");
+  if (keyEl)       keyEl.value       = saved.key       || "";
+  if (modelEl)     modelEl.value     = saved.model     || "";
+  if (urlEl)       urlEl.value       = saved.url       || "";
+  if (accountIdEl) accountIdEl.value = saved.accountId || "";
 }
 
 function aiConfigSave() {
-  const prov  = document.querySelector(".ai-prov-pill.active")?.dataset.prov || "";
-  const key   = (document.getElementById("ai-config-key")?.value   || "").trim();
-  const model = (document.getElementById("ai-config-model")?.value || "").trim();
-  const url   = (document.getElementById("ai-config-url")?.value   || "").trim();
+  const prov      = document.querySelector(".ai-prov-pill.active")?.dataset.prov || "";
+  const key       = (document.getElementById("ai-config-key")?.value       || "").trim();
+  const model     = (document.getElementById("ai-config-model")?.value     || "").trim();
+  const url       = (document.getElementById("ai-config-url")?.value       || "").trim();
+  const accountId = (document.getElementById("ai-config-accountid")?.value || "").trim();
 
   if (!key)  { _setAiConfigStatus("Informe a API key.", "error"); return; }
   if (!prov) { _setAiConfigStatus("Selecione um provedor.", "error"); return; }
+  if (prov === "cloudflare" && !accountId) {
+    _setAiConfigStatus("Informe o Account ID da Cloudflare.", "error"); return;
+  }
 
   const keys = _aiGetKeys();
-  keys[prov] = { key, model, url };
+  keys[prov] = { key, model, url, accountId };
   _aiSetKeys(keys);
 
   // If no active yet, make this one active

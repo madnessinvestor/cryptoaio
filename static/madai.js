@@ -376,12 +376,13 @@ async function aiSendMessage(text) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message:     text,
-        history:     _aiHistory,
-        ai_key:      _aiCfg.key      || "",
-        ai_provider: _aiCfg.provider || "",
-        ai_model:    _aiCfg.model    || "",
-        ai_url:      _aiCfg.url      || "",
+        message:        text,
+        history:        _aiHistory,
+        ai_key:         _aiCfg.key        || "",
+        ai_provider:    _aiCfg.provider   || "",
+        ai_model:       _aiCfg.model      || "",
+        ai_url:         _aiCfg.url        || "",
+        ai_account_id:  _aiCfg.accountId  || "",
       })
     });
 
