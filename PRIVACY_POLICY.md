@@ -74,7 +74,7 @@ If you configure the Mad AI feature, the app communicates with the AI provider y
 When using Mad AI:
 
 - Your **questions and portfolio data** (aggregated numbers, not raw keys or private information) are sent to the chosen provider to generate a response.
-- **Voice input** (if used) is transcribed via Groq Whisper: the audio recording is sent to Groq's API. The audio is not stored by CryptoAIO.
+- **Voice input** (if used) is transcribed via Groq Whisper (primary) or OpenAI Whisper (fallback): the audio recording is sent to the respective provider's API. The audio is not stored by CryptoAIO.
 - Your AI provider **API key** is stored only in your browser's `localStorage` and is sent directly from your browser to the chosen provider. It is never sent to or stored by the CryptoAIO developer.
 
 ### GitHub Gist Sync (Optional)
@@ -139,7 +139,7 @@ This Service may contain links to external websites (exchanges, data providers, 
 
 This Privacy Policy may be updated from time to time. Changes are effective immediately upon being posted in this file. You are advised to review this page periodically.
 
-**Last updated:** July 28, 2026
+**Last updated:** July 29, 2026
 
 ---
 

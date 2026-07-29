@@ -13,9 +13,10 @@ Chat with an AI specialised in your portfolio, with **voice** support.
 
 - Full trade analysis (P&L, win rate, best/worst asset)
 - Natural-language questions about your portfolio
-- **Voice input**: record your question with the microphone; audio is transcribed via **Groq Whisper**
+- **Voice input**: record your question with the microphone; audio is transcribed via **Groq Whisper** (primary) or **OpenAI Whisper** (fallback if `OPENAI_API_KEY` is set)
 - **Text-to-speech**: listen to AI responses with native speech synthesis
 - Gateway with automatic fallback across providers: **Groq → Gemini → OpenRouter**
+- **Custom provider**: any OpenAI-compatible endpoint — Cloudflare Workers AI, local models, self-hosted LLMs
 
 ---
 
@@ -27,7 +28,7 @@ Prices fetched from multiple exchanges simultaneously with automatic best-source
 | Hyperliquid | MEXC | KuCoin |
 | Gate.io | OKX | Kraken |
 | Bitfinex | CoinGecko | CoinCap |
-| CryptoCompare | — | — |
+| CryptoCompare | Yahoo Finance | — |
 
 ---
 
@@ -67,10 +68,19 @@ Add and remove assets with automatic persistence — no login required.
 
 ### 🏦 Dashboard (On-Chain + Manual Assets)
 - Track on-chain wallet balances grouped by network and asset
+- **Tokens / DeFi / Perps tabs** per wallet — separate views for token balances, DeFi positions, and perpetual positions
 - Manual assets for off-chain or custom positions
 - Portfolio diversification chart
 - Portfolio 24 h variation (% and absolute value)
 - Add wallets and manual assets via the **speed-dial FAB button** (＋)
+- **Transaction hash lookup** — decode any EVM, Solana, or Bitcoin transaction directly from the app
+
+#### Supported Wallet Networks
+
+| Type | Networks |
+|------|----------|
+| EVM | Ethereum · BSC · Polygon · Arbitrum One · Base · Optimism · HyperEVM · Avalanche · zkSync Era · Linea · Scroll · Mantle |
+| Other | Solana · Bitcoin · TON · NEAR · Ergo · Starknet · SEI |
 
 ---
 
@@ -141,7 +151,7 @@ Install CryptoAIO directly on your home screen on Android, iPhone, Windows, macO
 | Backend | Python 3.12 + Flask 3 |
 | Frontend | HTML5 · CSS3 · Vanilla JS (ES6+) |
 | AI | Groq (Whisper + LLaMA) · Gemini · OpenRouter |
-| Market Data | Hyperliquid, MEXC, KuCoin, Gate.io, OKX, Kraken, Bitfinex, CoinGecko, CoinCap, CryptoCompare, brapi.dev, Frankfurter |
+| Market Data | Hyperliquid, MEXC, KuCoin, Gate.io, OKX, Kraken, Bitfinex, CoinGecko, CoinCap, CryptoCompare, brapi.dev, Frankfurter, Yahoo Finance |
 | Storage | Local JSON + localStorage + GitHub Gist (optional sync) |
 
 ---
@@ -151,6 +161,8 @@ Install CryptoAIO directly on your home screen on Android, iPhone, Windows, macO
 ```
 cryptoaio/
 ├── app.py                  # Flask backend — routes, price aggregation, Mad AI gateway
+├── launcher.py             # Desktop launcher (PyInstaller + pywebview / browser fallback)
+├── android_main.py         # Android launcher (Kivy / Buildozer)
 ├── assets.json             # Persisted watchlist
 ├── alerts.json             # Price alerts
 ├── portfolio_data.json     # Trade / portfolio entries
@@ -202,6 +214,29 @@ Open in your browser: `http://localhost:5000`
 
 Dependencies are installed automatically. Just press **Run**.
 
+### Running as Desktop App
+
+```bash
+pip install -r requirements.txt pywebview
+python launcher.py
+```
+
+Opens in a native window via pywebview, or falls back to the system browser. To build a standalone executable:
+
+```bash
+pyinstaller CryptoAIO.spec
+```
+
+### Building the Android APK
+
+Requires [Buildozer](https://buildozer.readthedocs.io/):
+
+```bash
+buildozer android debug
+```
+
+Build configuration is in `buildozer.spec`.
+
 ### Environment Variables (optional — required for Mad AI)
 
 | Variable | Description |
@@ -210,6 +245,7 @@ Dependencies are installed automatically. Just press **Run**.
 | `GROQ_API_KEY` | Groq (Whisper transcription + LLaMA chat) |
 | `GOOGLE_AI_API_KEY` | Google Gemini (fallback) |
 | `OPENROUTER_API_KEY` | OpenRouter (fallback) |
+| `OPENAI_API_KEY` | OpenAI Whisper — voice transcription fallback (used when `GROQ_API_KEY` is absent) |
 | `GITHUB_CLIENT_ID` | GitHub OAuth App — enables one-click Gist auth |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth App secret |
 
@@ -238,6 +274,11 @@ Dependencies are installed automatically. Just press **Run**.
 - [x] Data sync via GitHub Gist (auto-backup across devices)
 - [x] i18n — Portuguese & English (full coverage)
 - [x] Global refresh button syncs widget live data + clock
+- [x] DeFi positions and Perps tracked per wallet (Tokens / DeFi / Perps tabs)
+- [x] Transaction hash lookup (EVM, Solana, Bitcoin)
+- [x] Custom AI provider (Cloudflare Workers AI, any OpenAI-compatible endpoint)
+- [x] Desktop app (PyInstaller + pywebview)
+- [x] Android APK (Buildozer / Kivy)
 - [ ] Historical price charts per asset
 - [ ] Multiple watchlists
 
