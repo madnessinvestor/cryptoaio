@@ -749,6 +749,20 @@ const TRANSLATIONS = {
     rpt_div_assets:        "assets",
     rpt_others:            "Others",
     rpt_div_section:       "Portfolio Diversification",
+
+    // report — share (full report)
+    rpt_share_loading:         "Loading data…",
+    rpt_share_doc_title:       "CryptoAIO — Full Report",
+    rpt_share_heading_full:    "Full Portfolio Report",
+    rpt_share_section_wl:      "Watchlist",
+    rpt_share_section_dash:    "Dashboard",
+    rpt_share_section_trade:   "Trade / Portfolio",
+    rpt_share_wl_empty:        "No assets in watchlist.",
+    rpt_share_onchain_wallets: "On-Chain Wallets",
+    rpt_share_trade_empty:     "No portfolio data.",
+    rpt_share_avg_abbr:        "Avg.",
+    rpt_share_cur_abbr:        "Current",
+    rpt_share_dash_empty:      "No dashboard data.",
   }
 };
 
