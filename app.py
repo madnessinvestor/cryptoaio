@@ -2063,7 +2063,15 @@ def _parse_evm_result(tx_from, transfers, tx_data, native_sym, chain_name, times
         _sold_sym     = best_seller[2]
         _buyer_stable = best_buyer[4]
         _seller_stable = best_seller[4]
+        # Exclude cases where the pool "bought" the wrapped version of the native coin
+        # the user sold (e.g. pool buys WETH while user sold ETH natively).
+        # These are the same asset — not a chained multi-hop swap.
+        _wrapped_equiv = (
+            _WRAPPED_TO_NATIVE.get(_bought_sym) == _sold_sym or
+            _WRAPPED_TO_NATIVE.get(_sold_sym)   == _bought_sym
+        )
         if (_bought_sym != _sold_sym
+                and not _wrapped_equiv
                 and _seller_stable > 0 and _buyer_stable > 0):
             _ratio = min(_buyer_stable, _seller_stable) / max(_buyer_stable, _seller_stable)
             if _ratio >= 0.90:
