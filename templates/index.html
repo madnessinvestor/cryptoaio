@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>CryptoAIO</title>
   <link rel="manifest" href="/static/manifest.json" />
-  <link rel="stylesheet" href="/static/style.css?v=20" />
+  <link rel="stylesheet" href="/static/style.css?v=21" />
 </head>
 <body>
   <header>
@@ -280,10 +280,26 @@
       <div class="wgt-card">
         <div class="wgt-card-title" data-i18n="wgt_theme">WIDGET THEME</div>
         <div class="wgt-pills-group" id="wt-theme">
-          <button class="wgt-pill" data-v="dark"  onclick="wSet('theme','dark')"  data-i18n="wgt_theme_dark">Dark</button>
-          <button class="wgt-pill" data-v="light" onclick="wSet('theme','light')" data-i18n="wgt_theme_light">Light</button>
-          <button class="wgt-pill" data-v="auto"  onclick="wSet('theme','auto')"  data-i18n="wgt_theme_auto">Auto</button>
+          <button class="wgt-pill" data-v="dark"        onclick="wSet('theme','dark')"        data-i18n="wgt_theme_dark">Escuro</button>
+          <button class="wgt-pill" data-v="light"       onclick="wSet('theme','light')"       data-i18n="wgt_theme_light">Claro</button>
+          <button class="wgt-pill" data-v="purple-dark" onclick="wSet('theme','purple-dark')" data-i18n="wgt_theme_purple">Purple</button>
+          <button class="wgt-pill" data-v="auto"        onclick="wSet('theme','auto')"        data-i18n="wgt_theme_auto">Auto</button>
+          <button class="wgt-pill wgt-pill-custom" data-v="custom" onclick="wSet('theme','custom')" data-i18n="wgt_theme_custom">🎨 Cor</button>
         </div>
+
+        <!-- Custom color picker — shown only when theme=custom -->
+        <div id="wgt-color-picker-panel" class="wgt-color-picker-panel" style="display:none">
+          <!-- Selected color preview + hex input -->
+          <div class="wgt-cp-preview-row">
+            <div id="wgt-cp-swatch" class="wgt-cp-swatch"></div>
+            <input id="wgt-cp-hex" class="wgt-cp-hex-input" type="text" maxlength="7" placeholder="#0f0f14" />
+          </div>
+          <!-- SB (saturation/brightness) picker canvas -->
+          <canvas id="wgt-cp-sb" class="wgt-cp-sb" width="260" height="160"></canvas>
+          <!-- Hue slider -->
+          <canvas id="wgt-cp-hue" class="wgt-cp-hue" width="260" height="18"></canvas>
+        </div>
+
         <div class="wgt-opacity-row">
           <div class="wgt-opacity-label">Transparência <span id="wt-opacity-val">100%</span></div>
           <input type="range" id="wt-bgOpacity" class="wgt-opacity-slider"
@@ -1045,13 +1061,13 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-  <script src="/static/i18n.js?v=10"></script>
+  <script src="/static/i18n.js?v=11"></script>
   <script src="/static/app.js?v=10"></script>
   <script src="/static/trade.js?v=8"></script>
   <script src="/static/alerts.js?v=3"></script>
   <script src="/static/madai.js?v=11"></script>
   <script src="/static/dashboard.js?v=20"></script>
-  <script src="/static/widget.js?v=8"></script>
+  <script src="/static/widget.js?v=9"></script>
   <script src="/static/gist.js?v=6"></script>
   <script src="/static/backup.js?v=2"></script>
 </body>

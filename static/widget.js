@@ -18,7 +18,8 @@ const WT_DEFAULTS = {
   showTrades:   false,   // show trade positions below watchlist
   // Android / home-screen widget settings
   size:         "sm",    // sm | md | lg
-  theme:        "dark",  // dark | light | auto
+  theme:        "dark",  // dark | light | purple-dark | auto | custom
+  customBg:     "#0f0f14", // hex used when theme=custom
   bgOpacity:    "100",   // 0–100
   refresh:      "15",    // minutes
   showChg:      true,
@@ -172,12 +173,33 @@ function wtApplyUI() {
     if (resolved === "auto") {
       resolved = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     }
-    const isLight = resolved === "light";
-    liveBox.classList.toggle("wgt-live-light", isLight);
+    const isLight    = resolved === "light";
+    const isPurple   = resolved === "purple-dark";
+    const isCustom   = wtCfg.theme === "custom";
     const alpha = (Math.max(0, Math.min(100, parseInt(wtCfg.bgOpacity ?? "100"))) / 100).toFixed(2);
-    liveBox.style.background = isLight
-      ? `rgba(244,244,248,${alpha})`
-      : `rgba(15,15,20,${alpha})`;
+
+    liveBox.classList.toggle("wgt-live-light",  isLight);
+    liveBox.classList.toggle("wgt-live-purple", isPurple);
+
+    if (isCustom) {
+      const hex = wtCfg.customBg || "#0f0f14";
+      const rgb = _cpHexToRgb(hex);
+      liveBox.style.background = rgb ? `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})` : `rgba(15,15,20,${alpha})`;
+    } else if (isLight) {
+      liveBox.style.background = `rgba(244,244,248,${alpha})`;
+    } else if (isPurple) {
+      liveBox.style.background = `rgba(26,10,46,${alpha})`;
+    } else {
+      liveBox.style.background = `rgba(15,15,20,${alpha})`;
+    }
+  }
+
+  // Show/hide custom color picker panel
+  const pickerPanel = document.getElementById("wgt-color-picker-panel");
+  if (pickerPanel) {
+    const show = wtCfg.theme === "custom";
+    pickerPanel.style.display = show ? "flex" : "none";
+    if (show) _cpInit();
   }
 
   // Toggle checkboxes
@@ -325,6 +347,152 @@ function wLoadAssets() {
       msg.textContent = "Could not load assets";
       container.appendChild(msg);
     });
+}
+
+// ── Custom Color Picker ───────────────────────────────────────────────────────
+// HSB color picker: SB canvas + hue slider
+let _cpH = 220, _cpS = 0.7, _cpB = 0.15; // current hue/sat/bri
+let _cpDraggingSB = false, _cpDraggingHue = false;
+
+function _cpHsvToRgb(h, s, v) {
+  const i = Math.floor(h / 60) % 6;
+  const f = h / 60 - Math.floor(h / 60);
+  const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  const m = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i];
+  return { r: Math.round(m[0]*255), g: Math.round(m[1]*255), b: Math.round(m[2]*255) };
+}
+function _cpRgbToHex(r, g, b) {
+  return "#" + [r,g,b].map(x => x.toString(16).padStart(2,"0")).join("");
+}
+function _cpHexToRgb(hex) {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : null;
+}
+function _cpHexToHsb(hex) {
+  const rgb = _cpHexToRgb(hex); if (!rgb) return;
+  const r = rgb.r/255, g = rgb.g/255, b = rgb.b/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d) {
+    if (max===r) h = ((g-b)/d + 6) % 6;
+    else if (max===g) h = (b-r)/d + 2;
+    else h = (r-g)/d + 4;
+    h *= 60;
+  }
+  _cpH = h; _cpS = max ? d/max : 0; _cpB = max;
+}
+
+function _cpDrawSB() {
+  const c = document.getElementById("wgt-cp-sb"); if (!c) return;
+  const ctx = c.getContext("2d"), W = c.width, H = c.height;
+  // Base hue
+  const [hr,hg,hb] = (() => { const {r,g,b}=_cpHsvToRgb(_cpH,1,1); return [r,g,b]; })();
+  ctx.clearRect(0,0,W,H);
+  const gH = ctx.createLinearGradient(0,0,W,0);
+  gH.addColorStop(0, "#fff"); gH.addColorStop(1, `rgb(${hr},${hg},${hb})`);
+  ctx.fillStyle = gH; ctx.fillRect(0,0,W,H);
+  const gV = ctx.createLinearGradient(0,0,0,H);
+  gV.addColorStop(0, "rgba(0,0,0,0)"); gV.addColorStop(1, "#000");
+  ctx.fillStyle = gV; ctx.fillRect(0,0,W,H);
+  // Cursor
+  const cx = _cpS * W, cy = (1 - _cpB) * H;
+  ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI*2);
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
+  ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 1; ctx.stroke();
+}
+
+function _cpDrawHue() {
+  const c = document.getElementById("wgt-cp-hue"); if (!c) return;
+  const ctx = c.getContext("2d"), W = c.width, H = c.height;
+  const g = ctx.createLinearGradient(0,0,W,0);
+  for (let i=0; i<=360; i+=30) g.addColorStop(i/360, `hsl(${i},100%,50%)`);
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // Cursor
+  const cx = (_cpH / 360) * W;
+  ctx.beginPath(); ctx.arc(cx, H/2, H/2 - 1, 0, Math.PI*2);
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, H/2, H/2 - 3, 0, Math.PI*2);
+  ctx.strokeStyle = "rgba(0,0,0,0.4)"; ctx.lineWidth = 1; ctx.stroke();
+}
+
+function _cpApply() {
+  const rgb = _cpHsvToRgb(_cpH, _cpS, _cpB);
+  const hex = _cpRgbToHex(rgb.r, rgb.g, rgb.b);
+  wtCfg.customBg = hex;
+  wtSave(wtCfg);
+  const swatch = document.getElementById("wgt-cp-swatch");
+  const hexIn  = document.getElementById("wgt-cp-hex");
+  if (swatch) swatch.style.background = hex;
+  if (hexIn && document.activeElement !== hexIn) hexIn.value = hex;
+  // Apply to live box immediately
+  const liveBox = document.querySelector(".wgt-live-box");
+  if (liveBox && wtCfg.theme === "custom") {
+    const alpha = (Math.max(0,Math.min(100,parseInt(wtCfg.bgOpacity??"100")))/100).toFixed(2);
+    liveBox.style.background = `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
+  }
+  _cpDrawSB(); _cpDrawHue();
+}
+
+function _cpPosSB(e) {
+  const c = document.getElementById("wgt-cp-sb"); if (!c) return;
+  const r = c.getBoundingClientRect();
+  const px = (e.touches ? e.touches[0].clientX : e.clientX);
+  const py = (e.touches ? e.touches[0].clientY : e.clientY);
+  _cpS = Math.max(0, Math.min(1, (px - r.left) / r.width));
+  _cpB = Math.max(0, Math.min(1, 1 - (py - r.top) / r.height));
+  _cpApply();
+}
+function _cpPosHue(e) {
+  const c = document.getElementById("wgt-cp-hue"); if (!c) return;
+  const r = c.getBoundingClientRect();
+  const px = (e.touches ? e.touches[0].clientX : e.clientX);
+  _cpH = Math.max(0, Math.min(360, ((px - r.left) / r.width) * 360));
+  _cpApply();
+}
+
+function _cpInit() {
+  const sb  = document.getElementById("wgt-cp-sb");
+  const hue = document.getElementById("wgt-cp-hue");
+  if (!sb || !hue || sb._cpBound) return;
+  sb._cpBound = true;
+
+  // Restore saved color
+  if (wtCfg.customBg) _cpHexToHsb(wtCfg.customBg);
+
+  // SB events
+  sb.addEventListener("mousedown",  e => { _cpDraggingSB=true; _cpPosSB(e); e.preventDefault(); });
+  sb.addEventListener("touchstart", e => { _cpDraggingSB=true; _cpPosSB(e); e.preventDefault(); }, {passive:false});
+  // Hue events
+  hue.addEventListener("mousedown",  e => { _cpDraggingHue=true; _cpPosHue(e); e.preventDefault(); });
+  hue.addEventListener("touchstart", e => { _cpDraggingHue=true; _cpPosHue(e); e.preventDefault(); }, {passive:false});
+
+  window.addEventListener("mousemove", e => {
+    if (_cpDraggingSB)  _cpPosSB(e);
+    if (_cpDraggingHue) _cpPosHue(e);
+  });
+  window.addEventListener("touchmove", e => {
+    if (_cpDraggingSB)  { _cpPosSB(e); e.preventDefault(); }
+    if (_cpDraggingHue) { _cpPosHue(e); e.preventDefault(); }
+  }, {passive:false});
+  window.addEventListener("mouseup",  () => { _cpDraggingSB=false; _cpDraggingHue=false; });
+  window.addEventListener("touchend", () => { _cpDraggingSB=false; _cpDraggingHue=false; });
+
+  // Hex input
+  const hexIn = document.getElementById("wgt-cp-hex");
+  if (hexIn) {
+    hexIn.addEventListener("input", () => {
+      const v = hexIn.value.trim();
+      if (/^#[0-9a-f]{6}$/i.test(v)) { _cpHexToHsb(v); _cpApply(); }
+    });
+    hexIn.addEventListener("change", () => {
+      const v = hexIn.value.trim();
+      const full = /^[0-9a-f]{6}$/i.test(v) ? "#"+v : v;
+      if (/^#[0-9a-f]{6}$/i.test(full)) { hexIn.value=full; _cpHexToHsb(full); _cpApply(); }
+    });
+  }
+
+  _cpApply();
 }
 
 // ── Phone mockup status-bar clock ────────────────────────────────────────────

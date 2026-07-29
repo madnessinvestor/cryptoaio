@@ -4452,6 +4452,72 @@ section.hidden { display: none; }
 .wgt-save-btn:active { opacity: 0.78; }
 
 /* ── Live Widget inline (Widget tab) ───────────────────────────────────── */
+/* ── Purple-dark theme for live box ─────────────────────────────────────────── */
+.wgt-live-box.wgt-live-purple {
+  background: #1a0a2e !important;
+}
+.wgt-live-box.wgt-live-purple .wgt-live-header,
+.wgt-live-box.wgt-live-purple .wgt-live-refresh-btn { color: #c084fc; }
+.wgt-live-box.wgt-live-purple .wgt-live-pill-group  { border-color: rgba(192,132,252,0.3); }
+.wgt-live-box.wgt-live-purple .wgt-live-pill        { color: #a855f7; }
+.wgt-live-box.wgt-live-purple .wgt-live-pill.active { background: rgba(168,85,247,0.25); color: #e879f9; }
+.wgt-live-box.wgt-live-purple .wlt-ticker           { color: #e2d9f3; }
+.wgt-live-box.wgt-live-purple .wlt-price            { color: #c4b5fd; }
+
+/* ── Custom color picker panel ───────────────────────────────────────────────── */
+.wgt-color-picker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 0 4px;
+}
+.wgt-cp-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.wgt-cp-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  transition: background 0.15s;
+}
+.wgt-cp-hex-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.85rem;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.wgt-cp-hex-input:focus { border-color: var(--accent); }
+.wgt-cp-sb {
+  width: 100%;
+  height: 160px;
+  border-radius: 10px;
+  cursor: crosshair;
+  display: block;
+  touch-action: none;
+}
+.wgt-cp-hue {
+  width: 100%;
+  height: 18px;
+  border-radius: 9px;
+  cursor: crosshair;
+  display: block;
+  touch-action: none;
+}
+/* "Cor" pill special style */
+.wgt-pill-custom { letter-spacing: 0.01em; }
+.wgt-pill-custom.active { background: linear-gradient(135deg,rgba(255,100,100,0.3),rgba(100,100,255,0.3)); color: #fff; }
+
 .wgt-live-box {
   background: #0f0f14;
   border-radius: 14px;
