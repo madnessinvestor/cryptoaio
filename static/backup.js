@@ -678,18 +678,33 @@ async function shareReport() {
 
   <div class="no-print" style="position:fixed;bottom:20px;right:20px;display:flex;gap:8px">
     <button onclick="window.print()" style="background:#00c27c;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer">${_bgt("rpt_save_pdf")}</button>
-    <button onclick="window.close()" style="background:#eee;color:#555;border:none;border-radius:8px;padding:10px 16px;font-size:13px;cursor:pointer">✕ ${_bgt("rpt_close")}</button>
+    <button onclick="try{window.parent.document.getElementById('share-report-overlay').remove()}catch(e){window.close()}" style="background:#eee;color:#555;border:none;border-radius:8px;padding:10px 16px;font-size:13px;cursor:pointer">✕ ${_bgt("rpt_close")}</button>
   </div>
 </body>
 </html>`;
 
-  const win = window.open("", "_blank");
-  if (!win) {
-    _backupSetStatus("error", _bgt("rpt_allow_popups"));
-    return;
-  }
-  win.document.write(html);
-  win.document.close();
+  // Render report in an in-page fullscreen overlay (avoids popup blockers)
+  const existing = document.getElementById("share-report-overlay");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "share-report-overlay";
+  overlay.style.cssText = [
+    "position:fixed","top:0","left:0","width:100%","height:100%",
+    "background:#fff","z-index:99999","display:flex","flex-direction:column"
+  ].join(";");
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url  = URL.createObjectURL(blob);
+
+  const iframe = document.createElement("iframe");
+  iframe.src = url;
+  iframe.style.cssText = "flex:1;border:none;width:100%;height:100%";
+  iframe.onload = () => URL.revokeObjectURL(url);
+
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
+  _backupSetStatus("", "");
 }
 
 // ─── Factory Reset ────────────────────────────────────────────────────────────
