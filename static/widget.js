@@ -559,7 +559,7 @@ function wltRenderTrades() {
 
   const tokens = wltPortfolioData;
   if (!tokens.length) {
-    section.innerHTML = `<div class="wlt-trade-empty">Sem posições registradas</div>`;
+    section.innerHTML = `<div class="wlt-trade-empty">${t('wgt_no_positions')}</div>`;
     return;
   }
 
