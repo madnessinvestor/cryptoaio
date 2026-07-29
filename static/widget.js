@@ -327,6 +327,14 @@ function wLoadAssets() {
     });
 }
 
+// ── Phone mockup status-bar clock ────────────────────────────────────────────
+function _updatePhoneClock() {
+  const el = document.getElementById("wgt-phone-clock");
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0");
+}
+
 // ── Entry point called by switchTab('widget') ─────────────────────────────────
 function widgetOnEnter() {
   wtCfg = wtLoad();
@@ -334,6 +342,10 @@ function widgetOnEnter() {
   wLoadAssets();
   wltLoad();
   wltScheduleRefresh();
+  _updatePhoneClock();
+  if (!window._phoneClockTimer) {
+    window._phoneClockTimer = setInterval(_updatePhoneClock, 30000);
+  }
 }
 
 function wltScheduleRefresh() {

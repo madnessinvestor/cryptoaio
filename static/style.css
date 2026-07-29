@@ -4173,6 +4173,54 @@ section.hidden { display: none; }
   padding: 4px 2px 0;
 }
 
+/* ── Phone mockup wrapper for AO VIVO ─────────────────────────────────────── */
+.wgt-phone-mockup {
+  background: #1a1a2e;
+  border: 3px solid #2e2e4a;
+  border-radius: 36px;
+  padding: 10px 8px 14px;
+  box-shadow: 0 0 0 1px #0d0d1f, 0 12px 40px rgba(0,0,0,0.6);
+  margin-bottom: 4px;
+  position: relative;
+}
+/* Notch / pill at top */
+.wgt-phone-mockup::before {
+  content: '';
+  display: block;
+  width: 44px;
+  height: 6px;
+  background: #2e2e4a;
+  border-radius: 4px;
+  margin: 0 auto 8px;
+}
+.wgt-phone-screen {
+  background: linear-gradient(145deg, #0a3d2e 0%, #0e5c42 40%, #0d7a54 70%, #0a6644 100%);
+  border-radius: 26px;
+  overflow: hidden;
+  padding: 10px 10px 12px;
+}
+/* Status bar */
+.wgt-phone-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 6px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.75);
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 0.03em;
+}
+.wgt-phone-icons {
+  font-size: 8px;
+  letter-spacing: 2px;
+  opacity: 0.7;
+}
+/* Remove the live-box's own border-radius so it sits flush inside the screen */
+.wgt-phone-screen .wgt-live-box {
+  border-radius: 14px;
+  margin-bottom: 0;
+}
+
 /* Preview box (centered card, no phone frame) */
 .wgt-preview-box {
   display: flex;
