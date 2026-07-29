@@ -1418,7 +1418,7 @@ def create_alert():
         return jsonify({"error": "invalid data"}), 400
     try:
         repeat_interval = int(data.get("repeat_interval", 0))
-        if repeat_interval not in (0, 60, 300, 900, 3600):
+        if repeat_interval not in (0, 60, 300, 900, 1800, 3600):
             repeat_interval = 0
     except (TypeError, ValueError):
         repeat_interval = 0
