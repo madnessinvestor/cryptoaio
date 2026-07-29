@@ -763,6 +763,7 @@ const TRANSLATIONS = {
     rpt_share_avg_abbr:        "Avg.",
     rpt_share_cur_abbr:        "Current",
     rpt_share_dash_empty:      "No dashboard data.",
+    rpt_close:                 "Close",
   }
 };
 
