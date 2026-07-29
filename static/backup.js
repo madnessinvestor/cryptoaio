@@ -735,6 +735,7 @@ async function factoryReset() {
     if (!el) return;
     el.className = "gist-status" + (type === "ok" ? " gist-status-ok" : type === "error" ? " gist-status-error" : "");
     el.textContent = msg;
+    el.style.display = msg ? "" : "none";
   };
 
   setStatus("loading", _bgt("factory_reset_running"));
