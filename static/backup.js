@@ -692,6 +692,48 @@ async function shareReport() {
   win.document.close();
 }
 
+// ─── Factory Reset ────────────────────────────────────────────────────────────
+
+function factoryResetConfirm() {
+  if (!confirm(_bgt("factory_reset_confirm"))) return;
+  factoryReset();
+}
+
+async function factoryReset() {
+  const el = document.getElementById("factory-reset-status");
+  const setStatus = (type, msg) => {
+    if (!el) return;
+    el.className = "gist-status" + (type === "ok" ? " gist-status-ok" : type === "error" ? " gist-status-error" : "");
+    el.textContent = msg;
+  };
+
+  setStatus("loading", _bgt("factory_reset_running"));
+
+  try {
+    // 1. Wipe server-side data files
+    const r = await fetch("/api/data/reset", { method: "POST" });
+    if (!r.ok) throw new Error("server reset failed");
+
+    // 2. Wipe client-side localStorage (Mad AI, Gist, Widget, columns)
+    const keysToRemove = [
+      "madai_keys", "madai_active",
+      "cryptoaio_gist_token", "cryptoaio_gist_id",
+      "trackerColumns",
+    ];
+    // Remove all widget keys (w_*)
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("w_"))
+      .forEach(k => localStorage.removeItem(k));
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    setStatus("ok", _bgt("factory_reset_ok"));
+    setTimeout(() => location.reload(), 1400);
+  } catch (e) {
+    console.error("[factoryReset]", e);
+    setStatus("error", _bgt("factory_reset_err"));
+  }
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function _backupSetStatus(type, msg) {

@@ -5373,6 +5373,16 @@ def data_import():
     return jsonify({"ok": True, "restored": restored})
 
 
+@app.route("/api/data/reset", methods=["POST"])
+def data_reset():
+    """Factory reset — wipe all user data files back to empty lists."""
+    files = [DATA_FILE, PORTFOLIO_FILE, DASH_WALLETS_FILE,
+             DASH_MANUAL_FILE, ALERTS_FILE, DASH_HISTORY_FILE]
+    for path in files:
+        _save_json_file(path, [])
+    return jsonify({"ok": True})
+
+
 _warmup()
 
 if __name__ == "__main__":

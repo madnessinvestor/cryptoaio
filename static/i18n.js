@@ -359,6 +359,14 @@ const TRANSLATIONS = {
     rpt_others:            "Outros",
     rpt_div_section:       "Diversificação do Portfólio",
     // report — share (full report)
+    // report bug / factory reset
+    bug_report_btn:            "🐛 Reportar bug",
+    factory_reset_btn:         "🗑️ Limpar App (Reset de Fábrica)",
+    factory_reset_desc:        "Apaga todos os dados do app: Watchlist, Dashboard, Trade, Alertas e configurações do Mad AI e Widget. Esta ação não pode ser desfeita.",
+    factory_reset_confirm:     "Tem certeza? Todos os seus dados serão apagados permanentemente.",
+    factory_reset_ok:          "✅ App resetado! Recarregando…",
+    factory_reset_err:         "Erro ao resetar. Tente novamente.",
+    factory_reset_running:     "Limpando dados…",
     rpt_share_loading:         "Carregando dados…",
     rpt_share_doc_title:       "CryptoAIO — Relatório Completo",
     rpt_share_heading_full:    "Relatório Completo do Portfolio",
@@ -644,6 +652,14 @@ const TRANSLATIONS = {
     set_subtitle:            "Customize the app",
     set_section_general:     "GENERAL",
     // export / import
+    // report bug / factory reset
+    bug_report_btn:            "🐛 Report a bug",
+    factory_reset_btn:         "🗑️ Clear App (Factory Reset)",
+    factory_reset_desc:        "Erases all app data: Watchlist, Dashboard, Trade, Alerts and Mad AI & Widget settings. This action cannot be undone.",
+    factory_reset_confirm:     "Are you sure? All your data will be permanently deleted.",
+    factory_reset_ok:          "✅ App reset! Reloading…",
+    factory_reset_err:         "Reset failed. Please try again.",
+    factory_reset_running:     "Clearing data…",
     bkp_section:       "EXPORT / IMPORT / SHARE",
     bkp_title:         "Full data backup",
     bkp_desc:          "Exports watchlist, trades, dashboard, alerts and AI settings into a single .json file that can be re-imported on this or another device.",

@@ -542,8 +542,26 @@
         <div id="gist-status" class="gist-status"></div>
       </div>
 
+      <!-- Report Bug -->
+      <div style="text-align:center;padding:8px 0 0">
+        <a href="https://github.com/madnessinvestor/cryptoaio/issues/new"
+           target="_blank" rel="noopener noreferrer"
+           class="factory-link-btn" data-i18n="bug_report_btn">
+          🐛 Reportar bug
+        </a>
+      </div>
+
+      <!-- Factory Reset -->
+      <div style="text-align:center;padding:6px 0 0">
+        <button class="factory-link-btn factory-link-btn--danger"
+                onclick="factoryResetConfirm()" data-i18n="factory_reset_btn">
+          🗑️ Limpar App (Reset de Fábrica)
+        </button>
+        <div id="factory-reset-status" class="gist-status" style="margin-top:6px"></div>
+      </div>
+
       <!-- Privacy Policy -->
-      <div style="text-align:center;padding:12px 0 4px">
+      <div style="text-align:center;padding:10px 0 4px">
         <a href="https://github.com/madnessinvestor/cryptoaio/blob/main/PRIVACY_POLICY.md"
            target="_blank" rel="noopener noreferrer"
            style="font-size:12px;color:var(--text-muted,#888);text-decoration:none;opacity:.75">
