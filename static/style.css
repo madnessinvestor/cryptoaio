@@ -1491,32 +1491,38 @@ main {
 }
 
 .settings-row-label {
-  font-size: 0.84rem;
+  font-size: 0.85rem;
   color: var(--text);
   font-weight: 500;
 }
 
 .settings-toggle-group {
   display: flex;
-  gap: 5px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .settings-toggle-btn {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--muted2);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-right: 1.5px solid var(--border);
   padding: 5px 13px;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.15s;
   line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
 }
+.settings-toggle-btn:last-child { border-right: none; }
 .settings-toggle-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #000;
+  background: rgba(0,230,118,0.18);
+  color: var(--accent);
 }
 .settings-toggle-btn:active { opacity: 0.75; }
 
