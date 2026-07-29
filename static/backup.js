@@ -11,8 +11,9 @@ async function exportAppData() {
 
     // Attach client-side preferences & AI keys
     data.client = {
-      madai_keys:     _bkpParseJSON(localStorage.getItem('madai_keys'),     {}),
-      madai_active:   localStorage.getItem('madai_active')   || '',
+      madai_keys:      _bkpParseJSON(localStorage.getItem('madai_keys'),     {}),
+      madai_active:    localStorage.getItem('madai_active')   || '',
+      madai_autospeak: localStorage.getItem('madai_autospeak') || '0',
       theme:          localStorage.getItem('theme')          || 'dark',
       currency:       localStorage.getItem('currency')       || 'USD',
       language:       localStorage.getItem('lang')           || 'pt',
@@ -83,9 +84,11 @@ async function importAppData(input) {
     // Restore client-side localStorage
     const c = data.client || {};
     if (c.madai_keys && typeof c.madai_keys === 'object')
-      localStorage.setItem('madai_keys',     JSON.stringify(c.madai_keys));
+      localStorage.setItem('madai_keys',      JSON.stringify(c.madai_keys));
     if (c.madai_active !== undefined && c.madai_active !== null)
-      localStorage.setItem('madai_active',   String(c.madai_active));
+      localStorage.setItem('madai_active',    String(c.madai_active));
+    if (c.madai_autospeak !== undefined && c.madai_autospeak !== null)
+      localStorage.setItem('madai_autospeak', String(c.madai_autospeak));
     if (c.theme)
       localStorage.setItem('theme',          c.theme);
     if (c.currency)
@@ -747,7 +750,7 @@ async function factoryReset() {
 
     // 2. Wipe client-side localStorage (Mad AI, Gist, Widget, columns)
     const keysToRemove = [
-      "madai_keys", "madai_active",
+      "madai_keys", "madai_active", "madai_autospeak",
       "cryptoaio_gist_token", "cryptoaio_gist_id",
       "trackerColumns",
     ];
