@@ -268,6 +268,7 @@ const TRANSLATIONS = {
     set_gist_err_popup:      "Popup bloqueado. Permita popups para este site.",
     set_subtitle:            "Personalize o app",
     set_section_general:     "GERAL",
+    set_section_actions:     "AÇÕES",
     // export / import
     bkp_section:       "EXPORTAR / IMPORTAR / COMPARTILHAR",
     bkp_title:         "Backup completo dos dados",
@@ -657,6 +658,7 @@ const TRANSLATIONS = {
     set_gist_err_popup:      "Popup blocked. Allow popups for this site.",
     set_subtitle:            "Customize the app",
     set_section_general:     "GENERAL",
+    set_section_actions:     "ACTIONS",
     // export / import
     // report bug / factory reset
     bug_report_btn:            "🐛 Report a bug",

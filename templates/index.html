@@ -539,17 +539,21 @@
       <!-- Actions card -->
       <div class="wgt-card">
         <div class="wgt-card-title" data-i18n="set_section_actions">AÇÕES</div>
-        <a href="https://github.com/madnessinvestor/cryptoaio/issues/new"
-           target="_blank" rel="noopener noreferrer"
-           class="factory-link-btn" data-i18n="bug_report_btn">
-          🐛 Reportar bug
-        </a>
-        <button class="factory-link-btn factory-link-btn--danger"
-                onclick="factoryResetConfirm()" data-i18n="factory_reset_btn">
-          🗑️ Limpar App (Reset de Fábrica)
-        </button>
-        <div id="factory-reset-status" class="gist-status"></div>
-        <button class="factory-link-btn" onclick="openDonateModal()">❤️ Donate</button>
+        <div class="settings-row" style="border-top:none">
+          <a href="https://github.com/madnessinvestor/cryptoaio/issues/new"
+             target="_blank" rel="noopener noreferrer"
+             class="factory-link-btn" data-i18n="bug_report_btn">🐛 Reportar bug</a>
+        </div>
+        <div class="settings-row">
+          <button class="factory-link-btn factory-link-btn--danger"
+                  onclick="factoryResetConfirm()" data-i18n="factory_reset_btn">
+            🗑️ Limpar App (Reset de Fábrica)
+          </button>
+        </div>
+        <div id="factory-reset-status" class="gist-status" style="margin-top:-6px"></div>
+        <div class="settings-row">
+          <button class="factory-link-btn" onclick="openDonateModal()">❤️ Donate</button>
+        </div>
       </div>
 
       <!-- Privacy Policy -->
