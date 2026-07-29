@@ -764,5 +764,5 @@ function _bkpParseJSON(str, fallback) {
 }
 
 function _bgt(key) {
-  try { return (TRANSLATIONS[currentLang || 'pt'] || {})[key] || key; } catch { return key; }
+  try { return (typeof t === 'function') ? t(key) : ((TRANSLATIONS[currentLang || 'pt'] || {})[key] || key); } catch { return key; }
 }
