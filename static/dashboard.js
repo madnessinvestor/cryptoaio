@@ -174,7 +174,7 @@ function shortAddr(addr) {
   return addr.slice(0, 6) + "…" + addr.slice(-4);
 }
 
-const _CHART_PERIODS = ["1D","1W","1M"];
+const _CHART_PERIODS = ["1D"];
 
 async function loadDashboard() {
   const [wr, mr, hr] = await Promise.all([
@@ -511,8 +511,7 @@ function _sparklineSvg(pts, isPositive) {
 }
 
 function _portfolioHeroHtml(grandTotal) {
-  const PERIODS = ["1D","1W","1M"];
-  const change  = _computeChange(grandTotal, _portfolioPeriod);
+  const change  = _computeChange(grandTotal, "1D");
   const isPos   = change && change.abs >= 0;
   const cls     = !change ? "neu" : (isPos ? "pos" : "neg");
 
@@ -531,11 +530,8 @@ function _portfolioHeroHtml(grandTotal) {
     changeLine = `${pctStr} &bull; ${absSign}${absStr}`;
   }
 
-  // Period buttons
-  const btnHtml = PERIODS.map(p =>
-    `<button class="dash-hero-period-btn${p === _portfolioPeriod ? " active" : ""}"
-      onclick="setPeriod('${p}')">${p}</button>`
-  ).join("");
+  // Period fixed at 24h — no buttons needed
+  const btnHtml = "";
 
   // Sparkline — prefer reconstructed chart data, fall back to snapshots
   const chartPts   = _chartCache[_portfolioPeriod];
@@ -574,7 +570,6 @@ function _portfolioHeroHtml(grandTotal) {
       <div class="dash-hero-value">${fmtDashUsd(grandTotal)}</div>
       ${heroPast}
       <div class="dash-hero-change ${cls}">${changeLine}</div>
-      <div class="dash-hero-periods">${btnHtml}</div>
     </div>
     ${chartHtml}
   </div>`;
