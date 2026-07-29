@@ -226,6 +226,15 @@ Dependencies are installed automatically. Just press **Run**.
 
 ---
 
+## 📝 Changelog
+
+### v2026.07.29
+- **Share report — no more pop-up blocker**: the full report (Watchlist · Dashboard · Trade) now opens in an in-page fullscreen overlay instead of a new browser window, so it works on every browser without needing to allow pop-ups.
+- **Share report — language-aware**: the generated report now respects the app's active language (PT/EN) — Portuguese when the app is set to PT, English when set to EN.
+- **i18n — English translations for Share report**: added all missing EN translations for the Share report (`rpt_share_*` keys, `rpt_close`, and related strings) so no raw key names are ever shown in English mode.
+
+---
+
 ## 📄 License
 
 Distributed under the **MIT** license.
