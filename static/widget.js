@@ -196,11 +196,8 @@ function wtApplyUI() {
     if (el) el.checked = !!wtCfg[key];
   });
 
-  // Asset chips
-  const selected = wtCfg.assets ? wtCfg.assets.split(",").filter(Boolean) : [];
-  document.querySelectorAll(".wgt-asset-chip").forEach(chip => {
-    chip.classList.toggle("active", selected.includes(chip.dataset.sym));
-  });
+  // Asset chips — delegate to _wRefreshChips() so ALL mode is handled correctly
+  _wRefreshChips();
 }
 
 // ── Live preview (wpc card) ────────────────────────────────────────────────────
