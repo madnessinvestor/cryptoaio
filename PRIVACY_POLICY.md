@@ -77,15 +77,6 @@ When using Mad AI:
 - **Voice input** (if used) is transcribed via Groq Whisper (primary) or OpenAI Whisper (fallback): the audio recording is sent to the respective provider's API. The audio is not stored by CryptoAIO.
 - Your AI provider **API key** is stored only in your browser's `localStorage` and is sent directly from your browser to the chosen provider. It is never sent to or stored by the CryptoAIO developer.
 
-### GitHub Gist Sync (Optional)
-
-If you choose to enable data sync via GitHub Gist:
-
-- Your **GitHub Personal Access Token** (with `gist` scope only) is stored in your browser's `localStorage`.
-- The token is sent directly from your browser to [GitHub's API](https://api.github.com) to create or update a **private** Gist under your own GitHub account.
-- CryptoAIO's developer has no access to your Gist or your token.
-- GitHub's privacy policy applies: [docs.github.com/site-policy/privacy-policies](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
-
 ---
 
 ## Log Data
