@@ -224,7 +224,7 @@ html { font-size: 114%; }
   gap: 8px;
 }
 .ai-cfg-card-title {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text);
 }
@@ -1531,7 +1531,7 @@ main {
 }
 
 .settings-row-label {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--text);
   font-weight: 500;
 }
@@ -1572,7 +1572,7 @@ main {
   border: 1.5px solid var(--border);
   border-radius: 10px;
   color: var(--text);
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   padding: 6px 10px;
   cursor: pointer;
   outline: none;
@@ -1617,7 +1617,7 @@ main {
 /* ── Factory-reset / bug-report link buttons ─────────────────── */
 .factory-link-btn {
   display: inline-block;
-  font-size: 12px;
+  font-size: 0.85rem;
   color: var(--text-muted, #888);
   background: none;
   border: none;
