@@ -163,20 +163,20 @@ html { font-size: 114%; }
 .ai-not-cfg-icon {
   font-size: 3rem;
   margin-bottom: 4px;
-  animation: ai-float 3s ease-in-out infinite;
+  animation: ai-breathe 3s ease-in-out infinite;
 }
 .ai-not-cfg-icon svg {
-  width: 64px;
-  height: 64px;
-  padding: 14px;
+  width: 128px;
+  height: 128px;
+  padding: 28px;
   box-sizing: border-box;
-  border-radius: 18px;
+  border-radius: 32px;
   background: rgba(0,230,118,0.1);
   color: var(--accent);
 }
-@keyframes ai-float {
-  0%,100% { transform: translateY(0);   }
-  50%      { transform: translateY(-6px);}
+@keyframes ai-breathe {
+  0%,100% { transform: scale(1);    opacity: 1;    }
+  50%      { transform: scale(1.08); opacity: 0.75; }
 }
 .ai-not-cfg-title {
   font-size: 1rem;
