@@ -193,6 +193,15 @@ async function loadDashboard() {
   renderDashboard();
   // Fetch all periods in parallel (non-blocking)
   _CHART_PERIODS.forEach(p => _fetchChartData(p));
+  // Auto-refresh wallets that have never been loaded (no last_updated)
+  const _unloaded = dashWallets.filter(w => !w.last_updated);
+  if (_unloaded.length > 0) {
+    setTimeout(async () => {
+      for (const w of _unloaded) {
+        await refreshWallet(w.address);
+      }
+    }, 200);
+  }
 }
 
 /** Low-level fetch — assumes period is already in _chartLoading. */
@@ -248,10 +257,8 @@ function renderDashboard() {
 
   let html = "";
 
-  if (grandTotal > 0) {
-    html += _portfolioHeroHtml(grandTotal);
-    html += _diversificationChartHtml(grandTotal);
-  }
+  html += _portfolioHeroHtml(grandTotal);
+  html += _diversificationChartHtml(grandTotal);
 
   // ── Wallets section ────────────────────────────────────────────────────────
   const walletListVisible = _walletListOpen;
@@ -315,7 +322,7 @@ const _PIE_COLORS = [
   "#4dd0e1","#607d8b"
 ];
 
-let _divChartOpen = localStorage.getItem("dashDivOpen") === "true";
+let _divChartOpen = localStorage.getItem("dashDivOpen") !== "false";
 
 function toggleDashFab() {
   const wrap = document.getElementById("dash-fab-wrap");
@@ -562,7 +569,7 @@ function _portfolioHeroHtml(grandTotal) {
   return `<div class="dash-hero">
     <div class="dash-hero-top">
       <div class="dash-hero-header">
-        <span class="dash-hero-title">Portfólio</span>
+        <span class="dash-hero-title">${t("dash_portfolio_title")}</span>
       </div>
       <div class="dash-hero-value">${fmtDashUsd(grandTotal)}</div>
       ${heroPast}
@@ -575,7 +582,32 @@ function _portfolioHeroHtml(grandTotal) {
 
 function _diversificationChartHtml(grandTotal) {
   const items = _buildDivData();
-  if (items.length < 2) return "";
+
+  const _sectionHeader = `<div class="dash-section-header" style="margin-top:28px">
+    <span class="dash-section-title dash-section-title--clickable" onclick="toggleDivChart()">
+      <span class="dash-section-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+        </svg>
+      </span>
+      ${t("rpt_div_title")}
+      <span class="dash-section-chev" id="dash-div-chev">${_divChartOpen ? "▼" : "▶"}</span>
+    </span>
+  </div>`;
+
+  if (items.length < 2) {
+    return _sectionHeader + `
+    <div class="dash-div-body" id="dash-div-body" style="${_divChartOpen ? "" : "display:none"}">
+      <div class="dash-empty" style="margin:0;padding:16px 0">
+        <div class="dash-empty-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+          </svg>
+        </div>
+        <p>${t("dash_div_empty")}</p>
+      </div>
+    </div>`;
+  }
 
   // ── SVG donut ──
   const R = 95, r = 55, GAP = items.length > 1 ? 1.5 : 0;
@@ -610,17 +642,7 @@ function _diversificationChartHtml(grandTotal) {
     </div>`;
   });
 
-  return `<div class="dash-section-header" style="margin-top:28px">
-    <span class="dash-section-title dash-section-title--clickable" onclick="toggleDivChart()">
-      <span class="dash-section-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
-        </svg>
-      </span>
-      ${t("rpt_div_title")}
-      <span class="dash-section-chev" id="dash-div-chev">${_divChartOpen ? "▼" : "▶"}</span>
-    </span>
-  </div>
+  return _sectionHeader + `
   <div class="dash-div-body" id="dash-div-body" style="${_divChartOpen ? "" : "display:none"}">
       <div class="dash-div-inner">
         <svg class="dash-pie-svg" viewBox="-110 -110 220 220" xmlns="http://www.w3.org/2000/svg">
