@@ -710,8 +710,23 @@ async function shareReport() {
 // ─── Factory Reset ────────────────────────────────────────────────────────────
 
 function factoryResetConfirm() {
-  if (!confirm(_bgt("factory_reset_confirm"))) return;
-  factoryReset();
+  const modal = document.getElementById("factory-reset-modal");
+  if (modal) {
+    // refresh translated strings before showing
+    modal.querySelectorAll("[data-i18n]").forEach(el => {
+      el.innerHTML = _bgt(el.getAttribute("data-i18n"));
+    });
+    modal.classList.remove("hidden");
+  } else {
+    // fallback to native confirm if modal not found
+    if (!confirm(_bgt("factory_reset_confirm"))) return;
+    factoryReset();
+  }
+}
+
+function closeFactoryResetModal() {
+  const modal = document.getElementById("factory-reset-modal");
+  if (modal) modal.classList.add("hidden");
 }
 
 async function factoryReset() {

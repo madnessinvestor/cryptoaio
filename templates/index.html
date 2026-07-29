@@ -609,6 +609,23 @@
     </div>
   </div>
 
+  <!-- Factory Reset confirmation modal -->
+  <div id="factory-reset-modal" class="freset-modal hidden" onclick="if(event.target===this)closeFactoryResetModal()">
+    <div class="freset-box">
+      <div class="freset-icon">⚠️</div>
+      <div class="freset-title" data-i18n="freset_title">Limpar App?</div>
+      <p class="freset-warning" data-i18n="freset_warning">Esta ação é <strong>irreversível</strong> e apagará permanentemente todos os seus dados: Watchlist, Dashboard, Trade, Alertas e configurações.</p>
+      <div class="freset-hint-box">
+        <span class="freset-hint-text" data-i18n="freset_export_hint">💡 Recomendamos exportar seus dados antes de continuar.</span>
+        <button class="freset-export-btn" onclick="exportBackup(); closeFactoryResetModal()" data-i18n="freset_export_btn">⬇ Exportar agora</button>
+      </div>
+      <div class="freset-actions">
+        <button class="freset-cancel" onclick="closeFactoryResetModal()" data-i18n="freset_cancel">Cancelar</button>
+        <button class="freset-confirm" onclick="closeFactoryResetModal(); factoryReset()" data-i18n="freset_confirm">🗑️ Sim, apagar tudo</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Refresh toast -->
   <div id="refresh-toast"></div>
 
