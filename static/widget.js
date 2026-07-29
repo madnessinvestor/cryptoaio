@@ -23,7 +23,7 @@ const WT_DEFAULTS = {
   refresh:      "15",    // minutes
   showChg:      true,
   showIcon:     true,
-  assets:       ""       // comma-separated selected symbols (up to 5)
+  assets:       ""       // comma-separated selected symbols
 };
 
 function wtLoad() {
@@ -62,14 +62,14 @@ function wToggle(key) {
   wltRender();
 }
 
-// Toggle an asset chip on/off (max 5 selected)
+// Toggle an asset chip on/off
 function wToggleAsset(sym) {
   const selected = wtCfg.assets ? wtCfg.assets.split(",").filter(Boolean) : [];
   const idx = selected.indexOf(sym);
   if (idx >= 0) {
     selected.splice(idx, 1);
   } else {
-    if (selected.length >= 5) return;
+
     selected.push(sym);
   }
   wtCfg.assets = selected.join(",");
