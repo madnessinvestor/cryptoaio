@@ -4232,6 +4232,13 @@ section.hidden { display: none; }
   background: rgba(0,230,118,0.1);
   border-color: var(--accent);
 }
+.wgt-asset-chip-all {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.wgt-asset-chip-all.active {
+  background: rgba(0,230,118,0.18);
+}
 .wgt-asset-chip:active { opacity: 0.7; }
 .wgt-asset-empty {
   font-size: 0.75rem;

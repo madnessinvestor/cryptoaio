@@ -62,22 +62,48 @@ function wToggle(key) {
   wltRender();
 }
 
-// Toggle an asset chip on/off
-function wToggleAsset(sym) {
-  const selected = wtCfg.assets ? wtCfg.assets.split(",").filter(Boolean) : [];
-  const idx = selected.indexOf(sym);
-  if (idx >= 0) {
-    selected.splice(idx, 1);
-  } else {
+// Select all assets (ALL chip)
+function wToggleAllAssets() {
+  wtCfg.assets = "";
+  wtSave(wtCfg);
+  _wRefreshChips();
+  wltRender();
+}
 
-    selected.push(sym);
+// Toggle an individual asset chip on/off
+function wToggleAsset(sym) {
+  const allMode = !wtCfg.assets;
+  // Get full symbol list from chips (to build explicit list when exiting ALL mode)
+  const allSyms = [...document.querySelectorAll(".wgt-asset-chip[data-sym]")]
+    .map(c => c.dataset.sym);
+
+  let selected;
+  if (allMode) {
+    // Exit ALL mode: keep everything except this one
+    selected = allSyms.filter(s => s !== sym);
+  } else {
+    selected = wtCfg.assets.split(",").filter(Boolean);
+    const idx = selected.indexOf(sym);
+    if (idx >= 0) selected.splice(idx, 1);
+    else selected.push(sym);
+    // If user re-selected everything manually, snap back to ALL mode
+    if (selected.length >= allSyms.length) selected = [];
   }
   wtCfg.assets = selected.join(",");
   wtSave(wtCfg);
-  document.querySelectorAll(".wgt-asset-chip").forEach(chip => {
-    chip.classList.toggle("active", selected.includes(chip.dataset.sym));
-  });
+  _wRefreshChips();
   wltRender();
+}
+
+// Refresh chip active states without rebuilding DOM
+function _wRefreshChips() {
+  const allMode  = !wtCfg.assets;
+  const selected = allMode ? [] : wtCfg.assets.split(",").filter(Boolean);
+  const allChip  = document.querySelector(".wgt-asset-chip-all");
+  if (allChip) allChip.classList.toggle("active", allMode);
+  document.querySelectorAll(".wgt-asset-chip[data-sym]").forEach(chip => {
+    chip.classList.toggle("active", allMode || selected.includes(chip.dataset.sym));
+  });
 }
 
 // Save button feedback
@@ -254,7 +280,8 @@ function wLoadAssets() {
     .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(data => {
       const assets   = Array.isArray(data) ? data : (data.assets || []);
-      const selected = wtCfg.assets ? wtCfg.assets.split(",").filter(Boolean) : [];
+      const allMode  = !wtCfg.assets;
+      const selected = allMode ? [] : wtCfg.assets.split(",").filter(Boolean);
 
       while (container.firstChild) container.removeChild(container.firstChild);
 
@@ -266,11 +293,18 @@ function wLoadAssets() {
         return;
       }
 
+      // ALL chip
+      const allBtn = document.createElement("button");
+      allBtn.className  = "wgt-asset-chip wgt-asset-chip-all" + (allMode ? " active" : "");
+      allBtn.textContent = t("wgt_all_assets");
+      allBtn.addEventListener("click", wToggleAllAssets);
+      container.appendChild(allBtn);
+
       assets.forEach(a => {
         const sym = wtSanitiseSym(a.symbol || a.ticker || a.id || String(a));
         if (!sym) return;
         const btn = document.createElement("button");
-        btn.className  = "wgt-asset-chip" + (selected.includes(sym) ? " active" : "");
+        btn.className   = "wgt-asset-chip" + (allMode || selected.includes(sym) ? " active" : "");
         btn.dataset.sym = sym;
         btn.textContent = sym;
         btn.addEventListener("click", () => wToggleAsset(sym));
