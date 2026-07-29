@@ -295,7 +295,7 @@ function wLoadAssets() {
       if (!assets.length) {
         const msg = document.createElement("span");
         msg.className   = "wgt-asset-empty";
-        msg.textContent = "No assets in Watchlist yet";
+        msg.textContent = "Nenhum ativo na Watchlist ainda";
         container.appendChild(msg);
         return;
       }
