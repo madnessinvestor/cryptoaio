@@ -25,6 +25,21 @@
     --muted:  #888;
   }
 
+  [data-theme="purple-dark"] {
+    --accent: #c084fc;
+    --bg:     #1a0a2e;
+    --surf:   #2a1040;
+    --border: rgba(192,132,252,0.20);
+    --text:   #e2d9f3;
+    --muted:  #a78bca;
+  }
+  [data-theme="purple-dark"] .pos { color: #c084fc; }
+  [data-theme="purple-dark"] .pill.active {
+    background: rgba(168,85,247,0.25);
+    color: #e879f9;
+  }
+  [data-theme="purple-dark"] .wt-trades-divider { background: rgba(192,132,252,0.20); }
+
   html {
     background: transparent !important;
   }
@@ -419,6 +434,12 @@
     </div>`;
   }
 
+  // ── Helpers ─────────────────────────────────────────────────
+  function hexToRgb(hex) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+    return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : null;
+  }
+
   // ── Theme ───────────────────────────────────────────────────
   function applyTheme(theme) {
     let resolved = theme;
@@ -434,14 +455,21 @@
 
     applyTheme(cfg.theme || "dark");
 
-    // Background opacity
+    // Background opacity — handle all themes
     const opacity = Math.min(100, Math.max(0, parseInt(cfg.bgOpacity ?? "100", 10))) / 100;
+    let bgRgb = "15,15,20"; // dark default
+    const resolvedTheme = document.documentElement.getAttribute("data-theme");
+    if (resolvedTheme === "light") {
+      bgRgb = "244,244,248";
+    } else if (resolvedTheme === "purple-dark") {
+      bgRgb = "26,10,46";
+    } else if (cfg.theme === "custom") {
+      const hex = localStorage.getItem("w_customBg") || "#0f0f14";
+      const rgb = hexToRgb(hex);
+      if (rgb) bgRgb = `${rgb.r},${rgb.g},${rgb.b}`;
+    }
     document.querySelector(".widget").style.backgroundColor =
-      opacity === 0 ? "transparent" : `rgba(${
-        document.documentElement.getAttribute("data-theme") === "light"
-          ? "244,244,244"
-          : "15,15,20"
-      },${opacity})`;
+      opacity === 0 ? "transparent" : `rgba(${bgRgb},${opacity})`;
 
     const fs = FS_MAP[cfg.fontSize] || "12px";
     document.getElementById("widget-cols").style.setProperty("font-size", fs);
