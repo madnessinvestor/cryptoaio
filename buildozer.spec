@@ -11,10 +11,10 @@ entrypoint = android_main.py
 
 # Requirements
 # flask and its deps are pure-python — p4a handles them automatically
-requirements = python3,kivy,flask,werkzeug,jinja2,itsdangerous,click,blinker,requests,urllib3
+requirements = python3,kivy,flask,werkzeug,jinja2,itsdangerous,click,blinker,requests,urllib3,plyer
 
 # Android config
-android.permissions = INTERNET
+android.permissions = INTERNET,POST_NOTIFICATIONS,VIBRATE,WAKE_LOCK
 android.api         = 33
 android.minapi      = 26
 android.ndk         = 25b

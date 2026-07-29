@@ -3,12 +3,17 @@ CryptoAIO — Android Launcher (Buildozer / python-for-android)
 
 Starts the Flask server on localhost:5000 then shows it inside an Android
 WebView using Kivy.  Requires python-for-android with the 'webview' recipe.
+
+Background alert checker: runs every 30 s, fetches prices from the local
+Flask API, and fires native Android notifications via plyer when a price
+alert triggers.
 """
 
 import threading
 import time
 import os
 import sys
+import json
 
 # ── Kivy must be imported before anything else on Android ────────────────────
 from kivy.app import App
@@ -21,13 +26,13 @@ PORT = 5000
 SERVER_READY = threading.Event()
 
 
+# ── Flask server ──────────────────────────────────────────────────────────────
+
 def _start_flask():
     try:
-        # On Android the app runs from /data/user/0/.../files/
         app_root = os.path.dirname(os.path.abspath(__file__))
         sys.path.insert(0, app_root)
 
-        # Ensure writable dirs exist
         for d in ["static/icons/tokens"]:
             os.makedirs(os.path.join(app_root, d), exist_ok=True)
 
@@ -37,6 +42,144 @@ def _start_flask():
     except Exception as e:
         print(f"Flask error: {e}")
 
+
+# ── Background alert checker ──────────────────────────────────────────────────
+
+def _alert_checker():
+    """
+    Runs in a daemon thread.
+    Every 30 s: fetches alerts + asset prices from the local Flask API,
+    fires plyer native notifications when a price target is hit, and calls
+    the trigger endpoint so the in-app state stays consistent.
+    Works while the app is open OR running in the Android background.
+    """
+    import urllib.request
+
+    BASE = f"http://127.0.0.1:{PORT}"
+
+    # Wait until Flask is up
+    SERVER_READY.wait(timeout=60)
+    time.sleep(3)  # extra buffer for Flask to fully initialise
+
+    # Track locally which one-time alerts already fired this session
+    # (server marks them triggered too, but we avoid double-firing)
+    _local_fired = set()
+
+    def _fetch(path):
+        try:
+            with urllib.request.urlopen(f"{BASE}{path}", timeout=6) as r:
+                return json.loads(r.read())
+        except Exception:
+            return None
+
+    def _post(path):
+        try:
+            req = urllib.request.Request(f"{BASE}{path}", method="POST",
+                                          data=b"", headers={"Content-Length": "0"})
+            urllib.request.urlopen(req, timeout=6)
+        except Exception:
+            pass
+
+    def _notify(title, message):
+        """Fire a native notification — Android (plyer) only."""
+        if platform != "android":
+            return
+        try:
+            from plyer import notification
+            notification.notify(
+                title=title,
+                message=message,
+                app_name="CryptoAIO",
+                app_icon="",   # plyer uses default app icon on Android
+                timeout=10,
+            )
+        except Exception as e:
+            print(f"[AlertChecker] notify error: {e}")
+
+    def _fmt_price(p):
+        if p is None:
+            return "—"
+        if p >= 10000:
+            return f"${p:,.0f}"
+        if p >= 1:
+            return f"${p:,.2f}"
+        if p >= 0.01:
+            return f"${p:.4f}"
+        return f"${p:.6f}"
+
+    print("[AlertChecker] started")
+
+    while True:
+        try:
+            alerts = _fetch("/api/alerts")
+            assets = _fetch("/api/assets")
+
+            if alerts and assets:
+                price_map = {
+                    a.get("symbol", "").upper(): a.get("price")
+                    for a in assets
+                    if a.get("price") is not None
+                }
+
+                now = time.time()
+
+                for alert in alerts:
+                    # Skip already-triggered one-time alerts
+                    if alert.get("triggered"):
+                        continue
+
+                    ticker    = (alert.get("ticker") or "").upper()
+                    target    = float(alert.get("target") or 0)
+                    direction = alert.get("direction", "above")
+                    alert_id  = alert.get("id")
+                    repeat    = int(alert.get("repeat_interval") or 0)
+
+                    price = price_map.get(ticker)
+                    if price is None:
+                        continue
+
+                    fired = (
+                        (direction == "above" and price >= target) or
+                        (direction == "below" and price <= target)
+                    )
+                    if not fired:
+                        continue
+
+                    # One-time: skip if already fired this session
+                    if repeat == 0 and alert_id in _local_fired:
+                        continue
+
+                    # Repeating: check last_fired_at from server payload
+                    if repeat > 0:
+                        last_fired_at = float(alert.get("last_fired_at") or 0)
+                        if now - last_fired_at < repeat:
+                            continue
+
+                    # Mark locally
+                    if repeat == 0:
+                        _local_fired.add(alert_id)
+
+                    # Tell the server
+                    _post(f"/api/alerts/{alert_id}/trigger")
+
+                    # Build notification
+                    arrow   = "▲" if direction == "above" else "▼"
+                    title   = f"CryptoAIO {arrow} {ticker}"
+                    message = (
+                        f"{ticker} atingiu {_fmt_price(price)}"
+                        f" — Alvo: {_fmt_price(target)}"
+                    )
+
+                    _notify(title, message)
+                    print(f"[AlertChecker] fired: {title} | {message}")
+
+        except Exception as e:
+            print(f"[AlertChecker] loop error: {e}")
+
+        time.sleep(30)
+
+
+# ── Kivy App ──────────────────────────────────────────────────────────────────
 
 class CryptoAIOApp(App):
     def build(self):
@@ -50,9 +193,13 @@ class CryptoAIOApp(App):
         )
         self.layout.add_widget(self.label)
 
-        # Start Flask server in background
+        # Start Flask server
         t = threading.Thread(target=_start_flask, daemon=True)
         t.start()
+
+        # Start background alert checker
+        a = threading.Thread(target=_alert_checker, daemon=True)
+        a.start()
 
         # Poll until server is ready, then load WebView
         Clock.schedule_interval(self._check_server, 0.5)
@@ -61,7 +208,6 @@ class CryptoAIOApp(App):
     def _check_server(self, dt):
         if not SERVER_READY.is_set():
             return
-
         Clock.unschedule(self._check_server)
         self._open_webview()
 
@@ -69,6 +215,9 @@ class CryptoAIOApp(App):
         url = f"http://127.0.0.1:{PORT}"
 
         if platform == "android":
+            # Request POST_NOTIFICATIONS permission (Android 13+)
+            _request_notification_permission()
+
             try:
                 from kivy.uix.webview import WebView
                 wv = WebView(url=url)
@@ -82,9 +231,9 @@ class CryptoAIOApp(App):
             try:
                 from android import mActivity  # noqa: F401
                 from jnius import autoclass
-                Intent   = autoclass("android.content.Intent")
-                Uri      = autoclass("android.net.Uri")
-                intent   = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                Intent = autoclass("android.content.Intent")
+                Uri    = autoclass("android.net.Uri")
+                intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 mActivity.startActivity(intent)
             except Exception as e:
                 self.label.text = f"Open browser:\n{url}\n\n{e}"
@@ -92,6 +241,15 @@ class CryptoAIOApp(App):
             import webbrowser
             webbrowser.open(url)
             self.label.text = f"Running at\n{url}"
+
+
+def _request_notification_permission():
+    """Ask for POST_NOTIFICATIONS at runtime (required on Android 13 / API 33+)."""
+    try:
+        from android.permissions import request_permissions, Permission
+        request_permissions([Permission.POST_NOTIFICATIONS])
+    except Exception:
+        pass  # Older Android versions don't need this
 
 
 if __name__ == "__main__":
