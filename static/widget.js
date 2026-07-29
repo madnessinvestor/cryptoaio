@@ -654,12 +654,12 @@ async function wltLoad() {
     const hh  = now.getHours().toString().padStart(2, "0");
     const mm  = now.getMinutes().toString().padStart(2, "0");
     const txt = document.getElementById("wlt-text");
-    if (txt) txt.textContent = "Atualizado às " + hh + ":" + mm;
+    if (txt) txt.textContent = t("refreshed_at") + " " + hh + ":" + mm;
 
     wltRender();
   } catch(e) {
     const txt = document.getElementById("wlt-text");
-    if (txt) txt.textContent = "Erro ao carregar";
+    if (txt) txt.textContent = t("error_load");
   }
 }
 
