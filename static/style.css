@@ -1865,6 +1865,17 @@ section.hidden { display: none; }
 
 /* ─── Portfolio card (watchlist style) ───────────────────────────────────────── */
 /* inherits rounded style from .asset-card */
+.portfolio-card { padding: 11px 12px; }
+.portfolio-card .asset-cur-price {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 2px;
+}
+.portfolio-card .asset-source:not(.asset-cur-price) {
+  font-size: 0.72rem;
+  margin-top: 2px;
+}
 
 /* ─── Portfolio card details (expanded) ──────────────────────────────────────── */
 .portfolio-details {
