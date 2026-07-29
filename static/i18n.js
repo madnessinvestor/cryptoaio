@@ -394,6 +394,7 @@ const TRANSLATIONS = {
     rpt_share_cur_abbr:        "Atual",
     rpt_close:                 "Fechar",
     rpt_share_dash_empty:      "Nenhum dado no dashboard.",
+    donate_sub:                "Se o CryptoAIO te ajuda, considere apoiar o projeto!",
   },
   en: {
     btn_add:          "Add",
@@ -786,6 +787,7 @@ const TRANSLATIONS = {
     rpt_share_cur_abbr:        "Current",
     rpt_share_dash_empty:      "No dashboard data.",
     rpt_close:                 "Close",
+    donate_sub:                "If CryptoAIO helps you, consider supporting the project!",
   }
 };
 
