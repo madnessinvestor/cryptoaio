@@ -228,6 +228,10 @@ Dependencies are installed automatically. Just press **Run**.
 
 ## 📝 Changelog
 
+### v2026.07.29 (rev2)
+- **Mad AI icon redesign**: replaced the sparkle/star icon with a robot head (antenna, eyes, mouth) across all three locations — navigation bar, section header, and the "not configured" empty state card.
+- **Mad AI empty-state icon**: the robot icon on the "not configured" card is now 128 px (2× larger) and has a **breathing animation** (smooth scale pulse).
+
 ### v2026.07.29
 - **Share report — no more pop-up blocker**: the full report (Watchlist · Dashboard · Trade) now opens in an in-page fullscreen overlay instead of a new browser window, so it works on every browser without needing to allow pop-ups.
 - **Share report — language-aware**: the generated report now respects the app's active language (PT/EN) — Portuguese when the app is set to PT, English when set to EN.
