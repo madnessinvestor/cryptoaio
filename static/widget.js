@@ -62,9 +62,19 @@ function wToggle(key) {
   wltRender();
 }
 
-// Select all assets (ALL chip)
+// Toggle all assets on/off (ALL chip)
 function wToggleAllAssets() {
-  wtCfg.assets = "";
+  const allMode = !wtCfg.assets;
+  if (allMode) {
+    // Currently ALL → deselect everything
+    const allSyms = [...document.querySelectorAll(".wgt-asset-chip[data-sym]")]
+      .map(c => c.dataset.sym);
+    // Store all syms but mark none active by using a sentinel that matches nothing
+    wtCfg.assets = allSyms.length ? "__none__" : "";
+  } else {
+    // Not ALL → activate all
+    wtCfg.assets = "";
+  }
   wtSave(wtCfg);
   _wRefreshChips();
   wltRender();
@@ -73,7 +83,6 @@ function wToggleAllAssets() {
 // Toggle an individual asset chip on/off
 function wToggleAsset(sym) {
   const allMode = !wtCfg.assets;
-  // Get full symbol list from chips (to build explicit list when exiting ALL mode)
   const allSyms = [...document.querySelectorAll(".wgt-asset-chip[data-sym]")]
     .map(c => c.dataset.sym);
 
@@ -82,7 +91,8 @@ function wToggleAsset(sym) {
     // Exit ALL mode: keep everything except this one
     selected = allSyms.filter(s => s !== sym);
   } else {
-    selected = wtCfg.assets.split(",").filter(Boolean);
+    // Filter out sentinel before working with the list
+    selected = wtCfg.assets.split(",").filter(s => s && s !== "__none__");
     const idx = selected.indexOf(sym);
     if (idx >= 0) selected.splice(idx, 1);
     else selected.push(sym);
