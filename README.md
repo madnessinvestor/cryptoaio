@@ -100,22 +100,6 @@ A standalone ticker widget (`/widget`) that can be embedded in any page.
 
 ---
 
-### ☁️ GitHub Gist Sync
-Sync your data automatically across devices (desktop app, APK, and web) using a private GitHub Gist — no server, no account beyond GitHub.
-
-- **Auto-sync**: every change to Watchlist, Trades, or Dashboard is uploaded to your Gist automatically (3 s debounce)
-- **Restore**: pull your data onto any new device in one click
-- Each user connects their **own** GitHub token — data is fully private and isolated
-- Token stored only in `localStorage` — never sent to any server other than GitHub
-
-#### Setup
-1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**
-2. Generate a token with only the **`gist`** scope
-3. Open the app → **Config** tab → paste token → **Save**
-4. Click **☁️ Backup** once to create the Gist — from then on, everything is automatic
-
----
-
 ### 📱 Progressive Web App (PWA)
 Install CryptoAIO directly on your home screen on Android, iPhone, Windows, macOS or Linux.
 - Offline shell
@@ -202,8 +186,8 @@ cryptoaio/
 ### Installation
 
 ```bash
-git clone https://github.com/madnessinvestor/madtrack.git
-cd madtrack
+git clone https://github.com/madnessinvestor/cryptoaio
+cd cryptoaio
 pip install -r requirements.txt
 python app.py
 ```
