@@ -547,21 +547,21 @@ function _portfolioHeroHtml(grandTotal) {
   } else if (_chartLoading.has(_portfolioPeriod)) {
     chartHtml = `<div class="dash-hero-no-data" style="opacity:.55">
       <span style="display:inline-block;animation:spin 1s linear infinite;margin-right:6px">⟳</span>
-      Carregando histórico…</div>`;
+      ${t('dash_chart_loading')}</div>`;
   } else {
     const hint = _portfolioPeriod === "1D"
-      ? "Histórico acumulando — dados disponíveis após 1h"
-      : "Sem dados para este período ainda";
+      ? t('dash_chart_accumulating')
+      : t('dash_chart_no_data');
     chartHtml = `<div class="dash-hero-no-data">${hint}</div>`;
   }
 
   // Historical value at start of the selected period
-  const periodLabel = { "1D": "24h", "1W": "7 dias", "1M": "30 dias" }[_portfolioPeriod] || _portfolioPeriod;
+  const periodLabel = { "1D": t('dash_period_1D'), "1W": t('dash_period_1W'), "1M": t('dash_period_1M') }[_portfolioPeriod] || _portfolioPeriod;
   let heroPast;
   if (chartPts && chartPts.length >= 2) {
-    heroPast = `<div class="dash-hero-past">há ${periodLabel}: <strong>${fmtDashUsd(chartPts[0].v)}</strong></div>`;
+    heroPast = `<div class="dash-hero-past">${t('dash_hero_past_label', periodLabel)} <strong>${fmtDashUsd(chartPts[0].v)}</strong></div>`;
   } else if (_chartLoading.has(_portfolioPeriod)) {
-    heroPast = `<div class="dash-hero-past">há ${periodLabel}: <span class="dash-hero-val-loading">⟳</span></div>`;
+    heroPast = `<div class="dash-hero-past">${t('dash_hero_past_label', periodLabel)} <span class="dash-hero-val-loading">⟳</span></div>`;
   } else {
     heroPast = "";
   }

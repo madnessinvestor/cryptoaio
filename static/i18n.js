@@ -395,6 +395,14 @@ const TRANSLATIONS = {
     rpt_close:                 "Fechar",
     rpt_share_dash_empty:      "Nenhum dado no dashboard.",
     donate_sub:                "Se o CryptoAIO te ajuda, considere apoiar o projeto!",
+    // dashboard chart / history
+    dash_chart_loading:        "Carregando histórico…",
+    dash_chart_accumulating:   "Histórico acumulando — dados disponíveis após 1h",
+    dash_chart_no_data:        "Sem dados para este período ainda",
+    dash_period_1D:            "24h",
+    dash_period_1W:            "7 dias",
+    dash_period_1M:            "30 dias",
+    dash_hero_past_label:      (lbl) => `há ${lbl}:`,
   },
   en: {
     btn_add:          "Add",
@@ -788,6 +796,14 @@ const TRANSLATIONS = {
     rpt_share_dash_empty:      "No dashboard data.",
     rpt_close:                 "Close",
     donate_sub:                "If CryptoAIO helps you, consider supporting the project!",
+    // dashboard chart / history
+    dash_chart_loading:        "Loading history…",
+    dash_chart_accumulating:   "History accumulating — data available after 1h",
+    dash_chart_no_data:        "No data for this period yet",
+    dash_period_1D:            "24h",
+    dash_period_1W:            "7 days",
+    dash_period_1M:            "30 days",
+    dash_hero_past_label:      (lbl) => `${lbl} ago:`,
   }
 };
 
