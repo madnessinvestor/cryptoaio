@@ -4231,12 +4231,6 @@ section.hidden { display: none; }
 [data-theme="light"] .wgt-phone-mockup::before {
   background: #c8c8d0;
 }
-[data-theme="light"] .wgt-phone-screen {
-  background: linear-gradient(145deg, #e8eaf0 0%, #f0f2f8 40%, #ffffff 70%, #eef0f6 100%);
-}
-[data-theme="light"] .wgt-phone-statusbar {
-  color: rgba(0,0,0,0.55);
-}
 
 /* Preview box (centered card, no phone frame) */
 .wgt-preview-box {
