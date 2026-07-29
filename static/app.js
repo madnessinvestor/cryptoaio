@@ -173,6 +173,9 @@ function refreshAll() {
   // Trigger real price refresh for dashboard wallets + manual assets
   if (typeof refreshAllWallets  === "function") refreshAllWallets();
   else if (typeof loadDashboard === "function") loadDashboard();
+  // Refresh widget live data + phone clock if widget tab is active
+  if (typeof wltLoad             === "function") wltLoad();
+  if (typeof _updatePhoneClock   === "function") _updatePhoneClock();
 }
 
 function showRefreshToast() {
