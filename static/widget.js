@@ -16,6 +16,7 @@ const WT_DEFAULTS = {
   showRefresh:  false,
   showControls: true,
   showTrades:   false,   // show trade positions below watchlist
+  showAlerts:   false,   // show price alerts below watchlist
   // Android / home-screen widget settings
   size:         "sm",    // sm | md | lg
   theme:        "dark",  // dark | light | purple-dark | auto | custom
@@ -213,6 +214,7 @@ function wtApplyUI() {
     ["wt-showRefresh",  "showRefresh"],
     ["wt-showControls", "showControls"],
     ["wt-showTrades",   "showTrades"],
+    ["wt-showAlerts",   "showAlerts"],
   ].forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (el) el.checked = !!wtCfg[key];
@@ -707,6 +709,7 @@ function wltRender() {
   });
 
   wltRenderTrades();
+  wltRenderAlerts();
 }
 
 // ── 2-row-per-asset renderer ──────────────────────────────────────────────────
@@ -851,6 +854,60 @@ function wltRenderTrades() {
       <div class="wlt-trade-bot">
         <span class="wlt-trade-qty">${wltEsc(qtyStr)}</span>
         <span class="wlt-trade-pnl-pct ${pnlCls}">${wltEsc(pnlPctStr)}</span>
+      </div>
+    </div>`;
+  });
+
+  section.innerHTML = rows.join("");
+}
+
+// ── Alerts section renderer ───────────────────────────────────────────────────
+function wltRenderAlerts() {
+  const divider = document.getElementById("wlt-alerts-divider");
+  const section = document.getElementById("wlt-alerts");
+  if (!divider || !section) return;
+
+  if (!wtCfg.showAlerts) {
+    divider.style.display = "none";
+    section.style.display = "none";
+    return;
+  }
+
+  divider.style.display = "";
+  section.style.display = "";
+
+  const fs = WLT_FS_MAP[wtCfg.fontSize] || "12px";
+  const fw = wtCfg.bold ? "font-weight:700;" : "";
+
+  // Collect only active (non-triggered) alerts
+  const entries = [];
+  for (const [ticker, alerts] of Object.entries(wltAlertMap)) {
+    const active = alerts.filter(al => !al.triggered);
+    for (const al of active) {
+      const dirLabel = al.direction === "above" ? "▲" : "▼";
+      const ccyRate  = wltCcyRate();
+      const ccySym   = wtCfg.showCcy ? (WLT_CCY_SYM[wtCfg.ccy] || "$") : "";
+      const target   = al.target * ccyRate;
+      const tgtStr   = target >= 1000
+        ? ccySym + target.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
+        : target >= 1 ? ccySym + target.toFixed(2)
+        : target >= 0.0001 ? ccySym + target.toFixed(4)
+        : ccySym + target.toPrecision(3);
+      entries.push({ ticker, dirLabel, tgtStr, dir: al.direction });
+    }
+  }
+
+  if (!entries.length) {
+    section.innerHTML = `<div class="wlt-trade-empty">${t('wgt_no_alerts')}</div>`;
+    return;
+  }
+
+  const rows = entries.map(e => {
+    const cls = e.dir === "above" ? "wlt-pos" : "wlt-neg";
+    return `<div class="wlt-trade-item" style="font-size:${fs}">
+      <div class="wlt-trade-top">
+        <span class="wlt-trade-ticker" style="${fw}">${wltEsc(e.ticker)}</span>
+        <span class="wlt-trade-val ${cls}" style="${fw}">${wltEsc(e.dirLabel)} ${wltEsc(e.tgtStr)}</span>
       </div>
     </div>`;
   });

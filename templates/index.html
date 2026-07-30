@@ -220,6 +220,9 @@
         <!-- Trades section (shown when showTrades is enabled) -->
         <div class="wlt-trades-divider" id="wlt-trades-divider" style="display:none"></div>
         <div class="wlt-trades-section" id="wlt-trades" style="display:none"></div>
+        <!-- Alerts section (shown when showAlerts is enabled) -->
+        <div class="wlt-trades-divider" id="wlt-alerts-divider" style="display:none"></div>
+        <div class="wlt-trades-section" id="wlt-alerts" style="display:none"></div>
       </div>
         </div><!-- /wgt-phone-screen -->
       </div><!-- /wgt-phone-mockup -->
@@ -386,10 +389,17 @@
           <span class="wgt-slider"></span>
         </label>
       </div>
-      <div class="wgt-toggle-row wgt-toggle-last" onclick="wToggle('showTrades')">
+      <div class="wgt-toggle-row" onclick="wToggle('showTrades')">
         <span class="wgt-toggle-label" data-i18n="wgt_show_trades">Mostrar posições (Trade)</span>
         <label class="wgt-switch" onclick="event.stopPropagation()">
           <input type="checkbox" id="wt-showTrades" onchange="wToggle('showTrades')">
+          <span class="wgt-slider"></span>
+        </label>
+      </div>
+      <div class="wgt-toggle-row wgt-toggle-last" onclick="wToggle('showAlerts')">
+        <span class="wgt-toggle-label" data-i18n="wgt_show_alerts">Mostrar alertas de preço</span>
+        <label class="wgt-switch" onclick="event.stopPropagation()">
+          <input type="checkbox" id="wt-showAlerts" onchange="wToggle('showAlerts')">
           <span class="wgt-slider"></span>
         </label>
       </div>
