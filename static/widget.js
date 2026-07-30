@@ -748,14 +748,14 @@ function wltAsset2RowHtml(a, fs) {
       const ccyRate2 = wltCcyRate();
       const ccySym2  = wtCfg.showCcy ? (WLT_CCY_SYM[wtCfg.ccy] || "$") : "";
       alertRows = activeAlerts.map(al => {
-        const dirLabel = al.direction === "above" ? t("wgt_alert_above") : t("wgt_alert_below");
+        const arrow = al.direction === "above" ? "↑" : "↓";
         const tgt  = al.target * ccyRate2;
         const tgtStr = tgt >= 1000
           ? ccySym2 + tgt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
           : tgt >= 1      ? ccySym2 + tgt.toFixed(2)
           : tgt >= 0.0001 ? ccySym2 + tgt.toFixed(4)
           : ccySym2 + tgt.toPrecision(3);
-        return `<div class="wlt-alert-row" style="${fss}">🔔 ${wltEsc(dirLabel)} ${wltEsc(tgtStr)}</div>`;
+        return `<div class="wlt-alert-row" style="${fss}">🔔 ${arrow} ${wltEsc(tgtStr)}</div>`;
       }).join("");
     }
   } else {

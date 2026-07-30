@@ -419,14 +419,14 @@
         const rate2  = ccyRate();
         const ccySym = cfg.showCcy ? (CCY_SYM[cfg.ccy] || "$") : "";
         alertRows = activeAlerts.map(al => {
-          const dirLabel = al.direction === "above" ? "Acima de" : "Abaixo de";
+          const arrow = al.direction === "above" ? "↑" : "↓";
           const tgt  = al.target * rate2;
           const tgtStr = tgt >= 1000
             ? ccySym + tgt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
             : tgt >= 1      ? ccySym + tgt.toFixed(2)
             : tgt >= 0.0001 ? ccySym + tgt.toFixed(4)
             : ccySym + tgt.toPrecision(3);
-          return `<div class="w-alert-row" style="${fss}">🔔 ${esc(dirLabel)} ${esc(tgtStr)}</div>`;
+          return `<div class="w-alert-row" style="${fss}">🔔 ${arrow} ${esc(tgtStr)}</div>`;
         }).join("");
       }
     } else {
