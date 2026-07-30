@@ -34,6 +34,7 @@ async function initAlerts() {
     navigator.serviceWorker.register("/static/sw.js").catch(() => {});
   }
   await loadAlerts();
+  renderSoundGrid();
   setInterval(checkAlerts, ALERT_INTERVAL);
 }
 
@@ -147,26 +148,309 @@ async function checkAlerts() {
   }
 }
 
-// ─── Alert sound ──────────────────────────────────────────────────────────────
+// ─── Alert sound system ───────────────────────────────────────────────────────
+
+const ALERT_SOUNDS = [
+  { id: 'classic',  label: 'Clássico',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>` },
+  { id: 'ping',     label: 'Ping',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4"/><path d="M17.7 6.3a8 8 0 0 1 0 11.4"/></svg>` },
+  { id: 'duplo',    label: 'Duplo',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/></svg>` },
+  { id: 'triple',   label: 'Triple',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="9" width="4" height="6" rx="1"/></svg>` },
+  { id: 'sino',     label: 'Sino',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>` },
+  { id: 'laser',    label: 'Laser',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>` },
+  { id: 'game',     label: 'Game',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>` },
+  { id: 'piano',    label: 'Piano',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="7" y1="5" x2="7" y2="14"/><line x1="12" y1="5" x2="12" y2="14"/><line x1="17" y1="5" x2="17" y2="14"/></svg>` },
+  { id: 'foguete',  label: 'Foguete',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>` },
+  { id: 'alarme',   label: 'Alarme',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` },
+  { id: 'pulso',    label: 'Pulso',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>` },
+  { id: 'bolha',    label: 'Bolha',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="3.5" r="1.5"/><circle cx="19.5" cy="8.5" r="1.5"/><circle cx="19.5" cy="15.5" r="1.5"/><circle cx="12" cy="20.5" r="1.5"/><circle cx="4.5" cy="15.5" r="1.5"/><circle cx="4.5" cy="8.5" r="1.5"/></svg>` },
+  { id: 'electro',  label: 'Electro',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>` },
+  { id: 'cristal',  label: 'Cristal',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>` },
+  { id: 'grave',    label: 'Grave',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/><path d="M5 19 2 22"/><path d="m19 19 3 3"/></svg>` },
+  { id: 'agudo',    label: 'Agudo',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 3 4 4-4 4"/><path d="M9 7H3"/><path d="m19 21-4-4 4-4"/><path d="M15 17h6"/><path d="M12 3v18"/></svg>` },
+  { id: 'fanfarra', label: 'Fanfarra',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z"/><path d="M9 17V4l12-1v13"/><path d="M15 16a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z"/></svg>` },
+  { id: 'digital',  label: 'Digital',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 7h.01"/><path d="M11 7h2"/><path d="M7 11h4"/><path d="M13 11h.01"/></svg>` },
+  { id: 'radar',    label: 'Radar',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>` },
+  { id: 'mute',     label: 'Sem Som',
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>` },
+  { id: 'custom',   label: 'Meu Som',  isCustom: true,
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>` },
+];
+
+let _selectedSoundId = localStorage.getItem('alertSoundId') || 'classic';
+
+// ─── Sound grid rendering & selection ─────────────────────────────────────────
+
+function renderSoundGrid() {
+  const grid = document.getElementById('alert-sound-grid');
+  if (!grid) return;
+  const hasCustom = !!localStorage.getItem('alertSoundCustom');
+  grid.innerHTML = ALERT_SOUNDS.map(s => {
+    const isActive = _selectedSoundId === s.id;
+    const dot = (s.isCustom && hasCustom)
+      ? '<span class="alert-sound-custom-dot"></span>' : '';
+    return `<div class="alert-sound-item${isActive ? ' active' : ''}"
+      onclick="selectAlertSound('${s.id}')" title="${s.label}">
+      <div class="alert-sound-icon">${s.icon}</div>
+      <span class="alert-sound-label">${s.label}</span>${dot}
+    </div>`;
+  }).join('');
+}
+
+function selectAlertSound(id) {
+  const sound = ALERT_SOUNDS.find(s => s.id === id);
+  if (!sound) return;
+  if (sound.isCustom) {
+    if (localStorage.getItem('alertSoundCustom')) {
+      _selectedSoundId = 'custom';
+      localStorage.setItem('alertSoundId', 'custom');
+      renderSoundGrid();
+      _playCustomSound();
+    } else {
+      _openCustomSoundPicker();
+    }
+    return;
+  }
+  _selectedSoundId = id;
+  localStorage.setItem('alertSoundId', id);
+  renderSoundGrid();
+  if (id !== 'mute') playAlertSound();
+}
+
+function _openCustomSoundPicker() {
+  let inp = document.getElementById('_asf-input');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'file'; inp.id = '_asf-input';
+    inp.accept = 'audio/*'; inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', _alertLoadCustomSound);
+  }
+  inp.click();
+}
+
+function _alertLoadCustomSound(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    localStorage.setItem('alertSoundCustom', e.target.result);
+    _selectedSoundId = 'custom';
+    localStorage.setItem('alertSoundId', 'custom');
+    renderSoundGrid();
+    _playCustomSound();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function _playCustomSound() {
+  const data = localStorage.getItem('alertSoundCustom');
+  if (!data) return;
+  try { const a = new Audio(data); a.volume = 0.7; a.play().catch(() => {}); } catch(e) {}
+}
+
+// ─── Synthesized sounds ───────────────────────────────────────────────────────
+
+function _snd_classic(ctx) {
+  [880, 1108, 1318, 1760].forEach((freq, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = freq;
+    const t = ctx.currentTime + i * 0.12;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.35, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22); o.start(t); o.stop(t + 0.22);
+  });
+}
+function _snd_ping(ctx) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 1200;
+  const t = ctx.currentTime;
+  g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+  o.start(t); o.stop(t + 0.55);
+}
+function _snd_duplo(ctx) {
+  [0, 0.2].forEach(d => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 960;
+    const t = ctx.currentTime + d;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.38, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.16); o.start(t); o.stop(t + 0.16);
+  });
+}
+function _snd_triple(ctx) {
+  [0, 0.17, 0.34].forEach(d => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 1000;
+    const t = ctx.currentTime + d;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.32, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.13); o.start(t); o.stop(t + 0.13);
+  });
+}
+function _snd_sino(ctx) {
+  [[523, 0.48], [1046, 0.24], [1568, 0.12], [2092, 0.06]].forEach(([freq, vol]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = freq;
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 1.7);
+    o.start(t); o.stop(t + 1.7);
+  });
+}
+function _snd_laser(ctx) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination); o.type = 'sawtooth';
+  const t = ctx.currentTime;
+  o.frequency.setValueAtTime(1400, t); o.frequency.exponentialRampToValueAtTime(150, t + 0.35);
+  g.gain.setValueAtTime(0.28, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+  o.start(t); o.stop(t + 0.35);
+}
+function _snd_game(ctx) {
+  [523, 659, 784, 1047].forEach((freq, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'square'; o.frequency.value = freq;
+    const t = ctx.currentTime + i * 0.07;
+    g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+    o.start(t); o.stop(t + 0.09);
+  });
+}
+function _snd_piano(ctx) {
+  [261, 329, 392].forEach(freq => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'triangle'; o.frequency.value = freq;
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(0.28, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.95);
+    o.start(t); o.stop(t + 0.95);
+  });
+}
+function _snd_foguete(ctx) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination); o.type = 'sine';
+  const t = ctx.currentTime;
+  o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(1800, t + 0.42);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.33, t + 0.05);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.42); o.start(t); o.stop(t + 0.42);
+}
+function _snd_alarme(ctx) {
+  [0, 0.18, 0.36, 0.54].forEach((d, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'square';
+    o.frequency.value = i % 2 === 0 ? 880 : 1109;
+    const t = ctx.currentTime + d;
+    g.gain.setValueAtTime(0.14, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    o.start(t); o.stop(t + 0.16);
+  });
+}
+function _snd_pulso(ctx) {
+  [0, 0.28, 0.56, 0.84].forEach(d => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 440;
+    const t = ctx.currentTime + d;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.35, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22); o.start(t); o.stop(t + 0.22);
+  });
+}
+function _snd_bolha(ctx) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination); o.type = 'sine';
+  const t = ctx.currentTime;
+  o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(180, t + 0.18);
+  g.gain.setValueAtTime(0.38, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+  o.start(t); o.stop(t + 0.18);
+}
+function _snd_electro(ctx) {
+  [[440, 'sawtooth', 0, 0.28], [660, 'sawtooth', 0.17, 0.22]].forEach(([freq, type, d, vol]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = type; o.frequency.value = freq;
+    const t = ctx.currentTime + d;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    o.start(t); o.stop(t + 0.12);
+  });
+}
+function _snd_cristal(ctx) {
+  [[2093, 0.28, 0.85], [4186, 0.1, 0.5]].forEach(([freq, vol, dur]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = freq;
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t); o.stop(t + dur);
+  });
+}
+function _snd_grave(ctx) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 75;
+  const t = ctx.currentTime;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.65, t + 0.05);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.65); o.start(t); o.stop(t + 0.65);
+}
+function _snd_agudo(ctx) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination); o.type = 'sine'; o.frequency.value = 2640;
+  const t = ctx.currentTime;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.24, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.28); o.start(t); o.stop(t + 0.28);
+}
+function _snd_fanfarra(ctx) {
+  [523, 659, 784, 1047, 1319].forEach((freq, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'triangle'; o.frequency.value = freq;
+    const t = ctx.currentTime + i * 0.09;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.28, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22); o.start(t); o.stop(t + 0.22);
+  });
+}
+function _snd_digital(ctx) {
+  [0, 0.1, 0.2, 0.3].forEach((d, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination); o.type = 'square';
+    o.frequency.value = i % 2 === 0 ? 880 : 440;
+    const t = ctx.currentTime + d;
+    g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    o.start(t); o.stop(t + 0.08);
+  });
+}
+function _snd_radar(ctx) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination); o.type = 'sine';
+  const t = ctx.currentTime;
+  o.frequency.setValueAtTime(820, t); o.frequency.linearRampToValueAtTime(755, t + 0.85);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.38, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.85); o.start(t); o.stop(t + 0.85);
+}
+
+const _SOUND_FNS = {
+  classic: _snd_classic, ping: _snd_ping, duplo: _snd_duplo, triple: _snd_triple,
+  sino: _snd_sino, laser: _snd_laser, game: _snd_game, piano: _snd_piano,
+  foguete: _snd_foguete, alarme: _snd_alarme, pulso: _snd_pulso, bolha: _snd_bolha,
+  electro: _snd_electro, cristal: _snd_cristal, grave: _snd_grave, agudo: _snd_agudo,
+  fanfarra: _snd_fanfarra, digital: _snd_digital, radar: _snd_radar,
+};
 
 function playAlertSound() {
+  if (_selectedSoundId === 'mute') return;
+  if (_selectedSoundId === 'custom') { _playCustomSound(); return; }
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [880, 1108, 1318, 1760];
-    notes.forEach((freq, i) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      const t0 = ctx.currentTime + i * 0.12;
-      gain.gain.setValueAtTime(0, t0);
-      gain.gain.linearRampToValueAtTime(0.35, t0 + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
-      osc.start(t0);
-      osc.stop(t0 + 0.22);
-    });
+    const ctx = _getAudioCtx();
+    if (!ctx) return;
+    const fn = _SOUND_FNS[_selectedSoundId];
+    if (fn) fn(ctx);
   } catch(e) {}
 }
 

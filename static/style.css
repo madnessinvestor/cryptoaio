@@ -2648,6 +2648,90 @@ section.hidden { display: none; }
 .alert-btn.del   { color: var(--muted); }
 .alert-btn:active { opacity: 0.6; }
 
+/* ─── Alert sound picker ────────────────────────────────────────────────────── */
+.alert-sound-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.alert-sound-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+@media (max-width: 480px) {
+  .alert-sound-grid { grid-template-columns: repeat(5, 1fr); }
+}
+.alert-sound-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.alert-sound-item:active { transform: scale(0.93); opacity: 0.8; }
+.alert-sound-item.active {
+  border-color: var(--accent);
+  background: rgba(0,230,118,0.1);
+}
+.alert-sound-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0,230,118,0.1);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.alert-sound-item.active .alert-sound-icon {
+  background: rgba(0,230,118,0.22);
+}
+.alert-sound-item:not(.active):hover .alert-sound-icon {
+  background: rgba(0,230,118,0.14);
+}
+[data-theme="light"] .alert-sound-icon {
+  background: rgba(0,168,84,0.1);
+  color: var(--accent);
+}
+[data-theme="light"] .alert-sound-item.active .alert-sound-icon {
+  background: rgba(0,168,84,0.2);
+}
+.alert-sound-label {
+  font-size: 0.6rem;
+  color: var(--muted2);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.alert-sound-item.active .alert-sound-label {
+  color: var(--accent);
+}
+.alert-sound-custom-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 /* ─── Hash Import ────────────────────────────────────────────────────────── */
 .hash-import-wrap {
   margin-bottom: 10px;
