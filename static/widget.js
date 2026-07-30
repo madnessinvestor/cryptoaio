@@ -662,8 +662,14 @@ function wltApplyLayout() {
     }
   });
 
-  // c2 visibility — must be applied AFTER the loop so it overrides the display set above
-  if (c2) c2.style.display = wtCfg.cols === "1" ? "none" : (is2Row ? "flex" : "grid");
+  // c2/c3/c4 visibility — applied AFTER the loop so it overrides the display set above
+  const _nCols = parseInt(wtCfg.cols) || 2;
+  const _colShow = is2Row ? "flex" : "grid";
+  const c3 = document.getElementById("wlt-c3");
+  const c4 = document.getElementById("wlt-c4");
+  if (c2) c2.style.display = _nCols >= 2 ? _colShow : "none";
+  if (c3) c3.style.display = _nCols >= 3 ? _colShow : "none";
+  if (c4) c4.style.display = _nCols >= 4 ? _colShow : "none";
 
   document.querySelectorAll("#wlt-ccy-group .wgt-live-pill").forEach(b =>
     b.classList.toggle("active", b.dataset.ccy === wtCfg.ccy));
@@ -689,15 +695,16 @@ function wltRender() {
   if (wtCfg.autoSort) data.sort((a, b) => (b.change24h || 0) - (a.change24h || 0));
 
   const fs = WLT_FS_MAP[wtCfg.fontSize] || "12px";
-  const c1 = document.getElementById("wlt-c1");
-  const c2 = document.getElementById("wlt-c2");
   const cellFn = wtCfg.rows === "2" ? wltAsset2RowHtml : wltCellsHtml;
 
-  const half = wtCfg.cols === "1" ? data.length : Math.ceil(data.length / 2);
-  const col1 = data.slice(0, half);
-  const col2 = wtCfg.cols === "1" ? [] : data.slice(half);
-  if (c1) c1.innerHTML = col1.map(a => cellFn(a, fs)).join("");
-  if (c2) c2.innerHTML = col2.map(a => cellFn(a, fs)).join("");
+  const nCols = parseInt(wtCfg.cols) || 2;
+  const chunkSize = Math.ceil(data.length / nCols);
+  ["wlt-c1", "wlt-c2", "wlt-c3", "wlt-c4"].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const chunk = i < nCols ? data.slice(i * chunkSize, (i + 1) * chunkSize) : [];
+    el.innerHTML = chunk.map(a => cellFn(a, fs)).join("");
+  });
 
   wltRenderTrades();
 }
