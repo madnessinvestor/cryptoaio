@@ -4613,7 +4613,7 @@ section.hidden { display: none; }
   touch-action: none;
 }
 /* "Cor" pill special style */
-.wgt-pill-custom { letter-spacing: 0.01em; }
+.wgt-pill-custom { letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 5px; }
 .wgt-pill-custom.active { background: linear-gradient(135deg,rgba(255,100,100,0.3),rgba(100,100,255,0.3)); color: #fff; }
 
 .wgt-live-box {

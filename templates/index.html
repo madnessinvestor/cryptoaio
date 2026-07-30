@@ -284,7 +284,10 @@
           <button class="wgt-pill" data-v="light"       onclick="wSet('theme','light')"       data-i18n="wgt_theme_light">Claro</button>
           <button class="wgt-pill" data-v="purple-dark" onclick="wSet('theme','purple-dark')" data-i18n="wgt_theme_purple">Purple</button>
           <button class="wgt-pill" data-v="auto"        onclick="wSet('theme','auto')"        data-i18n="wgt_theme_auto">Auto</button>
-          <button class="wgt-pill wgt-pill-custom" data-v="custom" onclick="wSet('theme','custom')" data-i18n="wgt_theme_custom">🎨 Cor</button>
+          <button class="wgt-pill wgt-pill-custom" data-v="custom" onclick="wSet('theme','custom')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+            <span data-i18n="wgt_theme_custom">Cor</span>
+          </button>
         </div>
 
         <!-- Custom color picker — shown only when theme=custom -->
@@ -1065,7 +1068,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-  <script src="/static/i18n.js?v=12"></script>
+  <script src="/static/i18n.js?v=13"></script>
   <script src="/static/app.js?v=10"></script>
   <script src="/static/trade.js?v=8"></script>
   <script src="/static/alerts.js?v=7"></script>
