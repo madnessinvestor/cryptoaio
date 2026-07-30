@@ -2885,6 +2885,12 @@ SOBRE O MERCADO EM GERAL — você também é um analista cripto experiente. Pod
    - Dar assessoramento sobre gestão de risco, diversificação e boas práticas operacionais.
    - Responder perguntas educacionais sobre DeFi, NFTs, Layer 2, staking, etc.
 
+SOBRE NOTÍCIAS — quando o usuário pedir notícias, manchetes ou "o que está acontecendo no mercado", você receberá um bloco NOTÍCIAS RECENTES DE MERCADO com manchetes reais de Yahoo Finance, CoinDesk, CoinTelegraph e Reuters. Use essas manchetes para:
+   - Listar os principais eventos que podem impactar cripto (regulação, macro, ETFs, hacks, adoção institucional, etc.).
+   - Contextualizar como cada notícia pode afetar o mercado — positivo, negativo ou neutro.
+   - Priorizar o que é mais relevante para o portfólio do usuário, se ele tiver ativos cadastrados.
+   - Se não houver manchetes disponíveis, informe que as notícias estão temporariamente indisponíveis.
+
 LIMITES:
    - Nunca dê dicas de investimento diretas como "compre X" ou "venda Y agora".
    - Quando abordar potencial de ativos, sempre enquadre como análise/contexto, não recomendação. Use frases como "analistas observam", "o projeto tem características de..." ou "historicamente este tipo de ativo...".
@@ -2995,6 +3001,61 @@ def _build_dashboard_context():
         lines += ["", "Ativos manuais:"] + manual_lines
 
     lines += ["", "Top tokens/posições por wallet:"] + token_details
+    return "\n".join(lines)
+
+
+def _build_news_context():
+    """Fetch recent crypto/finance headlines from RSS feeds.
+
+    Sources: Yahoo Finance (crypto tickers), CoinDesk, CoinTelegraph, Reuters.
+    Returns a plain-text block with up to 15 headlines (title + source + date).
+    Falls back gracefully if a feed is unavailable.
+    """
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+
+    FEEDS = [
+        ("Yahoo Finance",   "https://feeds.finance.yahoo.com/rss/2.0/headline"
+                            "?s=BTC-USD,ETH-USD,SOL-USD,BNB-USD,^GSPC,^DJI"
+                            "&region=US&lang=en-US"),
+        ("CoinDesk",        "https://www.coindesk.com/arc/outboundfeeds/rss/"),
+        ("CoinTelegraph",   "https://cointelegraph.com/rss"),
+        ("Reuters Finance", "https://feeds.reuters.com/reuters/businessNews"),
+    ]
+
+    headlines = []   # list of (pub_str, source, title)
+
+    for source, url in FEEDS:
+        try:
+            req  = urllib.request.Request(url, headers={"User-Agent": "CryptoAIO/1.0"})
+            with urllib.request.urlopen(req, timeout=6) as r:
+                raw = r.read()
+            root = ET.fromstring(raw)
+            # RSS 2.0: items live under /rss/channel/item or directly //item
+            for item in root.findall(".//item")[:6]:
+                title_el = item.find("title")
+                date_el  = item.find("pubDate")
+                if title_el is None or not (title_el.text or "").strip():
+                    continue
+                title = title_el.text.strip()
+                pub = ""
+                if date_el is not None and date_el.text:
+                    try:
+                        dt  = parsedate_to_datetime(date_el.text)
+                        pub = dt.strftime("%d/%m %H:%M")
+                    except Exception:
+                        pub = (date_el.text or "")[:16]
+                headlines.append((pub, source, title))
+        except Exception:
+            continue
+
+    if not headlines:
+        return "Notícias de mercado indisponíveis no momento."
+
+    lines = ["NOTÍCIAS RECENTES DE MERCADO (cripto e finanças):"]
+    for pub, src, title in headlines[:15]:
+        date_str = f" [{pub}]" if pub else ""
+        lines.append(f"  [{src}]{date_str} {title}")
     return "\n".join(lines)
 
 
@@ -3129,21 +3190,35 @@ def ai_chat():
     if not user_message:
         return jsonify({"error": "Mensagem vazia."}), 400
 
-    # Build all three contexts in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+    # Detect news requests early (before parallel fetch, so we can include news fetch)
+    _news_keywords = [
+        "notícia", "notícias", "news", "manchete", "manchetes",
+        "o que aconteceu", "o que está acontecendo", "mercado hoje",
+        "últimas do mercado", "novidades", "market news", "latest news",
+        "o que rolou", "destaques do dia", "headlines", "o que está movendo",
+        "o que move o mercado", "impacto no mercado", "eventos de mercado",
+    ]
+    _msg_lower   = user_message.lower()
+    wants_news   = any(kw in _msg_lower for kw in _news_keywords)
+
+    # Build all contexts in parallel (news only when requested)
+    _workers = 4 if wants_news else 3
+    with concurrent.futures.ThreadPoolExecutor(max_workers=_workers) as ex:
         f_watchlist   = ex.submit(_build_watchlist_context)
         f_portfolio   = ex.submit(_build_portfolio_context)
         f_dashboard   = ex.submit(_build_dashboard_context)
+        f_news        = ex.submit(_build_news_context) if wants_news else None
         watchlist_ctx = f_watchlist.result()
         portfolio_ctx = f_portfolio.result()
         dashboard_ctx = f_dashboard.result()
+        news_ctx      = f_news.result() if f_news else None
 
     # Detect full portfolio analysis requests → expand all budgets
     _analyze_keywords = [
         "análise completa", "analisar meu portfólio", "analyze my portfolio",
         "complete analysis", "como estou posicionado", "conclusão geral"
     ]
-    is_full_analysis = any(kw in user_message.lower() for kw in _analyze_keywords)
+    is_full_analysis = any(kw in _msg_lower for kw in _analyze_keywords)
 
     if is_full_analysis:
         # Compact analysis: keep total input under ~3 500 chars to leave
@@ -3151,12 +3226,14 @@ def ai_chat():
         wl_limit   = 400
         port_limit = 1600
         dash_limit = 1600
+        news_limit = 1200
         max_tok    = 500
     else:
         # Regular questions: balanced budget
         wl_limit   = 2000
         port_limit = 1800
         dash_limit = 2000
+        news_limit = 2000
         max_tok    = 500
 
     def _trunc(text, limit):
@@ -3170,6 +3247,8 @@ def ai_chat():
         {"role": "system", "content": f"TRADES (aba Trade — entradas/saídas, P&L por operação):\n{_trunc(portfolio_ctx, port_limit)}"},
         {"role": "system", "content": f"PORTFÓLIO (aba Dashboard — patrimônio total, wallets on-chain, ativos manuais):\n{_trunc(dashboard_ctx, dash_limit)}"},
     ]
+    if news_ctx:
+        messages.append({"role": "system", "content": _trunc(news_ctx, news_limit)})
     for h in history[-6:]:
         role    = h.get("role")
         content = h.get("content", "")
