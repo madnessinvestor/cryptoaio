@@ -219,14 +219,7 @@ function selectAlertSound(id) {
   const sound = ALERT_SOUNDS.find(s => s.id === id);
   if (!sound) return;
   if (sound.isCustom) {
-    if (localStorage.getItem('alertSoundCustom')) {
-      _selectedSoundId = 'custom';
-      localStorage.setItem('alertSoundId', 'custom');
-      renderSoundGrid();
-      _playCustomSound();
-    } else {
-      _openCustomSoundPicker();
-    }
+    _openCustomSoundPicker();
     return;
   }
   _selectedSoundId = id;
