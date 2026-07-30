@@ -40,10 +40,20 @@ android.archs   = arm64-v8a, armeabi-v7a
 # Auto-accept SDK license — required for non-interactive / CI builds
 android.accept_sdk_license = True
 
+# ── Background Service ────────────────────────────────────────────────────────
+# Formato: NomeDoServico:caminho/do/arquivo.py[:foreground]
+# O sufixo ':foreground' instrui o p4a a declarar o serviço com
+# android:exported="false" e permite chamar startForeground() no código.
+# Para Android 14 (API 34) com foregroundServiceType no manifesto, edite
+# o template do p4a ou use um recipe local — ver build-android.sh para detalhes.
+services = AlertChecker:service/main.py:foreground
+
 # ── Permissions ───────────────────────────────────────────────────────────────
-# POST_NOTIFICATIONS → runtime permission required on Android 13+ (API 33+)
-# VIBRATE / WAKE_LOCK → background alert checker
-android.permissions = INTERNET,POST_NOTIFICATIONS,VIBRATE,WAKE_LOCK
+# POST_NOTIFICATIONS         → permissão em runtime no Android 13+ (API 33+)
+# FOREGROUND_SERVICE         → necessária para startForeground() — API 28+
+# FOREGROUND_SERVICE_DATA_SYNC → tipo de serviço foreground no Android 14 (API 34+)
+# VIBRATE / WAKE_LOCK        → usados pelo alerta checker em background
+android.permissions = INTERNET,POST_NOTIFICATIONS,FOREGROUND_SERVICE,FOREGROUND_SERVICE_DATA_SYNC,VIBRATE,WAKE_LOCK
 
 # ── UI ────────────────────────────────────────────────────────────────────────
 android.orientation = portrait

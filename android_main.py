@@ -241,6 +241,23 @@ def _request_notification_permission():
         pass  # Android < 13 does not need this
 
 
+def _start_background_service():
+    """
+    Inicia o AlertChecker como Android Foreground Service (processo separado).
+    O serviço sobrevive ao fechamento do app e continua verificando alertas.
+    Usa a API nativa do p4a para iniciar serviços declarados em buildozer.spec.
+    """
+    if platform != "android":
+        return
+    try:
+        from android import AndroidService
+        svc = AndroidService("CryptoAIO Alerts", "Monitorando alertas de preço…")
+        svc.start("")
+        print("[Service] AndroidService iniciado")
+    except Exception as e:
+        print(f"[Service] Falha ao iniciar AndroidService: {e}")
+
+
 # ── Android WebView (jnius) ───────────────────────────────────────────────────
 
 def _open_android_webview(url, on_error=None):
@@ -328,8 +345,12 @@ class CryptoAIOApp(App):
         # Start Flask server
         threading.Thread(target=_start_flask, daemon=True).start()
 
-        # Start background alert checker
+        # Start background alert checker (in-process, while app is open)
         threading.Thread(target=_alert_checker, daemon=True).start()
+
+        # Start the Foreground Service (separate process — survives app close)
+        if platform == "android":
+            _start_background_service()
 
         # Poll until Flask is ready, then open WebView
         Clock.schedule_interval(self._check_server, 0.5)
