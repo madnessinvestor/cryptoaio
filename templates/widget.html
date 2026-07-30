@@ -217,25 +217,13 @@
     justify-content: flex-end;
     min-height: 1em;
   }
-  /* Alert row: ticker left, target price right */
-  .w-2r-bot--alert {
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-  .w-alert-sym {
-    color: rgba(255,255,255,0.55);
+  /* Sequential alert row — one per alert, gray muted text */
+  .w-alert-row {
+    color: rgba(255,255,255,0.45);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    flex-shrink: 1;
-    min-width: 0;
-  }
-  .w-alert-vals {
-    display: flex;
-    gap: 6px;
-    flex-shrink: 0;
-    white-space: nowrap;
+    padding-left: 1px;
   }
 
 </style>
@@ -420,9 +408,9 @@
       : "";
     const tickerAlerts = alertsByTicker[_symUp] || [];
     const activeAlerts = tickerAlerts.filter(al => !al.triggered);
-    let topChg = "", botChg = "", botCls = "";
+    let topChg = "", botChg = "", alertRows = "";
     if (cfg.showAlerts) {
-      // showAlerts mode: change on line 1; alert row (ticker left, target right) on line 2
+      // showAlerts mode: change on line 1; one sequential gray alert row per alert
       if (cfg.showChg) {
         const { text, cls } = fmtChg(a.price, a.change24h);
         if (text) topChg = `<span class="w-chg ${cls}" style="${fss}${fw}">${esc(text)}</span>`;
@@ -430,20 +418,16 @@
       if (activeAlerts.length) {
         const rate2  = ccyRate();
         const ccySym = cfg.showCcy ? (CCY_SYM[cfg.ccy] || "$") : "";
-        const alertSpans = activeAlerts.map(al => {
-          const dir  = al.direction === "above" ? "▲" : "▼";
-          const cls2 = al.direction === "above" ? "pos" : "neg";
+        alertRows = activeAlerts.map(al => {
+          const dirLabel = al.direction === "above" ? "Acima de" : "Abaixo de";
           const tgt  = al.target * rate2;
           const tgtStr = tgt >= 1000
             ? ccySym + tgt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
             : tgt >= 1      ? ccySym + tgt.toFixed(2)
             : tgt >= 0.0001 ? ccySym + tgt.toFixed(4)
             : ccySym + tgt.toPrecision(3);
-          return `<span class="${cls2}" style="${fss}${fw}">${dir} ${esc(tgtStr)}</span>`;
-        }).join(" ");
-        botCls = "w-2r-bot--alert";
-        botChg = `<span class="w-alert-sym" style="${fss}">${esc(symTrunc)}</span>` +
-                 `<span class="w-alert-vals">${alertSpans}</span>`;
+          return `<div class="w-alert-row" style="${fss}">🔔 ${esc(dirLabel)} ${esc(tgtStr)}</div>`;
+        }).join("");
       }
     } else {
       // Normal 2-row: "both" → value on line 1, % on line 2; pct/val → chg on line 2 only
@@ -466,7 +450,7 @@
         <span class="w-price"  style="${fss}${fw}">${esc(fmtPrice(a.price))}</span>
         ${topChg}
       </div>
-      <div class="w-2r-bot ${botCls}">${botChg}</div>
+      ${alertRows || `<div class="w-2r-bot">${botChg}</div>`}
     </div>`;
   }
 

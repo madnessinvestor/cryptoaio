@@ -4783,25 +4783,13 @@ section.hidden { display: none; }
   padding-right: 0;
   min-height: 1em;
 }
-/* Line 2 alert variant: ticker left, target price right */
-.wlt-2r-bot--alert {
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-.wlt-alert-sym {
-  color: rgba(255,255,255,0.55);
+/* Sequential alert row — one per alert, gray muted text */
+.wlt-alert-row {
+  color: rgba(255,255,255,0.45);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 1;
-  min-width: 0;
-}
-.wlt-alert-vals {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-  white-space: nowrap;
+  padding-left: 1px;
 }
 /* light theme overrides for 2-row mode */
 .wgt-live-box.wgt-live-light .wlt-2r-top .wlt-ticker { color: rgba(0,0,0,0.85); }

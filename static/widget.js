@@ -736,30 +736,27 @@ function wltAsset2RowHtml(a, fs) {
   let botChg  = "";
   let botCls  = "";   // extra class on .wlt-2r-bot when showing alert row
 
+  let alertRows = "";
+
   if (wtCfg.showAlerts) {
-    // showAlerts mode: entire change goes on line 1; alert row on line 2
+    // showAlerts mode: change on line 1; one alert row per alert (sequential, gray)
     if (wtCfg.showChg) {
       const { text, cls } = wltFmtChg(a.price, a.change24h);
       if (text) topChg = `<span class="wlt-chg ${cls}" style="${fss}${fw}">${wltEsc(text)}</span>`;
     }
     if (activeAlerts.length) {
-      const ccyRate = wltCcyRate();
-      const ccySym  = wtCfg.showCcy ? (WLT_CCY_SYM[wtCfg.ccy] || "$") : "";
-      const alertSpans = activeAlerts.map(al => {
-        const dir  = al.direction === "above" ? "▲" : "▼";
-        const cls2 = al.direction === "above" ? "wlt-pos" : "wlt-neg";
-        const tgt  = al.target * ccyRate;
+      const ccyRate2 = wltCcyRate();
+      const ccySym2  = wtCfg.showCcy ? (WLT_CCY_SYM[wtCfg.ccy] || "$") : "";
+      alertRows = activeAlerts.map(al => {
+        const dirLabel = al.direction === "above" ? t("wgt_alert_above") : t("wgt_alert_below");
+        const tgt  = al.target * ccyRate2;
         const tgtStr = tgt >= 1000
-          ? ccySym + tgt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
-          : tgt >= 1      ? ccySym + tgt.toFixed(2)
-          : tgt >= 0.0001 ? ccySym + tgt.toFixed(4)
-          : ccySym + tgt.toPrecision(3);
-        return `<span class="${cls2}" style="${fss}${fw}">${dir} ${wltEsc(tgtStr)}</span>`;
-      }).join(" ");
-      // ticker left, alert(s) right — space-between layout
-      botCls  = "wlt-2r-bot--alert";
-      botChg  = `<span class="wlt-alert-sym" style="${fss}">${wltEsc(symTrunc)}</span>` +
-                `<span class="wlt-alert-vals">${alertSpans}</span>`;
+          ? ccySym2 + tgt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
+          : tgt >= 1      ? ccySym2 + tgt.toFixed(2)
+          : tgt >= 0.0001 ? ccySym2 + tgt.toFixed(4)
+          : ccySym2 + tgt.toPrecision(3);
+        return `<div class="wlt-alert-row" style="${fss}">🔔 ${wltEsc(dirLabel)} ${wltEsc(tgtStr)}</div>`;
+      }).join("");
     }
   } else {
     // Normal 2-row change: "both" → value on line 1, % on line 2; pct/val → chg on line 2 only
@@ -783,7 +780,7 @@ function wltAsset2RowHtml(a, fs) {
       <span class="wlt-price"  style="${fss}${fw}">${price}</span>
       ${topChg}
     </div>
-    <div class="wlt-2r-bot ${botCls}">${botChg}</div>
+    ${alertRows || `<div class="wlt-2r-bot">${botChg}</div>`}
   </div>`;
 }
 
