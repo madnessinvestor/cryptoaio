@@ -37,19 +37,17 @@ html { font-size: 114%; }
   padding: 12px 14px;
 }
 .ai-header-icon {
-  font-size: 1.6rem;
   flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  background: rgba(0,230,118,0.1);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--accent);
 }
 .ai-header-icon svg {
-  width: 36px;
-  height: 36px;
-  padding: 8px;
-  box-sizing: border-box;
-  border-radius: 10px;
-  background: rgba(0,230,118,0.1);
   color: var(--accent);
 }
 .ai-header-title {
