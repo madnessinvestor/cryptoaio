@@ -91,14 +91,12 @@
           <div class="ai-header-title" data-i18n="ai_title">Mad AI</div>
           <div class="ai-header-sub" data-i18n="ai_subtitle">Análise inteligente do seu portfólio</div>
         </div>
-        <button class="ai-analyze-btn" onclick="aiAnalyzeTrades()" id="ai-analyze-btn">
-          <span data-i18n="ai_analyze_btn">Analisar meu Portfólio</span>
-        </button>
       </div>
 
       <div class="ai-suggestions">
         <div class="ai-chip-group">
           <span class="ai-chip-label" data-i18n="ai_group_dashboard">Dashboard</span>
+          <button class="ai-chip" id="ai-analyze-btn" onclick="aiAnalyzeTrades()" data-i18n="ai_analyze_btn">Analisar meu Portfólio</button>
           <button class="ai-chip" onclick="aiAskPreset(this)" data-i18n="ai_d1">Quanto vale meu portfólio total?</button>
           <button class="ai-chip" onclick="aiAskPreset(this)" data-i18n="ai_d2">Qual rede tem mais saldo?</button>
         </div>
