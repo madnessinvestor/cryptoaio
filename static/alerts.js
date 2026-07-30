@@ -219,7 +219,16 @@ function selectAlertSound(id) {
   const sound = ALERT_SOUNDS.find(s => s.id === id);
   if (!sound) return;
   if (sound.isCustom) {
-    _openCustomSoundPicker();
+    if (localStorage.getItem('alertSoundCustom') && _selectedSoundId !== 'custom') {
+      // Has a file but not active → just activate and play
+      _selectedSoundId = 'custom';
+      localStorage.setItem('alertSoundId', 'custom');
+      renderSoundGrid();
+      _playCustomSound();
+    } else {
+      // No file yet, OR already active → open picker to (re)load
+      _openCustomSoundPicker();
+    }
     return;
   }
   _selectedSoundId = id;
