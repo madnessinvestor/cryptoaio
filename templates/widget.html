@@ -217,6 +217,26 @@
     justify-content: flex-end;
     min-height: 1em;
   }
+  /* Alert row: ticker left, target price right */
+  .w-2r-bot--alert {
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+  .w-alert-sym {
+    color: rgba(255,255,255,0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .w-alert-vals {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 
 </style>
 </head>
@@ -266,6 +286,7 @@
     showRefresh:  false,
     showControls: true,
     showTrades:   false,
+    showAlerts:   false,
     showChg:      true,
     showIcon:     true,
     size:         "sm",
@@ -364,13 +385,6 @@
     const { text: chg, cls } = fmtChg(a.price, a.change24h);
     const fw  = cfg.bold ? "font-weight:700;" : "";
     const fss = `font-size:${fs};`;
-    const tickerAlerts = alertsByTicker[(a.symbol || "").toUpperCase()] || [];
-    const activeAlerts = tickerAlerts.filter(al => !al.triggered);
-    const bellTitle = activeAlerts.map(al =>
-      (al.direction === "above" ? "↑" : "↓") + " $" + Number(al.target).toLocaleString("en-US")
-    ).join(" • ");
-    const bell = activeAlerts.length
-      ? `<span class="w-bell" title="${esc(bellTitle)}">🔔</span>` : "";
     const rawSym  = a.symbol || "";
     const symTrunc = trunc(rawSym, 12);
     const _FOREX_FLAG = { USD:'us', EUR:'eu', BRL:'br', GBP:'gb', JPY:'jp', CHF:'ch', AUD:'au', CAD:'ca' };
@@ -383,7 +397,7 @@
       ? `<img class="w-icon" src="${_iconSrc}" alt="" onerror="this.style.visibility='hidden';this.style.width='0'">`
       : "";
     return iconHtml +
-           `<span class="w-ticker" style="${fss}${fw}">${esc(symTrunc)}${bell}</span>` +
+           `<span class="w-ticker" style="${fss}${fw}">${esc(symTrunc)}</span>` +
            `<span class="w-price"  style="${fss}${fw}">${esc(fmtPrice(a.price))}</span>` +
            `<span class="w-chg ${cls}" style="${fss}${fw}">${esc(chg)}</span>`;
   }
@@ -406,31 +420,53 @@
       : "";
     const tickerAlerts = alertsByTicker[_symUp] || [];
     const activeAlerts = tickerAlerts.filter(al => !al.triggered);
-    const bellTitle = activeAlerts.map(al =>
-      (al.direction === "above" ? "↑" : "↓") + " $" + Number(al.target).toLocaleString("en-US")
-    ).join(" • ");
-    const bell = activeAlerts.length
-      ? `<span class="w-bell" title="${esc(bellTitle)}">🔔</span>` : "";
-    let topChg = "", botChg = "";
-    if (cfg.showChg) {
-      if (cfg.chg === "both") {
-        const v = _fmtVal(a.price, a.change24h);
-        const p = _fmtPct(a.change24h);
-        topChg = `<span class="w-chg ${v.cls}" style="${fss}${fw}">${esc(v.text)}</span>`;
-        botChg = `<span class="w-chg ${p.cls}" style="${fss}${fw}">${esc(p.text)}</span>`;
-      } else {
+    let topChg = "", botChg = "", botCls = "";
+    if (cfg.showAlerts) {
+      // showAlerts mode: change on line 1; alert row (ticker left, target right) on line 2
+      if (cfg.showChg) {
         const { text, cls } = fmtChg(a.price, a.change24h);
-        botChg = `<span class="w-chg ${cls}" style="${fss}${fw}">${esc(text)}</span>`;
+        if (text) topChg = `<span class="w-chg ${cls}" style="${fss}${fw}">${esc(text)}</span>`;
+      }
+      if (activeAlerts.length) {
+        const rate2  = ccyRate();
+        const ccySym = cfg.showCcy ? (CCY_SYM[cfg.ccy] || "$") : "";
+        const alertSpans = activeAlerts.map(al => {
+          const dir  = al.direction === "above" ? "▲" : "▼";
+          const cls2 = al.direction === "above" ? "pos" : "neg";
+          const tgt  = al.target * rate2;
+          const tgtStr = tgt >= 1000
+            ? ccySym + tgt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
+            : tgt >= 1      ? ccySym + tgt.toFixed(2)
+            : tgt >= 0.0001 ? ccySym + tgt.toFixed(4)
+            : ccySym + tgt.toPrecision(3);
+          return `<span class="${cls2}" style="${fss}${fw}">${dir} ${esc(tgtStr)}</span>`;
+        }).join(" ");
+        botCls = "w-2r-bot--alert";
+        botChg = `<span class="w-alert-sym" style="${fss}">${esc(symTrunc)}</span>` +
+                 `<span class="w-alert-vals">${alertSpans}</span>`;
+      }
+    } else {
+      // Normal 2-row: "both" → value on line 1, % on line 2; pct/val → chg on line 2 only
+      if (cfg.showChg) {
+        if (cfg.chg === "both") {
+          const v = _fmtVal(a.price, a.change24h);
+          const p = _fmtPct(a.change24h);
+          topChg = `<span class="w-chg ${v.cls}" style="${fss}${fw}">${esc(v.text)}</span>`;
+          botChg = `<span class="w-chg ${p.cls}" style="${fss}${fw}">${esc(p.text)}</span>`;
+        } else {
+          const { text, cls } = fmtChg(a.price, a.change24h);
+          botChg = `<span class="w-chg ${cls}" style="${fss}${fw}">${esc(text)}</span>`;
+        }
       }
     }
     return `<div class="w-asset-2r">
       <div class="w-2r-top" style="${fss}">
         ${iconHtml}
-        <span class="w-ticker" style="${fss}${fw}">${esc(symTrunc)}${bell}</span>
+        <span class="w-ticker" style="${fss}${fw}">${esc(symTrunc)}</span>
         <span class="w-price"  style="${fss}${fw}">${esc(fmtPrice(a.price))}</span>
         ${topChg}
       </div>
-      <div class="w-2r-bot">${botChg}</div>
+      <div class="w-2r-bot ${botCls}">${botChg}</div>
     </div>`;
   }
 
@@ -485,7 +521,7 @@
     document.getElementById("controls").style.display    = cfg.showControls ? "" : "none";
 
     // Icon column: adjust grid and visibility; handle 2-row mode
-    const is2Row   = cfg.rows === "2";
+    const is2Row   = cfg.rows === "2" || cfg.showAlerts;
     const gridCols = cfg.showIcon
       ? "max-content 1fr max-content max-content"
       : "1fr max-content max-content";
@@ -532,7 +568,7 @@
     }
 
     const fs     = FS_MAP[cfg.fontSize] || "12px";
-    const cellFn = cfg.rows === "2" ? asset2RowHtml : cellsHtml;
+    const cellFn = (cfg.rows === "2" || cfg.showAlerts) ? asset2RowHtml : cellsHtml;
     const half   = cfg.cols === "1" ? data.length : Math.ceil(data.length / 2);
     const col1   = data.slice(0, half);
     const col2   = cfg.cols === "1" ? [] : data.slice(half);
