@@ -81,18 +81,32 @@ def _alert_checker():
             pass
 
     def _notify(title, message):
-        """Fire a native notification — Android (plyer) only."""
+        """
+        Fire a native notification — Android only.
+        Uses jnius directly so we control the channel (required on Android 8+).
+        """
         if platform != "android":
             return
         try:
-            from plyer import notification
-            notification.notify(
-                title=title,
-                message=message,
-                app_name="CryptoAIO",
-                app_icon="",   # plyer uses default app icon on Android
-                timeout=10,
-            )
+            from jnius import autoclass
+            from android import mActivity
+
+            Builder              = autoclass("android.app.Notification$Builder")
+            NotificationManager  = autoclass("android.app.NotificationManager")
+            String               = autoclass("java.lang.String")
+
+            builder = Builder(mActivity, String(NOTIFICATION_CHANNEL_ID))
+            builder.setSmallIcon(mActivity.getApplicationInfo().icon)
+            builder.setContentTitle(String(title))
+            builder.setContentText(String(message))
+            builder.setAutoCancel(True)
+            builder.setPriority(1)   # PRIORITY_HIGH
+
+            manager = mActivity.getSystemService(mActivity.NOTIFICATION_SERVICE)
+            # Use a unique notification ID based on time so alerts don't replace each other
+            import time as _time
+            notif_id = int(_time.time()) % 100000
+            manager.notify(notif_id, builder.build())
         except Exception as e:
             print(f"[AlertChecker] notify error: {e}")
 
@@ -215,7 +229,9 @@ class CryptoAIOApp(App):
         url = f"http://127.0.0.1:{PORT}"
 
         if platform == "android":
-            # Request POST_NOTIFICATIONS permission (Android 13+)
+            # Create notification channel first (required on Android 8+ / API 26+)
+            _create_notification_channel()
+            # Then request POST_NOTIFICATIONS permission (Android 13+ / API 33+)
             _request_notification_permission()
 
             try:
@@ -241,6 +257,43 @@ class CryptoAIOApp(App):
             import webbrowser
             webbrowser.open(url)
             self.label.text = f"Running at\n{url}"
+
+
+NOTIFICATION_CHANNEL_ID = "cryptoaio_price_alerts"
+
+
+def _create_notification_channel():
+    """
+    Create the notification channel required on Android 8+ (API 26+).
+    Without a channel, notifications are silently dropped on modern Android.
+    Must be called once, early in app startup — safe to call multiple times.
+    """
+    if platform != "android":
+        return
+    try:
+        from jnius import autoclass
+        from android import mActivity
+
+        NotificationChannel  = autoclass("android.app.NotificationChannel")
+        NotificationManager  = autoclass("android.app.NotificationManager")
+        String               = autoclass("java.lang.String")
+
+        channel = NotificationChannel(
+            String(NOTIFICATION_CHANNEL_ID),
+            String("Price Alerts"),                      # user-visible name
+            NotificationManager.IMPORTANCE_HIGH,         # shows heads-up banner
+        )
+        channel.setDescription(String("CryptoAIO price alert notifications"))
+        channel.enableVibration(True)
+        channel.enableLights(True)
+
+        manager = mActivity.getSystemService(
+            mActivity.NOTIFICATION_SERVICE
+        )
+        manager.createNotificationChannel(channel)
+        print(f"[NotificationChannel] created: {NOTIFICATION_CHANNEL_ID}")
+    except Exception as e:
+        print(f"[NotificationChannel] error: {e}")
 
 
 def _request_notification_permission():
