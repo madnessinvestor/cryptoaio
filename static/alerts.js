@@ -151,47 +151,47 @@ async function checkAlerts() {
 // ─── Alert sound system ───────────────────────────────────────────────────────
 
 const ALERT_SOUNDS = [
-  { id: 'classic',  label: 'Clássico',
+  { id: 'classic',  labelKey: 'snd_classic',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>` },
-  { id: 'ping',     label: 'Ping',
+  { id: 'ping',     labelKey: 'snd_ping',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4"/><path d="M17.7 6.3a8 8 0 0 1 0 11.4"/></svg>` },
-  { id: 'duplo',    label: 'Duplo',
+  { id: 'duplo',    labelKey: 'snd_duplo',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/></svg>` },
-  { id: 'triple',   label: 'Triple',
+  { id: 'triple',   labelKey: 'snd_triple',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="9" width="4" height="6" rx="1"/></svg>` },
-  { id: 'sino',     label: 'Sino',
+  { id: 'sino',     labelKey: 'snd_sino',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>` },
-  { id: 'laser',    label: 'Laser',
+  { id: 'laser',    labelKey: 'snd_laser',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>` },
-  { id: 'game',     label: 'Game',
+  { id: 'game',     labelKey: 'snd_game',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>` },
-  { id: 'piano',    label: 'Piano',
+  { id: 'piano',    labelKey: 'snd_piano',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="7" y1="5" x2="7" y2="14"/><line x1="12" y1="5" x2="12" y2="14"/><line x1="17" y1="5" x2="17" y2="14"/></svg>` },
-  { id: 'foguete',  label: 'Foguete',
+  { id: 'foguete',  labelKey: 'snd_foguete',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>` },
-  { id: 'alarme',   label: 'Alarme',
+  { id: 'alarme',   labelKey: 'snd_alarme',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` },
-  { id: 'pulso',    label: 'Pulso',
+  { id: 'pulso',    labelKey: 'snd_pulso',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>` },
-  { id: 'bolha',    label: 'Bolha',
+  { id: 'bolha',    labelKey: 'snd_bolha',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="3.5" r="1.5"/><circle cx="19.5" cy="8.5" r="1.5"/><circle cx="19.5" cy="15.5" r="1.5"/><circle cx="12" cy="20.5" r="1.5"/><circle cx="4.5" cy="15.5" r="1.5"/><circle cx="4.5" cy="8.5" r="1.5"/></svg>` },
-  { id: 'electro',  label: 'Electro',
+  { id: 'electro',  labelKey: 'snd_electro',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>` },
-  { id: 'cristal',  label: 'Cristal',
+  { id: 'cristal',  labelKey: 'snd_cristal',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>` },
-  { id: 'grave',    label: 'Grave',
+  { id: 'grave',    labelKey: 'snd_grave',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/><path d="M5 19 2 22"/><path d="m19 19 3 3"/></svg>` },
-  { id: 'agudo',    label: 'Agudo',
+  { id: 'agudo',    labelKey: 'snd_agudo',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 3 4 4-4 4"/><path d="M9 7H3"/><path d="m19 21-4-4 4-4"/><path d="M15 17h6"/><path d="M12 3v18"/></svg>` },
-  { id: 'fanfarra', label: 'Fanfarra',
+  { id: 'fanfarra', labelKey: 'snd_fanfarra',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z"/><path d="M9 17V4l12-1v13"/><path d="M15 16a3 3 0 1 0 6 0 3 3 0 0 0-6 0Z"/></svg>` },
-  { id: 'digital',  label: 'Digital',
+  { id: 'digital',  labelKey: 'snd_digital',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 7h.01"/><path d="M11 7h2"/><path d="M7 11h4"/><path d="M13 11h.01"/></svg>` },
-  { id: 'radar',    label: 'Radar',
+  { id: 'radar',    labelKey: 'snd_radar',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>` },
-  { id: 'mute',     label: 'Sem Som',
+  { id: 'mute',     labelKey: 'snd_mute',
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>` },
-  { id: 'custom',   label: 'Meu Som',  isCustom: true,
+  { id: 'custom',   labelKey: 'snd_custom', isCustom: true,
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>` },
 ];
 
@@ -208,9 +208,9 @@ function renderSoundGrid() {
     const dot = (s.isCustom && hasCustom)
       ? '<span class="alert-sound-custom-dot"></span>' : '';
     return `<div class="alert-sound-item${isActive ? ' active' : ''}"
-      onclick="selectAlertSound('${s.id}')" title="${s.label}">
+      onclick="selectAlertSound('${s.id}')" title="${t(s.labelKey)}">
       <div class="alert-sound-icon">${s.icon}</div>
-      <span class="alert-sound-label">${s.label}</span>${dot}
+      <span class="alert-sound-label">${t(s.labelKey)}</span>${dot}
     </div>`;
   }).join('');
 }
