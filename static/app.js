@@ -693,7 +693,7 @@ function updateCardAlertBadges() {
       return `${dir} ${fmtFull(a.target)}`;
     });
 
-    el.innerHTML = `<span class="cab-line${isFired ? " cab-fired" : ""}">🔔 ${parts.join(" • ")}</span>`;
+    el.innerHTML = `<span class="cab-line${isFired ? " cab-fired" : ""}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>${parts.join(" • ")}</span>`;
   });
 }
 
@@ -709,21 +709,23 @@ function renderDetailAlerts(sym) {
   if (!mine.length) { el.innerHTML = ""; return; }
 
   const rows = mine.map(a => {
-    const arrow    = a.direction === "above" ? "↑" : "↓";
+    const arrowSvg = a.direction === "above"
+      ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`
+      : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
     const dirLabel = a.direction === "above" ? t("alert_above") : t("alert_below");
     const isFired  = a.triggered;
     const cls      = isFired ? "triggered" : "active";
     return `<div class="detail-alert-item ${cls}">
-      <span class="detail-alert-desc">${dirLabel} ${formatUSD(a.target, true)} ${arrow}</span>
+      <span class="detail-alert-desc">${dirLabel} ${formatUSD(a.target, true)} ${arrowSvg}</span>
       <div class="detail-alert-actions">
         ${isFired ? `<span class="detail-alert-fired">${t("alert_triggered")}</span>` : ""}
-        ${isFired ? `<button class="alert-btn reset" onclick="resetAlertById('${a.id}')" title="${t('alert_reset')}">↺</button>` : ""}
-        <button class="alert-btn del" onclick="deleteAlertById('${a.id}')" title="${t('alert_delete')}">✕</button>
+        ${isFired ? `<button class="alert-btn reset" onclick="resetAlertById('${a.id}')" title="${t('alert_reset')}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.66"/></svg></button>` : ""}
+        <button class="alert-btn del" onclick="deleteAlertById('${a.id}')" title="${t('alert_delete')}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
     </div>`;
   }).join("");
 
-  el.innerHTML = `<div class="detail-alerts-header">🔔 ${t("alerts_title") || "Alertas"}</div>${rows}`;
+  el.innerHTML = `<div class="detail-alerts-header"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>${t("alerts_title") || "Alertas"}</div>${rows}`;
 }
 
 function closeDetailSheet() {
