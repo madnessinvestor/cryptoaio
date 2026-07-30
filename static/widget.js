@@ -597,14 +597,6 @@ function wltCellsHtml(a, fs) {
   const { text: chg, cls } = wltFmtChg(a.price, a.change24h);
   const fw  = wtCfg.bold ? "font-weight:700;" : "";
   const fss = `font-size:${fs};`;
-  const tickerAlerts = wltAlertMap[(a.symbol || "").toUpperCase()] || [];
-  const activeAlerts = tickerAlerts.filter(al => !al.triggered);
-  const bellTitle = activeAlerts.map(al =>
-    (al.direction === "above" ? "↑" : "↓") + " $" + Number(al.target).toLocaleString("en-US")
-  ).join(" • ");
-  const bell = activeAlerts.length
-    ? `<span class="wlt-bell" title="${wltEsc(bellTitle)}">🔔</span>`
-    : "";
   const rawSym = a.symbol || "";
   const symTrunc = rawSym.length > 12 ? rawSym.slice(0, 9) + "…" : rawSym;
   const sym   = wltEsc(symTrunc);
@@ -623,7 +615,7 @@ function wltCellsHtml(a, fs) {
         : `<img class="wlt-icon" src="/static/icons/tokens/${wltEsc(_symUp)}.png" alt="" onerror="this.style.visibility='hidden';this.style.width='0'">`)
     : "";
   return iconHtml +
-         `<span class="wlt-ticker" style="${fss}${fw}">${sym}${bell}</span>` +
+         `<span class="wlt-ticker" style="${fss}${fw}">${sym}</span>` +
          `<span class="wlt-price"  style="${fss}${fw}">${price}</span>` +
          `<span class="wlt-chg ${cls}" style="${fss}${fw}">${wltEsc(chg)}</span>`;
 }
@@ -638,7 +630,7 @@ function wltApplyLayout() {
   const valBtn     = document.getElementById("wlt-chg-val-btn");
   if (!topbar) return;
 
-  const is2Row = wtCfg.rows === "2";
+  const is2Row = wtCfg.rows === "2" || wtCfg.showAlerts;
 
   topbar.style.display    = (wtCfg.showHeader || wtCfg.showControls) ? "" : "none";
   if (header)     header.style.display     = wtCfg.showHeader   ? "" : "none";
@@ -697,7 +689,7 @@ function wltRender() {
   if (wtCfg.autoSort) data.sort((a, b) => (b.change24h || 0) - (a.change24h || 0));
 
   const fs = WLT_FS_MAP[wtCfg.fontSize] || "12px";
-  const cellFn = wtCfg.rows === "2" ? wltAsset2RowHtml : wltCellsHtml;
+  const cellFn = (wtCfg.rows === "2" || wtCfg.showAlerts) ? wltAsset2RowHtml : wltCellsHtml;
 
   const nCols = parseInt(wtCfg.cols) || 2;
   const chunkSize = Math.ceil(data.length / nCols);
@@ -709,7 +701,6 @@ function wltRender() {
   });
 
   wltRenderTrades();
-  wltRenderAlerts();
 }
 
 // ── 2-row-per-asset renderer ──────────────────────────────────────────────────
@@ -725,14 +716,9 @@ function wltAsset2RowHtml(a, fs) {
   const sym    = wltEsc(symTrunc);
   const price  = wltEsc(wltFmtPrice(a.price));
 
-  // Bell alerts
+  // Active alerts for this ticker
   const tickerAlerts = wltAlertMap[rawSym.toUpperCase()] || [];
   const activeAlerts = tickerAlerts.filter(al => !al.triggered);
-  const bellTitle = activeAlerts.map(al =>
-    (al.direction === "above" ? "↑" : "↓") + " $" + Number(al.target).toLocaleString("en-US")
-  ).join(" • ");
-  const bell = activeAlerts.length
-    ? `<span class="wlt-bell" title="${wltEsc(bellTitle)}">🔔</span>` : "";
 
   // Icon
   const _FOREX_FLAG = { USD:'us', EUR:'eu', BRL:'br', GBP:'gb', JPY:'jp', CHF:'ch', AUD:'au', CAD:'ca' };
@@ -745,29 +731,59 @@ function wltAsset2RowHtml(a, fs) {
         : `<img class="wlt-icon" src="/static/icons/tokens/${wltEsc(_symUp)}.png" alt="" onerror="this.style.visibility='hidden';this.style.width='0'">`)
     : "";
 
-  // Change: "both" → value on line 1, % on line 2; pct/val → chg on line 2 only
+  // Line 1 / line 2 content
   let topChg = "";
   let botChg  = "";
-  if (wtCfg.showChg) {
-    if (wtCfg.chg === "both") {
-      const v = _wltVal(a.price, a.change24h);
-      const p = _wltPct(a.change24h);
-      topChg = `<span class="wlt-chg ${v.cls}" style="${fss}${fw}">${wltEsc(v.text)}</span>`;
-      botChg = `<span class="wlt-chg ${p.cls}" style="${fss}${fw}">${wltEsc(p.text)}</span>`;
-    } else {
+  let botCls  = "";   // extra class on .wlt-2r-bot when showing alert row
+
+  if (wtCfg.showAlerts) {
+    // showAlerts mode: entire change goes on line 1; alert row on line 2
+    if (wtCfg.showChg) {
       const { text, cls } = wltFmtChg(a.price, a.change24h);
-      botChg = `<span class="wlt-chg ${cls}" style="${fss}${fw}">${wltEsc(text)}</span>`;
+      if (text) topChg = `<span class="wlt-chg ${cls}" style="${fss}${fw}">${wltEsc(text)}</span>`;
+    }
+    if (activeAlerts.length) {
+      const ccyRate = wltCcyRate();
+      const ccySym  = wtCfg.showCcy ? (WLT_CCY_SYM[wtCfg.ccy] || "$") : "";
+      const alertSpans = activeAlerts.map(al => {
+        const dir  = al.direction === "above" ? "▲" : "▼";
+        const cls2 = al.direction === "above" ? "wlt-pos" : "wlt-neg";
+        const tgt  = al.target * ccyRate;
+        const tgtStr = tgt >= 1000
+          ? ccySym + tgt.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
+          : tgt >= 1      ? ccySym + tgt.toFixed(2)
+          : tgt >= 0.0001 ? ccySym + tgt.toFixed(4)
+          : ccySym + tgt.toPrecision(3);
+        return `<span class="${cls2}" style="${fss}${fw}">${dir} ${wltEsc(tgtStr)}</span>`;
+      }).join(" ");
+      // ticker left, alert(s) right — space-between layout
+      botCls  = "wlt-2r-bot--alert";
+      botChg  = `<span class="wlt-alert-sym" style="${fss}">${wltEsc(symTrunc)}</span>` +
+                `<span class="wlt-alert-vals">${alertSpans}</span>`;
+    }
+  } else {
+    // Normal 2-row change: "both" → value on line 1, % on line 2; pct/val → chg on line 2 only
+    if (wtCfg.showChg) {
+      if (wtCfg.chg === "both") {
+        const v = _wltVal(a.price, a.change24h);
+        const p = _wltPct(a.change24h);
+        topChg = `<span class="wlt-chg ${v.cls}" style="${fss}${fw}">${wltEsc(v.text)}</span>`;
+        botChg = `<span class="wlt-chg ${p.cls}" style="${fss}${fw}">${wltEsc(p.text)}</span>`;
+      } else {
+        const { text, cls } = wltFmtChg(a.price, a.change24h);
+        botChg = `<span class="wlt-chg ${cls}" style="${fss}${fw}">${wltEsc(text)}</span>`;
+      }
     }
   }
 
   return `<div class="wlt-asset-2r">
     <div class="wlt-2r-top" style="${fss}">
       ${iconHtml}
-      <span class="wlt-ticker" style="${fss}${fw}">${sym}${bell}</span>
+      <span class="wlt-ticker" style="${fss}${fw}">${sym}</span>
       <span class="wlt-price"  style="${fss}${fw}">${price}</span>
       ${topChg}
     </div>
-    <div class="wlt-2r-bot">${botChg}</div>
+    <div class="wlt-2r-bot ${botCls}">${botChg}</div>
   </div>`;
 }
 
