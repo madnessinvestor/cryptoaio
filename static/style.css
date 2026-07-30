@@ -2686,26 +2686,29 @@ section.hidden { display: none; }
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(0,230,118,0.1);
-  color: var(--accent);
+  background: rgba(128,128,128,0.1);
+  color: var(--muted2);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 .alert-sound-item.active .alert-sound-icon {
   background: rgba(0,230,118,0.22);
+  color: var(--accent);
 }
 .alert-sound-item:not(.active):hover .alert-sound-icon {
-  background: rgba(0,230,118,0.14);
+  background: rgba(128,128,128,0.18);
+  color: var(--text2);
 }
 [data-theme="light"] .alert-sound-icon {
-  background: rgba(0,168,84,0.1);
-  color: var(--accent);
+  background: rgba(128,128,128,0.1);
+  color: var(--muted2);
 }
 [data-theme="light"] .alert-sound-item.active .alert-sound-icon {
   background: rgba(0,168,84,0.2);
+  color: var(--accent);
 }
 .alert-sound-label {
   font-size: 0.6rem;
