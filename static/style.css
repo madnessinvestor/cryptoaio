@@ -1833,7 +1833,7 @@ header {
 /* tab-bar removed — navigation moved to .bottom-nav */
 
 /* ─── Sections ──────────────────────────────────────────────────────────────── */
-section { display: flex; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
+section { display: flex; flex-direction: column; flex: 1; overflow-y: scroll; min-height: 0; }
 section.hidden { display: none; }
 
 /* ─── Portfolio Summary Strip ──────────────────────────────────────────────── */
