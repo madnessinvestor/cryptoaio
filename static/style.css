@@ -1177,6 +1177,7 @@ main {
 [data-theme="light"] .dwm-net-btn.active      { color: #fff; }
 [data-theme="light"] .btn-portfolio-add      { color: #fff; }
 [data-theme="light"] .col-btn.active         { color: #fff; }
+[data-theme="light"] .ai-cfg-save-btn        { color: #fff; }
 [data-theme="light"] .ai-cfg-select option    { background: #ffffff; color: #111; }
 [data-theme="light"] .cfg-prov-select option  { background: #ffffff; color: #111; }
 
