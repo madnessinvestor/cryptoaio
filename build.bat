@@ -2,6 +2,9 @@
 REM CryptoAIO — Windows Desktop Build Script
 REM Requires Python 3.10+ and pip
 
+REM Change to the script's own directory so relative paths work
+cd /d "%~dp0"
+
 echo ============================================
 echo  CryptoAIO — Building Windows Desktop App
 echo ============================================
