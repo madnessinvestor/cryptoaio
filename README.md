@@ -79,8 +79,8 @@ Add and remove assets with automatic persistence — no login required.
 
 | Type | Networks |
 |------|----------|
-| EVM | Ethereum · BSC · Polygon · Arbitrum One · Base · Optimism · HyperEVM · Avalanche · zkSync Era · Linea · Scroll · Mantle |
-| Other | Solana · Bitcoin · TON · NEAR · Ergo · Starknet · SEI |
+| EVM | Ethereum · Polygon · Arbitrum One · Base · HyperEVM |
+| Other | Solana · Bitcoin · Ergo · Starknet · SEI |
 
 ---
 
@@ -136,7 +136,7 @@ Install CryptoAIO directly on your home screen on Android, iPhone, Windows, macO
 | Frontend | HTML5 · CSS3 · Vanilla JS (ES6+) |
 | AI | Groq (Whisper + LLaMA) · Gemini · OpenRouter |
 | Market Data | Hyperliquid, MEXC, KuCoin, Gate.io, OKX, Kraken, Bitfinex, CoinGecko, CoinCap, CryptoCompare, brapi.dev, Frankfurter, Yahoo Finance |
-| Storage | Local JSON + localStorage + GitHub Gist (optional sync) |
+| Storage | Local JSON + localStorage |
 
 ---
 
@@ -230,8 +230,6 @@ Build configuration is in `buildozer.spec`.
 | `GOOGLE_AI_API_KEY` | Google Gemini (fallback) |
 | `OPENROUTER_API_KEY` | OpenRouter (fallback) |
 | `OPENAI_API_KEY` | OpenAI Whisper — voice transcription fallback (used when `GROQ_API_KEY` is absent) |
-| `GITHUB_CLIENT_ID` | GitHub OAuth App — enables one-click Gist auth |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth App secret |
 
 > Without AI keys, Mad AI is unavailable. All other modules work normally.
 
@@ -254,8 +252,7 @@ Build configuration is in `buildozer.spec`.
 - [x] Embeddable widget with 2-column / 2-row layouts
 - [x] Widget phone mockup preview (live "AO VIVO" with clock & wallpaper)
 - [x] Widget custom colour picker (HSB canvas + hue slider + hex input)
-- [x] Widget themes: Escuro · Claro · Purple Dark · Auto · Custom
-- [x] Data sync via GitHub Gist (auto-backup across devices)
+- [x] Widget themes: Dark · Light · Purple Dark · Auto · Custom
 - [x] i18n — Portuguese & English (full coverage)
 - [x] Global refresh button syncs widget live data + clock
 - [x] DeFi positions and Perps tracked per wallet (Tokens / DeFi / Perps tabs)
