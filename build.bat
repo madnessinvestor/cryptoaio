@@ -29,19 +29,11 @@ echo [2/3] Cleaning previous build...
 if exist build rmdir /s /q build
 if exist dist  rmdir /s /q dist
 
-REM Build main app
-echo [3/4] Running PyInstaller — Main app...
+REM Build main app + widget (single spec, shared dist folder)
+echo [3/3] Running PyInstaller (main app + widget)...
 python -m PyInstaller CryptoAIO.spec --clean --noconfirm
 if %errorlevel% neq 0 (
-    echo ERROR: PyInstaller failed (main app).
-    pause & exit /b 1
-)
-
-REM Build widget
-echo [4/4] Running PyInstaller — Widget...
-python -m PyInstaller CryptoAIOWidget.spec --clean --noconfirm
-if %errorlevel% neq 0 (
-    echo ERROR: PyInstaller failed (widget).
+    echo ERROR: PyInstaller failed.
     pause & exit /b 1
 )
 
@@ -49,6 +41,6 @@ echo.
 echo ============================================
 echo  Build complete!
 echo  Main app : dist\CryptoAIO\CryptoAIO.exe
-echo  Widget   : dist\CryptoAIOWidget\CryptoAIOWidget.exe
+echo  Widget   : dist\CryptoAIO\CryptoAIOWidget.exe
 echo ============================================
 pause
