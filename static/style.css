@@ -1167,6 +1167,17 @@ main {
 .empty-state p { font-size: 0.88rem; line-height: 1.7; }
 .empty-state b { color: var(--text); }
 
+/* ─── Light theme — button text & select options ────────────────────────── */
+[data-theme="light"] .btn-primary          { color: #fff; }
+[data-theme="light"] .btn-confirm          { color: #fff; }
+[data-theme="light"] .btn-fab              { color: #fff; }
+[data-theme="light"] .dash-fab-option-icon { color: #fff; }
+[data-theme="light"] .ai-not-cfg-btn       { color: #fff; }
+[data-theme="light"] .hash-cat-btn.active  { color: #fff; }
+[data-theme="light"] .dwm-net-btn.active   { color: #fff; }
+[data-theme="light"] .ai-cfg-select option    { background: #ffffff; color: #111; }
+[data-theme="light"] .cfg-prov-select option  { background: #ffffff; color: #111; }
+
 /* Card */
 .asset-card {
   background: var(--surface);
