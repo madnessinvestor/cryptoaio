@@ -94,6 +94,9 @@ function _extractHash(raw) {
   // Accept full explorer URLs like https://etherscan.io/tx/0xABC... or hyperevmscan.io/tx/...
   const m = raw.match(/(?:\/tx\/|[?&]tx=)(0x[0-9a-fA-F]+|[0-9a-fA-F]{40,})/i);
   if (m) return m[1];
+  // Solana explorer URLs use base58-encoded hashes (solscan.io, explorer.solana.com, solana.fm)
+  const sol = raw.match(/(?:\/tx\/|[?&]tx=)([1-9A-HJ-NP-Za-km-z]{32,90})/);
+  if (sol) return sol[1];
   // If the input is an explorer address URL (/address/0x...), there is no tx hash to extract.
   // Return null so no lookup is triggered (prevents confusing "not found" error).
   if (/\/address\/0x[0-9a-fA-F]+/i.test(raw)) return null;

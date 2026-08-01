@@ -2491,6 +2491,11 @@ def tx_lookup():
     url_match = _re.search(r'/tx/(0x[0-9a-fA-F]+|[0-9a-fA-F]{40,})', hash_)
     if url_match:
         hash_ = url_match.group(1)
+    else:
+        # Solana explorer URLs (solscan.io, explorer.solana.com, solana.fm) use base58 hashes
+        sol_url_match = _re.search(r'/tx/([1-9A-HJ-NP-Za-km-z]{32,90})', hash_)
+        if sol_url_match:
+            hash_ = sol_url_match.group(1)
 
     # Manual network selection — bypass auto-detect
     if network == "bitcoin":
