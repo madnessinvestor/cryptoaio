@@ -712,9 +712,10 @@
   function init() {
     if (!window.pywebview) return; // browser/PWA: no-op
     var BASE_W = 480;
+    var MIN_ZOOM = 250 / BASE_W; // mínimo 250 px largura
     function applyZoom() {
-      var zoom = window.innerWidth / BASE_W;
-      document.documentElement.style.zoom = zoom.toFixed(4);
+      var zoom = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
+      document.body.style.zoom = zoom.toFixed(4);
     }
     applyZoom();
     window.addEventListener('resize', applyZoom);

@@ -96,7 +96,7 @@ if __name__ == "__main__":
             width=480,
             height=920,
             resizable=True,
-            min_size=(360, 600),
+            min_size=(250, 435),
         )
         webview.start()
     except ImportError:
