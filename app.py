@@ -914,6 +914,11 @@ def rename_portfolio_token(ticker):
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
 
+@app.route("/graphics/<path:filename>")
+def serve_graphics(filename):
+    from flask import send_from_directory
+    return send_from_directory("graphics", filename)
+
 @app.route("/")
 def index():
     return render_template("index.html")
