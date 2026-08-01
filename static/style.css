@@ -937,6 +937,7 @@ h1 {
   height: 2.475rem;
   width: auto;
   display: block;
+  margin-top: 6px;
   animation: logo-breathe 4s ease-in-out infinite;
 }
 
