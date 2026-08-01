@@ -9,6 +9,7 @@ block_cipher = None
 datas = [
     ("templates",               "templates"),
     ("static",                  "static"),
+    ("graphics",                "graphics"),
     ("assets.json",             "."),
     ("alerts.json",             "."),
     ("dashboard_wallets.json",  "."),
@@ -72,7 +73,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="static/icons/logo.ico",  # Multi-resolution ICO (16–256 px)
+    icon="graphics/icon-512.ico",  # Multi-resolution ICO (16–256 px)
 )
 
 coll = COLLECT(

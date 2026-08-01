@@ -916,8 +916,11 @@ def rename_portfolio_token(ticker):
 
 @app.route("/graphics/<path:filename>")
 def serve_graphics(filename):
+    import sys
     from flask import send_from_directory
-    return send_from_directory("graphics", filename)
+    # When bundled with PyInstaller, files live in sys._MEIPASS, not the CWD
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return send_from_directory(os.path.join(base, "graphics"), filename)
 
 @app.route("/")
 def index():
