@@ -713,10 +713,16 @@
   var MIN_ZOOM = 250 / BASE_W;
 
   function applyZoom() {
-    var zoom = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
-    document.body.style.width            = BASE_W + 'px';
-    document.body.style.zoom             = zoom.toFixed(4);
-    document.documentElement.style.overflowX = 'hidden';
+    var zoom     = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
+    var logicalH = Math.round(window.innerHeight / zoom);
+
+    document.documentElement.style.setProperty('--app-h',  logicalH + 'px');
+    document.documentElement.style.setProperty('--app-vw', BASE_W   + 'px');
+
+    document.body.style.width    = BASE_W   + 'px';
+    document.body.style.height   = logicalH + 'px';
+    document.body.style.zoom     = zoom.toFixed(4);
+    document.documentElement.style.overflow = 'hidden';
   }
 
   function init() {

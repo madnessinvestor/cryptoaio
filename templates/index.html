@@ -1113,15 +1113,22 @@
 /* ── Proportional zoom for pywebview desktop window ── */
 (function () {
   var BASE_W = 480;
-  var MIN_ZOOM = 250 / BASE_W; // mínimo 250 px → zoom 0.52
+  var MIN_ZOOM = 250 / BASE_W; // mínimo 250 px → zoom ~0.52
 
   function applyZoom() {
-    var zoom = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
-    // 1) Fixa largura em BASE_W para o layout sempre renderizar a 480 px
-    // 2) zoom escala tudo proporcionalmente (px, rem, ícones, botões)
-    document.body.style.width            = BASE_W + 'px';
-    document.body.style.zoom             = zoom.toFixed(4);
-    document.documentElement.style.overflowX = 'hidden'; // sem scroll horizontal
+    var zoom     = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
+    var logicalH = Math.round(window.innerHeight / zoom); // altura lógica de design
+
+    // CSS custom properties usadas no style.css (dvh / vw)
+    // No browser/PWA essas vars nunca são definidas → fallback 100dvh/100vw
+    document.documentElement.style.setProperty('--app-h',  logicalH + 'px');
+    document.documentElement.style.setProperty('--app-vw', BASE_W   + 'px');
+
+    // Fixa largura e altura no espaço lógico; zoom escala tudo visualmente
+    document.body.style.width    = BASE_W   + 'px';
+    document.body.style.height   = logicalH + 'px';
+    document.body.style.zoom     = zoom.toFixed(4);
+    document.documentElement.style.overflow = 'hidden';
   }
 
   function init() {
@@ -1131,7 +1138,6 @@
 
   // pywebviewready só dispara dentro do pywebview (build desktop)
   window.addEventListener('pywebviewready', init);
-  // Fallback: caso o objeto já esteja pronto antes do listener
   if (window.pywebview) { init(); }
 })();
 </script>
