@@ -41,13 +41,13 @@
   [data-theme="purple-dark"] .wt-trades-divider { background: rgba(192,132,252,0.20); }
 
   html {
-    background: transparent !important;
+    background: #0f0f14 !important;
   }
 
   body {
     width: 100%;
     min-height: 100%;
-    background: transparent !important;
+    background: #0f0f14 !important;
     font-family: 'Roboto Mono', 'Droid Sans Mono', 'Courier New', monospace;
     color: var(--text);
     overflow: hidden;
@@ -70,6 +70,23 @@
     -webkit-app-region: no-drag;
     app-region: no-drag;
   }
+
+  /* ── 8-direction resize handles (pywebview desktop only) ─── */
+  .wv-edge {
+    position: fixed;
+    z-index: 10000;
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+    display: none; /* shown by JS inside pywebview */
+  }
+  .wv-edge.n  { top:0;    left:8px;   right:8px;  height:5px; cursor:n-resize; }
+  .wv-edge.s  { bottom:0; left:8px;   right:8px;  height:5px; cursor:s-resize; }
+  .wv-edge.e  { right:0;  top:8px;  bottom:8px;   width:5px;  cursor:e-resize; }
+  .wv-edge.w  { left:0;   top:8px;  bottom:8px;   width:5px;  cursor:w-resize; }
+  .wv-edge.ne { top:0;    right:0;  width:12px; height:12px;  cursor:ne-resize; }
+  .wv-edge.nw { top:0;    left:0;   width:12px; height:12px;  cursor:nw-resize; }
+  .wv-edge.se { bottom:0; right:0;  width:12px; height:12px;  cursor:se-resize; }
+  .wv-edge.sw { bottom:0; left:0;   width:12px; height:12px;  cursor:sw-resize; }
 
   /* Close button injected by JS when inside pywebview */
   #wv-close {
@@ -311,15 +328,17 @@
   <div class="wt-trades-divider" id="wt-trades-divider" style="display:none"></div>
   <div class="wt-trades-section" id="wt-trades" style="display:none"></div>
 
-  <!-- Resize grip: only shown inside pywebview (activated by JS below) -->
-  <div id="wv-resize" title="Redimensionar">
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <line x1="14" y1="5"  x2="5"  y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="14" y1="9"  x2="9"  y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      <line x1="14" y1="13" x2="13" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
-  </div>
 </div>
+
+<!-- 8-direction resize handles (activated by JS when inside pywebview) -->
+<div class="wv-edge n"  id="wv-rn"></div>
+<div class="wv-edge s"  id="wv-rs"></div>
+<div class="wv-edge e"  id="wv-re"></div>
+<div class="wv-edge w"  id="wv-rw"></div>
+<div class="wv-edge ne" id="wv-rne"></div>
+<div class="wv-edge nw" id="wv-rnw"></div>
+<div class="wv-edge se" id="wv-rse"></div>
+<div class="wv-edge sw" id="wv-rsw"></div>
 
 <script>
   // ── Config defaults (all w_* keys — shared with main app Widget tab) ─────────
@@ -798,46 +817,75 @@
 </script>
 
 <script>
-/* ── pywebview desktop extras: close button + resize grip ── */
+/* ── pywebview desktop extras: close button + 8-direction resize ── */
 (function () {
+  var MIN_W = 280, MIN_H = 60;
+
+  // Config for each handle: does dragging it grow/shrink W or H,
+  // and does it also need to reposition the window (N/W edges)?
+  //   growW / growH : +delta  → bigger   (S / E / SE / NE / SW)
+  //   shrinkW/shrinkH: -delta → smaller, window moves (N / W / NW / SW / NE)
+  var HANDLES = [
+    { id:'wv-rn',  shrinkH:true  },
+    { id:'wv-rs',  growH:true    },
+    { id:'wv-re',  growW:true    },
+    { id:'wv-rw',  shrinkW:true  },
+    { id:'wv-rne', growW:true,   shrinkH:true  },
+    { id:'wv-rnw', shrinkW:true, shrinkH:true  },
+    { id:'wv-rse', growW:true,   growH:true    },
+    { id:'wv-rsw', shrinkW:true, growH:true    },
+  ];
+
+  function attachResize(el, cfg) {
+    el.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var sx = e.screenX, sy = e.screenY;
+      var sw = window.outerWidth,  sh = window.outerHeight;
+      var ox = window.screenLeft,  oy = window.screenTop;
+
+      function onMove(ev) {
+        var dx = ev.screenX - sx;
+        var dy = ev.screenY - sy;
+        var newW = sw, newH = sh, newX = ox, newY = oy;
+
+        if (cfg.growW)   newW = Math.max(MIN_W, sw + dx);
+        if (cfg.shrinkW) { newW = Math.max(MIN_W, sw - dx); newX = ox + (sw - newW); }
+        if (cfg.growH)   newH = Math.max(MIN_H, sh + dy);
+        if (cfg.shrinkH) { newH = Math.max(MIN_H, sh - dy); newY = oy + (sh - newH); }
+
+        var api = window.pywebview && window.pywebview.api;
+        if (!api) return;
+        if (cfg.shrinkW || cfg.shrinkH) api.move(newX, newY);
+        api.resize(newW, newH);
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup',   onUp);
+    });
+  }
+
   function setup() {
-    // Show close button and wire it up
+    // Close button
     var btn = document.getElementById('wv-close');
     if (btn) {
       btn.style.display = 'block';
       btn.addEventListener('click', function () {
-        window.pywebview.api && window.pywebview.api.close
-          ? window.pywebview.api.close()
-          : window.close();
+        var api = window.pywebview && window.pywebview.api;
+        api && api.close ? api.close() : window.close();
       });
     }
 
-    // Show resize grip and implement manual resize via pywebview move_window / resize
-    var grip = document.getElementById('wv-resize');
-    if (grip) {
-      grip.style.display = 'block';
-      grip.addEventListener('mousedown', function (e) {
-        e.preventDefault();
-        var startX  = e.screenX;
-        var startY  = e.screenY;
-        var startW  = window.outerWidth;
-        var startH  = window.outerHeight;
-
-        function onMove(ev) {
-          var newW = Math.max(280, startW + (ev.screenX - startX));
-          var newH = Math.max(60,  startH + (ev.screenY - startY));
-          if (window.pywebview && window.pywebview.api && window.pywebview.api.resize) {
-            window.pywebview.api.resize(newW, newH);
-          }
-        }
-        function onUp() {
-          document.removeEventListener('mousemove', onMove);
-          document.removeEventListener('mouseup', onUp);
-        }
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-      });
-    }
+    // Resize handles
+    HANDLES.forEach(function (cfg) {
+      var el = document.getElementById(cfg.id);
+      if (!el) return;
+      el.style.display = 'block';
+      attachResize(el, cfg);
+    });
   }
 
   window.addEventListener('pywebviewready', setup);

@@ -74,6 +74,10 @@ class WidgetApi:
         if self._window:
             self._window.resize(int(width), int(height))
 
+    def move(self, x, y):
+        if self._window:
+            self._window.move(int(x), int(y))
+
 
 def _server_already_running():
     import urllib.request
