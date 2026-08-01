@@ -1,2 +1,31 @@
+# Replit / IDE
 .canvas/
 attached_assets/
+.local/
+.agents/
+
+# PyInstaller build output
+build/
+dist/
+*.spec.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.env
+venv/
+.venv/
+
+# User data — contains personal wallets, portfolio, alerts. Never commit.
+assets.json
+alerts.json
+portfolio_data.json
+dashboard_wallets.json
+dashboard_manual.json
+dashboard_history.json
+dashboard_wallets.json.*
+
+# Token icon cache (downloaded at runtime)
+static/icons/tokens/
