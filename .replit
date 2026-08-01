@@ -5,7 +5,7 @@ stack = "BEST_EFFORT_FALLBACK"
 
 [nix]
 channel = "stable-25_05"
-packages = ["SDL2", "SDL2_image", "SDL2_mixer", "SDL2_ttf", "libcxx", "mtdev", "pkg-config"]
+packages = ["SDL2", "SDL2_image", "SDL2_mixer", "SDL2_ttf", "freetype", "lcms2", "libcxx", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "mtdev", "openjpeg", "pkg-config", "tcl", "tk", "zlib"]
 
 [workflows]
 runButton = "Project"

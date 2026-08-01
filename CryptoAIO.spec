@@ -72,7 +72,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="static/icons/logo.png",  # Will be ignored if file doesn't exist
+    icon="static/icons/logo.ico",  # Multi-resolution ICO (16–256 px)
 )
 
 coll = COLLECT(
