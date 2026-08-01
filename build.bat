@@ -5,6 +5,12 @@ REM Requires Python 3.10+ and pip
 REM Change to the script's own directory so relative paths work
 cd /d "%~dp0"
 
+REM Always restore requirements.txt to only what the web app needs
+REM (Replit may inject kivy/pillow automatically)
+echo flask^>=3.0>  requirements.txt
+echo requests>>    requirements.txt
+echo gunicorn>>    requirements.txt
+
 echo ============================================
 echo  CryptoAIO — Building Windows Desktop App
 echo ============================================
