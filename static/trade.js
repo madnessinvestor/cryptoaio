@@ -16,7 +16,7 @@ function selectHashNet(btn, net) {
   }
 }
 
-const _EVM_NETS = ['hyperevm','ethereum','base','arbitrum','optimism','bsc','polygon'];
+const _EVM_NETS = ['hyperevm','ethereum','base','arbitrum','polygon'];
 
 function syncHashCatFromNet(net) {
   let cat = "auto";
