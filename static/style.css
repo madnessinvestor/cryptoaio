@@ -1174,7 +1174,8 @@ main {
 [data-theme="light"] .dash-fab-option-icon { color: #fff; }
 [data-theme="light"] .ai-not-cfg-btn       { color: #fff; }
 [data-theme="light"] .hash-cat-btn.active  { color: #fff; }
-[data-theme="light"] .dwm-net-btn.active   { color: #fff; }
+[data-theme="light"] .dwm-net-btn.active      { color: #fff; }
+[data-theme="light"] .btn-portfolio-add      { color: #fff; }
 [data-theme="light"] .ai-cfg-select option    { background: #ffffff; color: #111; }
 [data-theme="light"] .cfg-prov-select option  { background: #ffffff; color: #111; }
 
@@ -3848,7 +3849,7 @@ section.hidden { display: none; }
   cursor: pointer; transition: all .15s;
 }
 .dwm-net-btn:hover  { border-color: var(--accent); color: var(--accent); }
-.dwm-net-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.dwm-net-btn.active { background: var(--accent); border-color: var(--accent); color: #111; }
 .dwc-total    { font-size: 0.92rem; font-weight: 700; color: var(--text); }
 .dwc-btns     { display: flex; gap: 4px; }
 .dwc-body     { border-top: 1px solid var(--border); }
