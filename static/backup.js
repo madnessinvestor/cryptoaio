@@ -748,17 +748,8 @@ async function factoryReset() {
     const r = await fetch("/api/data/reset", { method: "POST" });
     if (!r.ok) throw new Error("server reset failed");
 
-    // 2. Wipe client-side localStorage (Mad AI, Gist, Widget, columns)
-    const keysToRemove = [
-      "madai_keys", "madai_active", "madai_autospeak",
-      "cryptoaio_gist_token", "cryptoaio_gist_id",
-      "trackerColumns",
-    ];
-    // Remove all widget keys (w_*)
-    Object.keys(localStorage)
-      .filter(k => k.startsWith("w_"))
-      .forEach(k => localStorage.removeItem(k));
-    keysToRemove.forEach(k => localStorage.removeItem(k));
+    // 2. Wipe ALL client-side localStorage for this origin
+    localStorage.clear();
 
     setStatus("ok", _bgt("factory_reset_ok"));
     setTimeout(() => location.reload(), 1400);
