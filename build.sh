@@ -33,17 +33,21 @@ pip install -r requirements.txt pyinstaller pywebview --quiet
 echo "[2/3] Cleaning previous build..."
 rm -rf build dist
 
-echo "[3/3] Running PyInstaller..."
+echo "[3/4] Running PyInstaller — Main app..."
 pyinstaller CryptoAIO.spec --clean --noconfirm
+
+echo "[4/4] Running PyInstaller — Widget..."
+pyinstaller CryptoAIOWidget.spec --clean --noconfirm
 
 echo
 echo "============================================"
 if [ "$OS" = "Darwin" ]; then
     echo " Build complete!"
-    echo " App bundle : dist/CryptoAIO.app"
-    echo " Also at    : dist/CryptoAIO/CryptoAIO"
+    echo " Main app   : dist/CryptoAIO.app"
+    echo " Widget     : dist/CryptoAIOWidget.app"
 else
     echo " Build complete!"
-    echo " Executable : dist/CryptoAIO/CryptoAIO"
+    echo " Main app   : dist/CryptoAIO/CryptoAIO"
+    echo " Widget     : dist/CryptoAIOWidget/CryptoAIOWidget"
 fi
 echo "============================================"
