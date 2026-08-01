@@ -919,10 +919,10 @@ h1 {
   width: auto;
   display: block;
   filter:
-    drop-shadow(1px  0px 0px #000)
-    drop-shadow(-1px  0px 0px #000)
-    drop-shadow(0px  1px 0px #000)
-    drop-shadow(0px -1px 0px #000);
+    drop-shadow(0.5px  0px   0px rgba(0,0,0,0.5))
+    drop-shadow(-0.5px  0px  0px rgba(0,0,0,0.5))
+    drop-shadow(0px  0.5px   0px rgba(0,0,0,0.5))
+    drop-shadow(0px -0.5px   0px rgba(0,0,0,0.5));
 }
 
 .header-actions {
