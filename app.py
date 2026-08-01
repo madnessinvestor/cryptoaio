@@ -940,6 +940,22 @@ def widget():
 def widget_settings():
     return render_template("widget_settings.html")
 
+@app.route("/static/icons/tokens/<path:filename>")
+def serve_token_icon(filename):
+    """Serve token icons from the runtime data directory.
+    Overrides Flask's default static handler so icons downloaded to data_dir
+    (APPDATA/CryptoAIO/static/icons/tokens/) are found in the exe builds,
+    where flask_app.static_folder points to the read-only bundle directory."""
+    path = os.path.abspath(os.path.join(ICON_DIR, filename))
+    # Safety: ensure the resolved path is inside ICON_DIR (no path traversal)
+    if not path.startswith(os.path.abspath(ICON_DIR)):
+        return ("", 403)
+    if os.path.exists(path) and os.path.getsize(path) > 200:
+        resp = send_file(path, mimetype="image/png")
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
+    return ("", 404)
+
 # ── Widget settings — server-side persistence (shared between CryptoAIO.exe and CryptoAIOWidget.exe)
 WIDGET_SETTINGS_FILE = "widget_settings.json"
 

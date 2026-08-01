@@ -483,9 +483,11 @@
     const _FOREX_FLAG = { USD:'us', EUR:'eu', BRL:'br', GBP:'gb', JPY:'jp', CHF:'ch', AUD:'au', CAD:'ca' };
     const _symUp = rawSym.toUpperCase();
     const _forexCc = _symUp.length === 6 ? _FOREX_FLAG[_symUp.slice(0,3)] : null;
+    // Use remote icon_url from API (CDN) first, then /api/icon-img (served from data_dir,
+    // works in both exe and browser builds), fallback hides the img on error.
     const _iconSrc = _forexCc
       ? `https://flagcdn.com/48x36/${_forexCc}.png`
-      : `/static/icons/tokens/${esc(_symUp)}.png`;
+      : (a.icon_url || `/api/icon-img?symbol=${esc(_symUp)}`);
     const iconHtml = cfg.showIcon
       ? `<img class="w-icon" src="${_iconSrc}" alt="" onerror="this.style.visibility='hidden';this.style.width='0'">`
       : "";
@@ -507,7 +509,7 @@
     const _forexCc = _symUp.length === 6 ? _FOREX_FLAG[_symUp.slice(0,3)] : null;
     const _iconSrc = _forexCc
       ? `https://flagcdn.com/48x36/${_forexCc}.png`
-      : `/static/icons/tokens/${esc(_symUp)}.png`;
+      : (a.icon_url || `/api/icon-img?symbol=${esc(_symUp)}`);
     const iconHtml = cfg.showIcon
       ? `<img class="w-icon" src="${_iconSrc}" alt="" onerror="this.style.visibility='hidden';this.style.width='0'">`
       : "";
@@ -818,24 +820,26 @@
   });
 
   // ── Init ────────────────────────────────────────────────────
-  // Pull settings from server first — syncs between CryptoAIO.exe and CryptoAIOWidget.exe
+  // Pull settings from server FIRST — ensures cfg is correct before load() fetches and renders.
+  // This bridges the localStorage gap between CryptoAIO.exe and CryptoAIOWidget.exe
+  // (each pywebview process has its own localStorage; server-side JSON is the shared source).
+  function _startApp() {
+    applyLayout();
+    load();
+    scheduleRefresh();
+  }
   fetch("/api/widget/settings").then(r => r.json()).then(data => {
-    if (!data || typeof data !== "object" || !Object.keys(data).length) return;
-    let changed = false;
-    for (const [k, v] of Object.entries(data)) {
-      if (!(k in DEFAULTS) && k !== "customBg") continue;
-      const def    = DEFAULTS[k] !== undefined ? DEFAULTS[k] : "";
-      const newVal = typeof def === "boolean" ? (v ? "1" : "0") : String(v);
-      if (localStorage.getItem("w_" + k) !== newVal) {
+    if (data && typeof data === "object" && Object.keys(data).length) {
+      for (const [k, v] of Object.entries(data)) {
+        if (!(k in DEFAULTS) && k !== "customBg") continue;
+        const def    = DEFAULTS[k] !== undefined ? DEFAULTS[k] : "";
+        const newVal = typeof def === "boolean" ? (v ? "1" : "0") : String(v);
         localStorage.setItem("w_" + k, newVal);
-        changed = true;
       }
+      cfg = readCfg();
     }
-    if (changed) { cfg = readCfg(); applyLayout(); render(); }
-  }).catch(() => {});
-  applyLayout();
-  load();
-  scheduleRefresh();
+    _startApp();
+  }).catch(() => { _startApp(); });
 </script>
 
 <script>
