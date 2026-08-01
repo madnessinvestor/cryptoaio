@@ -80,7 +80,10 @@ function _netFromUrl(raw) {
   try {
     const url = raw.includes('://') ? raw : 'https://' + raw;
     const host = new URL(url).hostname.replace(/^www\./, '');
-    for (const [domain, net] of Object.entries(_EXPLORER_DOMAINS)) {
+    // Sort longest domain first so subdomains (e.g. optimistic.etherscan.io)
+    // are checked before their parent (etherscan.io).
+    const entries = Object.entries(_EXPLORER_DOMAINS).sort((a, b) => b[0].length - a[0].length);
+    for (const [domain, net] of entries) {
       if (host === domain || host.endsWith('.' + domain)) return net;
     }
   } catch (_) {}
