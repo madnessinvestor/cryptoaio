@@ -2472,8 +2472,8 @@ section.hidden { display: none; }
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 7px 11px;
-  font-size: 1rem;
+  padding: 9px 13px;
+  font-size: 1.1rem;
   cursor: pointer;
   line-height: 1;
   display: flex;
