@@ -50,7 +50,14 @@ async function importAppData(input) {
 
   _backupSetStatus('loading', _bgt('bkp_reading'));
   try {
-    const text = await file.text();
+    // Use FileReader instead of file.text() for compatibility with
+    // pywebview MSHTML (IE11-based) engine used on Windows without WebView2.
+    const text = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = e => resolve(e.target.result);
+      reader.onerror = () => reject(new Error('FileReader error'));
+      reader.readAsText(file, 'utf-8');
+    });
     let data;
     try { data = JSON.parse(text); } catch {
       _backupSetStatus('error', _bgt('bkp_err_invalid'));
