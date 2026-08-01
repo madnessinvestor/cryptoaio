@@ -2229,10 +2229,47 @@ def _lookup_bitcoin(hash_):
         "note":      "btc_outputs",
     })
 
+# ── Static map of well-known Solana mint addresses → symbols ─────────────────
+# Used as first-pass lookup before hitting remote APIs, and as fallback when
+# Jupiter / Solana token-list APIs fail or time out.
+_SOL_KNOWN_MINTS: dict = {
+    "So11111111111111111111111111111111111111112":  "SOL",     # Wrapped SOL
+    "mSoLzYCxHZoBFXkG61EP6pDkMF47cs4zjOrqAHSZfUE": "mSOL",   # Marinade staked SOL
+    "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn": "JitoSOL", # Jito staked SOL
+    "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1":  "bSOL",  # BlazeStake staked SOL
+    "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj":  "stSOL", # Lido staked SOL
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v":  "USDC",
+    "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB":   "USDT",
+    "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263":  "BONK",
+    "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN":   "JUP",
+    "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R":  "RAY",
+    "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE":   "ORCA",
+    "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs":  "ETH",   # Wormhole ETH on Solana
+    "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh":  "WBTC",  # Wormhole WBTC on Solana
+    "HZ1JovNiVvGrCNiiYWY1ZZxSPMmHHUBMXFq6rJp9N4G":   "PYTH",
+    "WENWENvqqNya429ubCdR81ZmD69brwQaaBYY6p3LCpk":    "WEN",
+    "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm":  "WIF",
+    "A9mUU4qviSctJVPJdBJWkb28deg915LYJKrzQ19ji3FM":   "USDCet",
+}
+
 def _sol_mint_symbol(mint, timeout=5):
+    # 1. Static known-mints map (instant, no network call)
+    if mint in _SOL_KNOWN_MINTS:
+        return _SOL_KNOWN_MINTS[mint]
+    # 2. Jupiter token API
     data = _tx_fetch(f"https://api.jup.ag/tokens/v1/{mint}", timeout=timeout)
     if data and isinstance(data, dict) and data.get("symbol"):
         return data["symbol"].upper()
+    # 3. Solana token list (fallback)
+    data2 = _tx_fetch(
+        f"https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json",
+        timeout=timeout)
+    if data2 and isinstance(data2, dict):
+        for tok in data2.get("tokens", []):
+            if tok.get("address") == mint and tok.get("symbol"):
+                sym = tok["symbol"].upper()
+                _SOL_KNOWN_MINTS[mint] = sym   # cache for next time
+                return sym
     return None
 
 # ── Solana parser constants ────────────────────────────────────────────────────

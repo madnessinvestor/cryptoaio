@@ -223,20 +223,27 @@ function _applyTxResult(data) {
   let html = `<span class="hash-network-badge">🔗 ${data.network || "?"}</span>`;
   html += `<span class="hash-trade-type ${isSwap ? "swap" : (data.is_sell ? "sell" : "buy")}">${tradeTypeLabel}</span>`;
   const details = [];
+  const usdSuffix = data.total_usd
+    ? ` <span class="hash-usd-inline">${data.total_usd_estimated ? "~" : ""}${formatUSD(data.total_usd, true)}</span>`
+    : "";
   if (isSwap && data.from_qty) {
-    // Token-for-token swap: show both legs
-    details.push(`<span class="hash-detail-item">${fmtQty(data.from_qty)} ${data.from_ticker} → <strong>${fmtQty(data.qty)} ${data.ticker}</strong></span>`);
+    // Token-for-token swap: show both legs + USD value inline
+    details.push(`<span class="hash-detail-item"><strong>${fmtQty(data.from_qty)} ${data.from_ticker}</strong> → <strong>${fmtQty(data.qty)} ${data.ticker}</strong>${usdSuffix}</span>`);
   } else if (data.is_sell && data.received_ticker && data.received_qty) {
-    // Sell: show "sold → received stablecoin" on a single line
-    details.push(`<span class="hash-detail-item">${fmtQty(data.qty)} ${data.ticker} → <strong>${fmtQty(data.received_qty)} ${data.received_ticker}</strong></span>`);
+    // Sell: show "sold → received stablecoin" on a single line + USD inline
+    details.push(`<span class="hash-detail-item"><strong>${fmtQty(data.qty)} ${data.ticker}</strong> → <strong>${fmtQty(data.received_qty)} ${data.received_ticker}</strong>${usdSuffix}</span>`);
   } else if (data.ticker && data.qty) {
-    details.push(`<span class="hash-detail-item">${t("qty_label")}: <strong>${fmtQty(data.qty)} ${data.ticker}</strong></span>`);
-  }
-  if (data.total_usd) {
-    const usdLabel = isSwap ? "Valor (USD)" : (data.is_sell ? "Recebido" : t("investment_label"));
+    const usdLabel = data.is_sell ? "Recebido" : t("investment_label");
     const estTag = data.total_usd_estimated ? " ~" : "";
-    details.push(`<span class="hash-detail-item">${usdLabel}${estTag}: <strong>${formatUSD(data.total_usd, true)}</strong></span>`);
-  } else if (data.native_sym && data.native_amount) {
+    details.push(`<span class="hash-detail-item">${t("qty_label")}: <strong>${fmtQty(data.qty)} ${data.ticker}</strong>${usdSuffix}</span>`);
+  }
+  // USD shown inline above for swaps/sells; show separately only for simple buys without qty
+  if (!isSwap && !data.is_sell && data.total_usd && !(data.ticker && data.qty)) {
+    const estTag = data.total_usd_estimated ? " ~" : "";
+    details.push(`<span class="hash-detail-item">${t("investment_label")}${estTag}: <strong>${formatUSD(data.total_usd, true)}</strong></span>`);
+  } else if (!isSwap && !data.is_sell && data.total_usd && data.ticker && data.qty) {
+    // simple buy with qty: already shown inline via usdSuffix, nothing extra needed
+  } else if (data.native_sym && data.native_amount && !data.total_usd) {
     details.push(`<span class="hash-detail-item">Pago: <strong>${data.native_amount} ${data.native_sym}</strong></span>`);
   }
   if (data.timestamp) {

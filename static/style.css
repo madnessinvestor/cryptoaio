@@ -2800,6 +2800,12 @@ section.hidden { display: none; }
 .hash-detail-item strong {
   color: var(--text);
 }
+.hash-usd-inline {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--accent);
+  opacity: 0.85;
+}
 .hash-note {
   margin-top: 4px;
   font-size: 11px;
