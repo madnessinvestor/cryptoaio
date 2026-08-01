@@ -71,35 +71,6 @@ cryptoaio/
     ├── widget.html         # Standalone widget page
     └── widget_settings.html
 ```
----
-
-## 🎯 Roadmap
-
-- [x] Multi-asset watchlist
-- [x] Portfolio with P&L
-- [x] On-chain wallet dashboard
-- [x] Manual assets dashboard
-- [x] Portfolio diversification chart
-- [x] Portfolio 24 h variation only (simplified, no period buttons)
-- [x] Price alerts
-- [x] Multi-currency (BRL / USD / EUR)
-- [x] Mad AI — AI assistant with portfolio analysis
-- [x] Voice input (AI Whisper)
-- [x] Text-to-speech (native TTS)
-- [x] Installable PWA
-- [x] Embeddable widget with 2-column / 2-row layouts
-- [x] Widget phone mockup preview (live "AO VIVO" with clock & wallpaper)
-- [x] Widget custom colour picker (HSB canvas + hue slider + hex input)
-- [x] Widget themes: Dark · Light · Purple Dark · Auto · Custom
-- [x] i18n — Portuguese & English (full coverage)
-- [x] Global refresh button syncs widget live data + clock
-- [x] DeFi positions and Perps tracked per wallet (Tokens / DeFi / Perps tabs)
-- [x] Transaction hash lookup (EVM, Solana, Bitcoin)
-- [x] Custom AI provider (Cloudflare Workers AI, any OpenAI-compatible endpoint)
-- [x] Desktop app (PyInstaller + pywebview)
-- [x] Android APK (Buildozer / Kivy)
-- [ ] Historical price charts per asset
-- [ ] Multiple watchlists
 
 ---
 
