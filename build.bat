@@ -12,7 +12,7 @@ echo.
 
 REM Install / upgrade build deps
 echo [1/3] Installing dependencies...
-pip install -r requirements.txt pyinstaller pywebview --quiet
+python -m pip install -r requirements.txt pyinstaller pywebview --quiet
 if %errorlevel% neq 0 (
     echo ERROR: pip install failed.
     pause & exit /b 1
@@ -25,7 +25,7 @@ if exist dist  rmdir /s /q dist
 
 REM Build
 echo [3/3] Running PyInstaller...
-pyinstaller CryptoAIO.spec --clean --noconfirm
+python -m PyInstaller CryptoAIO.spec --clean --noconfirm
 if %errorlevel% neq 0 (
     echo ERROR: PyInstaller failed.
     pause & exit /b 1
