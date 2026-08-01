@@ -55,6 +55,21 @@
     box-sizing: border-box;
   }
 
+  /* ── Frameless window drag (pywebview / desktop only) ─────────────────────
+     The topbar acts as the drag handle. Buttons inside must opt out so
+     clicks still register normally.                                        */
+  .widget-topbar {
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+  .widget-topbar button,
+  .widget-topbar .pill,
+  .widget-topbar .pill-group,
+  .widget-controls {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
+
   .widget {
     width: 100%;
     padding: 10px 12px 14px;

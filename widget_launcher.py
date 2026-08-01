@@ -104,11 +104,13 @@ if __name__ == "__main__":
             "CryptoAIO Widget",
             url,
             width=420,
-            height=260,
+            height=120,
             resizable=True,
-            min_size=(280, 160),
+            min_size=(280, 80),
             on_top=True,
-            frameless=False,
+            frameless=True,
+            transparent=True,
+            easy_drag=True,
         )
         webview.start()
     except ImportError:
