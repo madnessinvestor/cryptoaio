@@ -2529,10 +2529,16 @@ def tx_lookup():
     if url_match:
         hash_ = url_match.group(1)
     else:
-        # Solana explorer URLs (solscan.io, explorer.solana.com, solana.fm) use base58 hashes
-        sol_url_match = _re.search(r'/tx/([1-9A-HJ-NP-Za-km-z]{32,90})', hash_)
-        if sol_url_match:
-            hash_ = sol_url_match.group(1)
+        # Bitcoin explorer URLs that use /transactions/btc/<hash>
+        # e.g. blockchain.com/explorer/transactions/btc/<64-char-hex>
+        btc_url_match = _re.search(r'/transactions/btc/([0-9a-fA-F]{64})', hash_)
+        if btc_url_match:
+            hash_ = btc_url_match.group(1)
+        else:
+            # Solana explorer URLs (solscan.io, explorer.solana.com, solana.fm) use base58 hashes
+            sol_url_match = _re.search(r'/tx/([1-9A-HJ-NP-Za-km-z]{32,90})', hash_)
+            if sol_url_match:
+                hash_ = sol_url_match.group(1)
 
     # Manual network selection — bypass auto-detect
     if network == "bitcoin":
