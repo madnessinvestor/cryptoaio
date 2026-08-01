@@ -395,7 +395,7 @@ function switchTab(tab) {
 
   if (isTrade && !cachedPortfolio.length) loadPortfolio();
   if (isDashboard) {
-    if (!dashLoaded) {
+    if (typeof dashLoaded === "undefined" || !dashLoaded) {
       loadDashboard();
     } else {
       // Re-render from cache immediately for instant feedback, then refresh
