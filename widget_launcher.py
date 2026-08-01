@@ -58,6 +58,23 @@ PORT = 5000
 _server_started_here = False
 
 
+# ── pywebview JS API ──────────────────────────────────────────────────────────
+
+class WidgetApi:
+    """Methods callable from JS via window.pywebview.api.*"""
+
+    def __init__(self):
+        self._window = None  # injected after window creation
+
+    def close(self):
+        if self._window:
+            self._window.destroy()
+
+    def resize(self, width, height):
+        if self._window:
+            self._window.resize(int(width), int(height))
+
+
 def _server_already_running():
     import urllib.request
     try:
@@ -100,18 +117,21 @@ if __name__ == "__main__":
 
     try:
         import webview  # pywebview
-        webview.create_window(
+        api = WidgetApi()
+        win = webview.create_window(
             "CryptoAIO Widget",
             url,
             width=420,
             height=120,
             resizable=True,
-            min_size=(280, 80),
+            min_size=(280, 60),
             on_top=True,
             frameless=True,
             transparent=True,
-            easy_drag=True,
+            background_color='#00000000',
+            js_api=api,
         )
+        api._window = win
         webview.start()
     except ImportError:
         webbrowser.open(url)

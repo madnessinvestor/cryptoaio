@@ -55,9 +55,10 @@
     box-sizing: border-box;
   }
 
-  /* ── Frameless window drag (pywebview / desktop only) ─────────────────────
-     The topbar acts as the drag handle. Buttons inside must opt out so
-     clicks still register normally.                                        */
+  /* ── Frameless window drag + desktop controls (pywebview) ────────────────
+     Topbar is the drag handle; interactive children opt out.
+     Close button and resize grip are only injected when running inside
+     pywebview (detected via JS below).                                    */
   .widget-topbar {
     -webkit-app-region: drag;
     app-region: drag;
@@ -70,6 +71,40 @@
     app-region: no-drag;
   }
 
+  /* Close button injected by JS when inside pywebview */
+  #wv-close {
+    display: none;
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0 0 6px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  #wv-close:hover { color: #ff5f57; }
+
+  /* Resize grip — bottom-right corner, only shown in pywebview */
+  #wv-resize {
+    display: none;
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 14px;
+    height: 14px;
+    cursor: se-resize;
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+    opacity: 0.35;
+    transition: opacity 0.15s;
+  }
+  #wv-resize:hover { opacity: 0.75; }
+  #wv-resize svg { display: block; }
+
   .widget {
     width: 100%;
     padding: 10px 12px 14px;
@@ -78,6 +113,7 @@
     background: var(--bg);
     border-radius: 20px;
     overflow: hidden;
+    position: relative;
   }
 
   /* ── Top bar ──────────────────────────────────────────────── */
@@ -263,6 +299,8 @@
         <button class="pill" data-chg="both" onclick="setChg('both')">%+$</button>
       </div>
     </div>
+    <!-- Close button: only shown inside pywebview (activated by JS below) -->
+    <button id="wv-close" title="Fechar">✕</button>
   </div>
 
   <div class="widget-cols" id="widget-cols">
@@ -272,6 +310,15 @@
   <!-- Trades section (shown when showTrades is enabled) -->
   <div class="wt-trades-divider" id="wt-trades-divider" style="display:none"></div>
   <div class="wt-trades-section" id="wt-trades" style="display:none"></div>
+
+  <!-- Resize grip: only shown inside pywebview (activated by JS below) -->
+  <div id="wv-resize" title="Redimensionar">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <line x1="14" y1="5"  x2="5"  y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="14" y1="9"  x2="9"  y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="14" y1="13" x2="13" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </div>
 </div>
 
 <script>
@@ -747,6 +794,54 @@
 
   window.addEventListener('pywebviewready', init);
   if (window.pywebview) { init(); }
+})();
+</script>
+
+<script>
+/* ── pywebview desktop extras: close button + resize grip ── */
+(function () {
+  function setup() {
+    // Show close button and wire it up
+    var btn = document.getElementById('wv-close');
+    if (btn) {
+      btn.style.display = 'block';
+      btn.addEventListener('click', function () {
+        window.pywebview.api && window.pywebview.api.close
+          ? window.pywebview.api.close()
+          : window.close();
+      });
+    }
+
+    // Show resize grip and implement manual resize via pywebview move_window / resize
+    var grip = document.getElementById('wv-resize');
+    if (grip) {
+      grip.style.display = 'block';
+      grip.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        var startX  = e.screenX;
+        var startY  = e.screenY;
+        var startW  = window.outerWidth;
+        var startH  = window.outerHeight;
+
+        function onMove(ev) {
+          var newW = Math.max(280, startW + (ev.screenX - startX));
+          var newH = Math.max(60,  startH + (ev.screenY - startY));
+          if (window.pywebview && window.pywebview.api && window.pywebview.api.resize) {
+            window.pywebview.api.resize(newW, newH);
+          }
+        }
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    }
+  }
+
+  window.addEventListener('pywebviewready', setup);
+  if (window.pywebview) { setup(); }
 })();
 </script>
 </body>
