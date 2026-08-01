@@ -936,13 +936,15 @@ h1 {
 @keyframes logo-breathe-light {
   0%, 100% {
     filter:
-      drop-shadow(0 0 2px rgba(0,0,0,0.45))
-      drop-shadow(0 0 6px rgba(0,0,0,0.20));
+      drop-shadow(0 0 3px rgba(0,0,0,0.70))
+      drop-shadow(0 0 8px rgba(0,0,0,0.45))
+      drop-shadow(0 0 16px rgba(0,0,0,0.25));
   }
   50% {
     filter:
-      drop-shadow(0 0 4px rgba(0,0,0,0.65))
-      drop-shadow(0 0 10px rgba(0,0,0,0.30));
+      drop-shadow(0 0 5px rgba(0,0,0,0.90))
+      drop-shadow(0 0 14px rgba(0,0,0,0.60))
+      drop-shadow(0 0 28px rgba(0,0,0,0.35));
   }
 }
 
