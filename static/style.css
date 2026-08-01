@@ -1383,7 +1383,7 @@ main {
 /* ─── iOS Safe Area support ──────────────────────────────────────────────────── */
 /* Pushes content below the status bar on black-translucent mode */
 header {
-  padding-top: max(0px, env(safe-area-inset-top));
+  padding-top: max(6px, env(safe-area-inset-top));
 }
 
 /* ─── Bottom Nav ─────────────────────────────────────────────────────────────── */
