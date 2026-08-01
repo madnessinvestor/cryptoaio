@@ -888,7 +888,7 @@ body {
 
 /* Header */
 header {
-  padding: 10px 16px 8px;
+  padding: 6px 16px 5px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -934,10 +934,10 @@ h1 {
 }
 
 .app-logo {
-  height: 1.98rem;
+  height: 1.6rem;
   width: auto;
   display: block;
-  margin-top: 6px;
+  margin-top: 3px;
   animation: logo-breathe 4s ease-in-out infinite;
 }
 
