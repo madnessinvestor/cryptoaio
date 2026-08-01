@@ -5583,13 +5583,22 @@ def data_import():
     }
 
     restored = []
+    skipped  = []
     for key, path in mapping.items():
         val = server.get(key)
-        if isinstance(val, list):
-            _save_json_file(path, val)
-            restored.append(key)
+        if not isinstance(val, list):
+            continue
+        if len(val) == 0:
+            # Don't overwrite existing data with an empty array.
+            # An empty section in the backup almost always means "no data
+            # was present on the machine that exported" — not an intentional
+            # clear. Silently skip so the destination keeps its own data.
+            skipped.append(key)
+            continue
+        _save_json_file(path, val)
+        restored.append(key)
 
-    return jsonify({"ok": True, "restored": restored})
+    return jsonify({"ok": True, "restored": restored, "skipped": skipped})
 
 
 @app.route("/api/data/reset", methods=["POST"])
