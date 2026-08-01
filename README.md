@@ -1,130 +1,26 @@
 # 🟢 CryptoAIO
 
-**CryptoAIO** is an All-In-One, *privacy-first* asset tracker for **Cryptocurrencies, Stocks and Forex**, built with **Flask + Vanilla JavaScript** as a **Progressive Web App (PWA)**.
+**Crypto AIO** is an **All-in-One** cryptocurrency application designed to bring together the essential tools that investors and traders use every day, without requiring users to connect or grant access to their wallets. 
 
-Monitor your favourite assets quickly and lightly — no account, no subscription, no tracking.
+## Key Features
 
----
+* 📊 Track portfolios using public wallet addresses. `No need for logins or wallet subscriptions` (On-Chain + Manual Assets) in EVM, Solana, Bitcoin and Others.
+* ⭐ Create personalized watchlists with home screen widget support.
+* 🔔 Price Alerts Set high/low alerts for any watchlist asset. Instant browser notification.
+* 📈 Manage and track your trading history.
+* 🤖 Integrated AI (Groq, Gemini, Openrouter between others with custom config) for analyzing assets, portfolios, and trades, fully customizable to your preferred AI provider. With voice and text guidance. `It requires its own AI to function`
+* 📱 Embeddable Widget, A standalone ticker widget (`/widget`) that can be embedded in any page.
+* 💻 Available on Desktop, Android, and iOS.
+* 🌐 Runs directly in the browser as a Progressive Web App (PWA), with optional installation.
+* 🔒 Privacy-first architecture, with local processing whenever possible to keep your data under your control.
 
-## ✨ Features
-
-### 🤖 Mad AI — AI-Powered Financial Assistant
-Chat with an AI specialised in your portfolio, with **voice** support.
-
-- Full trade analysis (P&L, win rate, best/worst asset)
-- Natural-language questions about your portfolio
-- **Voice input**: record your question with the microphone; audio is transcribed via **Groq Whisper** (primary) or **OpenAI Whisper** (fallback if `OPENAI_API_KEY` is set)
-- **Text-to-speech**: listen to AI responses with native speech synthesis
-- Gateway with automatic fallback across providers: **Groq → Gemini → OpenRouter**
-- **Custom provider**: any OpenAI-compatible endpoint — Cloudflare Workers AI, local models, self-hosted LLMs
+The goal of **Crypto AIO** is to provide a complete cryptocurrency management experience by combining portfolio tracking, investment management, market monitoring, and AI-powered insights into a single modern, fast, and secure platform.
 
 ---
 
-### 🚀 Multi-Exchange Price Aggregation
-Prices fetched from multiple exchanges simultaneously with automatic best-source selection.
-
-| Exchange | Exchange | Exchange |
-|----------|----------|----------|
-| Hyperliquid | MEXC | KuCoin |
-| Gate.io | OKX | Kraken |
-| Bitfinex | CoinGecko | CoinCap |
-| CryptoCompare | Yahoo Finance | — |
-
----
-
-### 📊 Stocks
-
-#### 🇧🇷 Brazilian Stock Exchange (B3)
-PETR4, VALE3, ITUB4, BBAS3, WEGE3, BBDC4 and many more — via **brapi.dev**.
-
-#### 🇺🇸 US Stock Market
-AAPL, MSFT, NVDA, TSLA, GOOGL and any supported American ticker.
-
----
-
-### 💱 Forex
-Real-time pairs with automatic flag icons:
-`USDBRL` · `EURBRL` · `GBPBRL` · `USDEUR` · `USDJPY`
-
----
-
-### 🌎 Multi-Currency
-View all assets in **BRL (R$)**, **USD ($)** or **EUR (€)** with real-time conversion and instant switching without reloading the page.
-
----
-
-### ⭐ Watchlist
-Add and remove assets with automatic persistence — no login required.
-
----
-
-### 💼 Trade Tab (Portfolio)
-- Record entries and exits per asset
-- Realised and unrealised P&L calculation
-- Win rate and aggregated statistics
-- Multiple trades per asset supported
-
----
-
-### 🏦 Dashboard (On-Chain + Manual Assets)
-- Track on-chain wallet balances grouped by network and asset
-- **Tokens / DeFi / Perps tabs** per wallet — separate views for token balances, DeFi positions, and perpetual positions
-- Manual assets for off-chain or custom positions
-- Portfolio diversification chart
-- Portfolio 24 h variation (% and absolute value)
-- Add wallets and manual assets via the **speed-dial FAB button** (＋)
-- **Transaction hash lookup** — decode any EVM, Solana, or Bitcoin transaction directly from the app
-
-#### Supported Wallet Networks
-
-| Type | Networks |
-|------|----------|
-| EVM | Ethereum · Polygon · Arbitrum One · Base · HyperEVM |
-| Other | Solana · Bitcoin · Ergo · Starknet · SEI |
-
----
-
-### 🔔 Price Alerts
-Set high/low alerts for any watchlist asset. Instant browser notification.
-
----
-
-### 📱 Embeddable Widget
-A standalone ticker widget (`/widget`) that can be embedded in any page.
-
-- Configurable columns (1 or 2) and rows (1 or 2 per asset)
-- Adjustable font size, currency, and refresh rate
-- **Live "AO VIVO" preview** inside a phone mockup with real-time clock and green wallpaper background
-- **Themes**: Escuro · Claro · Purple Dark · Auto · **Custom colour** (full HSB picker — saturation/brightness canvas + hue slider + hex input)
-- Separate settings page at `/widget/settings`
-
----
-
-### 📱 Progressive Web App (PWA)
-Install CryptoAIO directly on your home screen on Android, iPhone, Windows, macOS or Linux.
-- Offline shell
-- Fast loading
-- Native-like experience
-
----
-
-### 🔒 Privacy First
-
-| ✅ No account required | ✅ No personal data collected |
-|---|---|
-| ✅ No analytics or tracking | ✅ No private keys |
-| ✅ No broker integration | ✅ No data selling |
-
----
-
-## 🪙 Supported Asset Types
-
-| Type | Examples |
-|------|----------|
-| Cryptocurrencies | BTC, ETH, SOL, HYPE, XRP, DOGE |
-| Brazilian Stocks (B3) | PETR4, VALE3, ITUB4, WEGE3 |
-| US Stocks | AAPL, NVDA, TSLA, GOOGL |
-| Forex | USDBRL, EURBRL, GBPBRL |
+## 🚀 Multi-Exchange Price Aggregation
+*Supports **cryptocurrencies, Brazilian stocks (B3), US stocks, and Forex** in a single platform. Track assets with real-time market data, switch instantly between **BRL, USD, and EUR**, and monitor everything from one unified dashboard. Compatible with thousands of supported tickers across multiple markets.
+**It uses Hyperliquid, MEXC, KuCoin, Gate.io, OKX, Kraken, Bitfinex, CoinGecko, CoinCap, CryptoCompare, and Yahoo Finance to ensure accurate asset pricing.
 
 ---
 
@@ -175,64 +71,6 @@ cryptoaio/
     ├── widget.html         # Standalone widget page
     └── widget_settings.html
 ```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Python 3.10+
-
-### Installation
-
-```bash
-git clone https://github.com/madnessinvestor/cryptoaio
-cd cryptoaio
-pip install -r requirements.txt
-python app.py
-```
-
-Open in your browser: `http://localhost:5000`
-
-### Running on Replit
-
-Dependencies are installed automatically. Just press **Run**.
-
-### Running as Desktop App
-
-```bash
-pip install -r requirements.txt pywebview
-python launcher.py
-```
-
-Opens in a native window via pywebview, or falls back to the system browser. To build a standalone executable:
-
-```bash
-pyinstaller CryptoAIO.spec
-```
-
-### Building the Android APK
-
-Requires [Buildozer](https://buildozer.readthedocs.io/):
-
-```bash
-buildozer android debug
-```
-
-Build configuration is in `buildozer.spec`.
-
-### Environment Variables (optional — required for Mad AI)
-
-| Variable | Description |
-|----------|-------------|
-| `SESSION_SECRET` | Flask session secret key (set in Replit Secrets) |
-| `GROQ_API_KEY` | Groq (Whisper transcription + LLaMA chat) |
-| `GOOGLE_AI_API_KEY` | Google Gemini (fallback) |
-| `OPENROUTER_API_KEY` | OpenRouter (fallback) |
-| `OPENAI_API_KEY` | OpenAI Whisper — voice transcription fallback (used when `GROQ_API_KEY` is absent) |
-
-> Without AI keys, Mad AI is unavailable. All other modules work normally.
-
 ---
 
 ## 🎯 Roadmap
@@ -246,7 +84,7 @@ Build configuration is in `buildozer.spec`.
 - [x] Price alerts
 - [x] Multi-currency (BRL / USD / EUR)
 - [x] Mad AI — AI assistant with portfolio analysis
-- [x] Voice input (Groq Whisper)
+- [x] Voice input (AI Whisper)
 - [x] Text-to-speech (native TTS)
 - [x] Installable PWA
 - [x] Embeddable widget with 2-column / 2-row layouts
@@ -262,33 +100,6 @@ Build configuration is in `buildozer.spec`.
 - [x] Android APK (Buildozer / Kivy)
 - [ ] Historical price charts per asset
 - [ ] Multiple watchlists
-
----
-
-## 📝 Changelog
-
-### v2026.07.29 (rev5)
-- **Widget — custom colour picker**: new "🎨 Cor" theme option opens a full HSB panel (saturation/brightness canvas + hue slider + hex input + live swatch). Colour persists in `localStorage` and applies instantly to the "AO VIVO" preview.
-- **Widget — Purple Dark theme**: new preset theme with deep purple background and lilac accents.
-- **Widget — phone mockup preview**: the "AO VIVO" section is now wrapped in a phone-frame mockup with a green wallpaper background, a status bar with live clock, and a pill notch — simulating how the widget looks on a real device.
-- **Widget — phone clock syncs on refresh**: pressing the global ↻ button now also calls `wltLoad()` (updates live data and "Atualizado às" timestamp) and `_updatePhoneClock()` (updates the status bar clock).
-- **Widget — i18n fix for empty state**: "Nenhum ativo na Watchlist ainda" / "No assets in Watchlist yet" now uses the `t()` i18n function so it correctly switches language when the user changes locale in Config.
-- **Dashboard — 24 h only**: removed the 1S / 1M period buttons from the Portfolio card. Only the 24 h variation is shown.
-
-### v2026.07.29 (rev4)
-- **Data reset on import**: cleared all sample data from the original repository (watchlist, trades, wallets, alerts, history) so the app starts completely empty on first run.
-
-### v2026.07.29 (rev3)
-- **Mad AI icon redesign**: replaced the sparkle/star icon with a robot head (antenna, eyes, mouth) across all three locations — navigation bar, section header, and the "not configured" empty state card.
-- **Mad AI empty-state icon**: the robot icon on the "not configured" card is now 128 px (2× larger) and has a **breathing animation** (smooth scale pulse).
-
-### v2026.07.29 (rev2)
-- **Share report — no more pop-up blocker**: the full report now opens in an in-page fullscreen overlay instead of a new browser window.
-- **Share report — language-aware**: the generated report respects the app's active language (PT/EN).
-- **i18n — English translations for Share report**: added all missing EN translations for `rpt_share_*` keys.
-
-### v2026.07.29
-- Initial Replit deployment. Flask dependencies installed, workflow configured, app verified running.
 
 ---
 
