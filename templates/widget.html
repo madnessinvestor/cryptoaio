@@ -639,14 +639,26 @@
       data.sort((a, b) => (b.change24h || 0) - (a.change24h || 0));
     }
 
+    // Empty state — guide the user to add assets in the main app
+    const wc1 = document.getElementById("wc1");
+    const wc2 = document.getElementById("wc2");
+    if (!data.length) {
+      wc1.innerHTML = `<div style="grid-column:1/-1;padding:12px 8px;color:var(--muted,#666);font-size:11px;text-align:center;opacity:.7;">
+        Nenhum ativo na watchlist.<br>Adicione ativos no app principal.
+      </div>`;
+      wc2.innerHTML = "";
+      renderTrades();
+      return;
+    }
+
     const fs     = FS_MAP[cfg.fontSize] || "12px";
     const cellFn = (cfg.rows === "2" || cfg.showAlerts) ? asset2RowHtml : cellsHtml;
     const half   = cfg.cols === "1" ? data.length : Math.ceil(data.length / 2);
     const col1   = data.slice(0, half);
     const col2   = cfg.cols === "1" ? [] : data.slice(half);
 
-    document.getElementById("wc1").innerHTML = col1.map(a => cellFn(a, fs)).join("");
-    document.getElementById("wc2").innerHTML = col2.map(a => cellFn(a, fs)).join("");
+    wc1.innerHTML = col1.map(a => cellFn(a, fs)).join("");
+    wc2.innerHTML = col2.map(a => cellFn(a, fs)).join("");
 
     renderTrades();
   }
