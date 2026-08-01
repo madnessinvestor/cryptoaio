@@ -94,6 +94,9 @@ function _extractHash(raw) {
   // Accept full explorer URLs like https://etherscan.io/tx/0xABC... or hyperevmscan.io/tx/...
   const m = raw.match(/(?:\/tx\/|[?&]tx=)(0x[0-9a-fA-F]+|[0-9a-fA-F]{40,})/i);
   if (m) return m[1];
+  // If the input is an explorer address URL (/address/0x...), there is no tx hash to extract.
+  // Return null so no lookup is triggered (prevents confusing "not found" error).
+  if (/\/address\/0x[0-9a-fA-F]+/i.test(raw)) return null;
   // Or just a raw hex / base58 string
   return raw.trim();
 }
