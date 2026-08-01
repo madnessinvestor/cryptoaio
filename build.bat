@@ -12,7 +12,7 @@ echo.
 
 REM Install / upgrade build deps
 echo [1/3] Installing dependencies...
-python -m pip install -r requirements.txt pyinstaller pywebview --quiet
+python -m pip install -r requirements.txt pyinstaller pywebview pillow --quiet
 if %errorlevel% neq 0 (
     echo ERROR: pip install failed.
     pause & exit /b 1
