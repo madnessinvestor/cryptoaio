@@ -709,22 +709,23 @@
 <script>
 /* ── Proportional zoom for pywebview desktop window ── */
 (function () {
+  var BASE_W = 480;
+  var MIN_ZOOM = 250 / BASE_W;
+
+  function applyZoom() {
+    var zoom = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
+    document.body.style.width            = BASE_W + 'px';
+    document.body.style.zoom             = zoom.toFixed(4);
+    document.documentElement.style.overflowX = 'hidden';
+  }
+
   function init() {
-    if (!window.pywebview) return; // browser/PWA: no-op
-    var BASE_W = 480;
-    var MIN_ZOOM = 250 / BASE_W; // mínimo 250 px largura
-    function applyZoom() {
-      var zoom = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
-      document.body.style.zoom = zoom.toFixed(4);
-    }
     applyZoom();
     window.addEventListener('resize', applyZoom);
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+
+  window.addEventListener('pywebviewready', init);
+  if (window.pywebview) { init(); }
 })();
 </script>
 </body>

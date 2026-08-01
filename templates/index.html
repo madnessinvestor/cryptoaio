@@ -1112,23 +1112,27 @@
 <script>
 /* ── Proportional zoom for pywebview desktop window ── */
 (function () {
+  var BASE_W = 480;
+  var MIN_ZOOM = 250 / BASE_W; // mínimo 250 px → zoom 0.52
+
+  function applyZoom() {
+    var zoom = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
+    // 1) Fixa largura em BASE_W para o layout sempre renderizar a 480 px
+    // 2) zoom escala tudo proporcionalmente (px, rem, ícones, botões)
+    document.body.style.width            = BASE_W + 'px';
+    document.body.style.zoom             = zoom.toFixed(4);
+    document.documentElement.style.overflowX = 'hidden'; // sem scroll horizontal
+  }
+
   function init() {
-    if (!window.pywebview) return; // browser/PWA: no-op
-    var BASE_W = 480;
-    var MIN_ZOOM = 250 / BASE_W; // mínimo 250 px largura
-    function applyZoom() {
-      var zoom = Math.max(window.innerWidth / BASE_W, MIN_ZOOM);
-      // Aplicar no body garante que fontes px e rem escalam junto no Chromium
-      document.body.style.zoom = zoom.toFixed(4);
-    }
     applyZoom();
     window.addEventListener('resize', applyZoom);
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+
+  // pywebviewready só dispara dentro do pywebview (build desktop)
+  window.addEventListener('pywebviewready', init);
+  // Fallback: caso o objeto já esteja pronto antes do listener
+  if (window.pywebview) { init(); }
 })();
 </script>
 </body>
