@@ -940,6 +940,29 @@ def widget():
 def widget_settings():
     return render_template("widget_settings.html")
 
+# ── Widget settings — server-side persistence (shared between CryptoAIO.exe and CryptoAIOWidget.exe)
+WIDGET_SETTINGS_FILE = "widget_settings.json"
+
+def _load_widget_settings():
+    if os.path.exists(WIDGET_SETTINGS_FILE):
+        try:
+            return json.load(open(WIDGET_SETTINGS_FILE))
+        except Exception:
+            pass
+    return {}
+
+@app.route("/api/widget/settings", methods=["GET"])
+def get_widget_settings():
+    return jsonify(_load_widget_settings())
+
+@app.route("/api/widget/settings", methods=["POST"])
+def post_widget_settings():
+    data = request.get_json(force=True, silent=True) or {}
+    current = _load_widget_settings()
+    current.update(data)
+    _save_json_file(WIDGET_SETTINGS_FILE, current)
+    return jsonify({"ok": True})
+
 @app.route("/favicon.ico")
 def favicon():
     return send_file("static/icons/icon-192.png", mimetype="image/png")

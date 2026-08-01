@@ -379,6 +379,12 @@
   function writeCfg(key, val) {
     localStorage.setItem("w_" + key, typeof val === "boolean" ? (val ? "1" : "0") : val);
     cfg[key] = val;
+    // Persist full config to server so settings are shared between exes
+    fetch("/api/widget/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cfg)
+    }).catch(() => {});
   }
 
   let cfg = readCfg();
@@ -782,6 +788,21 @@
   });
 
   // ── Init ────────────────────────────────────────────────────
+  // Pull settings from server first — syncs between CryptoAIO.exe and CryptoAIOWidget.exe
+  fetch("/api/widget/settings").then(r => r.json()).then(data => {
+    if (!data || typeof data !== "object" || !Object.keys(data).length) return;
+    let changed = false;
+    for (const [k, v] of Object.entries(data)) {
+      if (!(k in DEFAULTS) && k !== "customBg") continue;
+      const def    = DEFAULTS[k] !== undefined ? DEFAULTS[k] : "";
+      const newVal = typeof def === "boolean" ? (v ? "1" : "0") : String(v);
+      if (localStorage.getItem("w_" + k) !== newVal) {
+        localStorage.setItem("w_" + k, newVal);
+        changed = true;
+      }
+    }
+    if (changed) { cfg = readCfg(); applyLayout(); render(); }
+  }).catch(() => {});
   applyLayout();
   load();
   scheduleRefresh();

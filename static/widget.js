@@ -43,6 +43,12 @@ function wtSave(cfg) {
   for (const [k, v] of Object.entries(cfg)) {
     localStorage.setItem("w_" + k, typeof v === "boolean" ? (v ? "1" : "0") : v);
   }
+  // Persist to server so CryptoAIO.exe and CryptoAIOWidget.exe share the same settings
+  fetch("/api/widget/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(cfg)
+  }).catch(() => {});
 }
 
 let wtCfg = Object.assign({}, WT_DEFAULTS);
@@ -505,6 +511,29 @@ function _updatePhoneClock() {
   el.textContent = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0");
 }
 
+// ── Sync settings from server (bridges localStorage gap between separate exes) ─
+async function _wtSyncFromServer() {
+  try {
+    const res  = await fetch("/api/widget/settings");
+    const data = await res.json();
+    if (!data || typeof data !== "object" || !Object.keys(data).length) return;
+    let changed = false;
+    for (const [k, v] of Object.entries(data)) {
+      if (!(k in WT_DEFAULTS)) continue;
+      const newVal = typeof WT_DEFAULTS[k] === "boolean" ? (v ? "1" : "0") : String(v);
+      if (localStorage.getItem("w_" + k) !== newVal) {
+        localStorage.setItem("w_" + k, newVal);
+        changed = true;
+      }
+    }
+    if (changed) {
+      wtCfg = wtLoad();
+      wtApplyUI();
+      wltRender();
+    }
+  } catch (e) {}
+}
+
 // ── Entry point called by switchTab('widget') ─────────────────────────────────
 function widgetOnEnter() {
   wtCfg = wtLoad();
@@ -516,6 +545,7 @@ function widgetOnEnter() {
   if (!window._phoneClockTimer) {
     window._phoneClockTimer = setInterval(_updatePhoneClock, 30000);
   }
+  _wtSyncFromServer(); // pull latest settings from server (syncs between exes)
 }
 
 function wltScheduleRefresh() {

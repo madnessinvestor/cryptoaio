@@ -19,6 +19,7 @@ datas = [
     ("portfolio_data.json",     "."),
     ("dashboard_manual.json",   "."),
     ("dashboard_history.json",  "."),
+    ("widget_settings.json",    "."),
 ]
 datas = [(src, dst) for src, dst in datas if os.path.exists(src)]
 

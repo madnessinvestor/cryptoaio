@@ -369,6 +369,12 @@
     for (const [k, v] of Object.entries(cfg)) {
       localStorage.setItem("w_" + k, typeof v === "boolean" ? (v ? "1" : "0") : v);
     }
+    // Persist to server so settings are shared between CryptoAIO.exe and CryptoAIOWidget.exe
+    fetch("/api/widget/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cfg)
+    }).catch(() => {});
   }
 
   let cfg = loadCfg();
@@ -457,6 +463,21 @@
   }
 
   // ── Init ────────────────────────────────────────────────────
+  // Pull settings from server — syncs between CryptoAIO.exe and CryptoAIOWidget.exe
+  fetch("/api/widget/settings").then(r => r.json()).then(data => {
+    if (!data || typeof data !== "object" || !Object.keys(data).length) return;
+    let changed = false;
+    for (const [k, v] of Object.entries(data)) {
+      if (!(k in DEFAULTS)) continue;
+      const newVal = typeof DEFAULTS[k] === "boolean" ? (v ? "1" : "0") : String(v);
+      if (localStorage.getItem("w_" + k) !== newVal) {
+        localStorage.setItem("w_" + k, newVal);
+        changed = true;
+      }
+    }
+    if (changed) { cfg = loadCfg(); applyUI(); updatePreview(); }
+  }).catch(() => {});
+
   // fetch real rates for preview
   fetch("/api/rates").then(r => r.json()).then(d => {
     if (d.BRL) RATES.BRL = d.BRL;

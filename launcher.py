@@ -37,7 +37,8 @@ if hasattr(sys, "_MEIPASS"):
 
     # Copy default data files on first launch
     for fname in ["assets.json", "alerts.json", "dashboard_wallets.json",
-                  "portfolio_data.json", "dashboard_manual.json", "dashboard_history.json"]:
+                  "portfolio_data.json", "dashboard_manual.json", "dashboard_history.json",
+                  "widget_settings.json"]:
         src = resource_path(fname)
         dst = os.path.join(data_dir, fname)
         if not os.path.exists(dst) and os.path.exists(src):
