@@ -19,8 +19,8 @@ The goal of **Crypto AIO** is to provide a complete cryptocurrency management ex
 ---
 
 ## 🚀 Multi-Exchange Price Aggregation
-*Supports **cryptocurrencies, Brazilian stocks (B3), US stocks, and Forex** in a single platform. Track assets with real-time market data, switch instantly between **BRL, USD, and EUR**, and monitor everything from one unified dashboard. Compatible with thousands of supported tickers across multiple markets.
-**It uses Hyperliquid, MEXC, KuCoin, Gate.io, OKX, Kraken, Bitfinex, CoinGecko, CoinCap, CryptoCompare, and Yahoo Finance to ensure accurate asset pricing.
+Supports **cryptocurrencies, Brazilian stocks (B3), US stocks, and Forex** in a single platform. Track assets with real-time market data, switch instantly between **BRL, USD, and EUR**, and monitor everything from one unified dashboard. Compatible with thousands of supported tickers across multiple markets.
+It uses Hyperliquid, MEXC, KuCoin, Gate.io, OKX, Kraken, Bitfinex, CoinGecko, CoinCap, CryptoCompare, and Yahoo Finance to ensure accurate asset pricing.
 
 ---
 
