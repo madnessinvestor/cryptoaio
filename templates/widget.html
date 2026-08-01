@@ -705,5 +705,26 @@
   load();
   scheduleRefresh();
 </script>
+
+<script>
+/* ── Proportional zoom for pywebview desktop window ── */
+(function () {
+  function init() {
+    if (!window.pywebview) return; // browser/PWA: no-op
+    var BASE_W = 480;
+    function applyZoom() {
+      var zoom = window.innerWidth / BASE_W;
+      document.documentElement.style.zoom = zoom.toFixed(4);
+    }
+    applyZoom();
+    window.addEventListener('resize', applyZoom);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
 </body>
 </html>
