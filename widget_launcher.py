@@ -128,7 +128,7 @@ if __name__ == "__main__":
             on_top=True,
             frameless=True,
             transparent=True,
-            background_color='#00000000',
+            background_color='#000000',
             js_api=api,
         )
         api._window = win
