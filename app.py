@@ -761,7 +761,7 @@ def _fetch_price_raw(symbol):
     return primary
 
 
-def fetch_price(symbol):
+def fetch_price(symbol, force=False):
     """Cached wrapper around _fetch_price_raw.
 
     • First call for a symbol within PRICE_CACHE_TTL seconds hits the APIs once.
@@ -769,9 +769,15 @@ def fetch_price(symbol):
       receives the cached result — no duplicate network round-trips.
     • Thundering-herd guard: if a fetch is already in-flight, new callers wait
       on the same threading.Event instead of spawning parallel requests.
+    • force=True bypasses and clears the cache entry, fetching fresh from APIs.
     """
     sym = symbol.strip().upper()
     now = time.time()
+
+    # Force-refresh: evict cache entry so we always hit the APIs
+    if force:
+        with _price_cache_lock:
+            _price_cache.pop(sym, None)
 
     # Fast path: valid cache hit
     with _price_cache_lock:
@@ -1071,9 +1077,10 @@ def price_lookup():
 @app.route("/api/assets", methods=["GET"])
 def get_assets():
     assets = load_assets()
+    force  = request.args.get("force") == "1"
     def fetch_one(a):
         sym = a.get("symbol", "").upper()
-        r = fetch_price(sym)
+        r = fetch_price(sym, force=force)
         icon_url = _icon_cache.get(sym)
         if r:
             return {**r, "symbol": sym, "id": sym, "icon_url": icon_url}

@@ -168,7 +168,7 @@ function changeHTML(change, size = "") {
 // ─── Watchlist ────────────────────────────────────────────────────────────────
 
 function refreshAll() {
-  loadAssets();
+  loadAssets(true); // force=true: bypasses server cache, busca preços frescos das APIs
   if (typeof loadPortfolio      === "function") loadPortfolio();
   // Trigger real price refresh for dashboard wallets + manual assets
   if (typeof refreshAllWallets  === "function") refreshAllWallets();
@@ -190,11 +190,12 @@ function showRefreshToast() {
   el.classList.add("show");
 }
 
-async function loadAssets() {
+async function loadAssets(force = false) {
   const list = document.getElementById("asset-list");
 
   try {
-    const res    = await fetch("/api/assets");
+    const url    = force ? "/api/assets?force=1" : "/api/assets";
+    const res    = await fetch(url);
     const assets = await res.json();
     cachedAssets = assets;
 
