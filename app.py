@@ -1510,7 +1510,7 @@ _STABLECOINS = {"USDT","USDC","DAI","BUSD","FDUSD","TUSD","USDE","FRAX","LUSD",
 EVM_CHAINS = [
     ("Ethereum",     "https://eth.blockscout.com",      "ETH"),
     ("BSC",          "https://bsc.blockscout.com",      "BNB"),
-    ("Polygon",      "https://polygon.blockscout.com",  "MATIC"),
+    ("Polygon",      "https://polygon.blockscout.com",  "POL"),
     ("Arbitrum One", "https://arbitrum.blockscout.com", "ETH"),
     ("Base",         "https://base.blockscout.com",     "ETH"),
     ("Optimism",     "https://optimism.blockscout.com", "ETH"),
@@ -1523,7 +1523,7 @@ NETWORK_MAP = {
     "arbitrum":  ("Arbitrum One", "https://arbitrum.blockscout.com",          "ETH"),
     "optimism":  ("Optimism",     "https://optimism.blockscout.com",          "ETH"),
     "bsc":       ("BSC",          "https://bsc.blockscout.com",               "BNB"),
-    "polygon":   ("Polygon",      "https://polygon.blockscout.com",           "MATIC"),
+    "polygon":   ("Polygon",      "https://polygon.blockscout.com",           "POL"),
     "hyperevm":  ("HyperEVM",     "https://hyperevmscan.io",                  "HYPE"),
     "sei":       ("SEI",          "https://seitrace.com",                     "SEI"),
     "avalanche": ("Avalanche",    "https://avalanche.blockscout.com",         "AVAX"),
@@ -1742,12 +1742,12 @@ def _ts_fmt(iso_str):
     except Exception:
         return None
 
-_WRAPPED_NATIVE = {"WETH","WBNB","WMATIC","WAVAX","WFTM","WONE","WHYPE","WCORE","WGLMR"}
+_WRAPPED_NATIVE = {"WETH","WBNB","WMATIC","WPOL","WAVAX","WFTM","WONE","WHYPE","WCORE","WGLMR"}
 
 # Maps a wrapped-native symbol to its underlying native coin for LIVE PRICE lookups only
 # (display ticker still shows the wrapped symbol, e.g. "WETH").
 _WRAPPED_TO_NATIVE = {
-    "WETH": "ETH", "WBNB": "BNB", "WMATIC": "MATIC", "WAVAX": "AVAX",
+    "WETH": "ETH", "WBNB": "BNB", "WMATIC": "MATIC", "WPOL": "POL", "WAVAX": "AVAX",
     "WFTM": "FTM", "WONE": "ONE", "WHYPE": "HYPE", "WCORE": "CORE", "WGLMR": "GLMR",
     "WS":   "S",   # wrapped Sonic → Sonic native
 }
@@ -1971,6 +1971,35 @@ def _parse_evm_result(tx_from, transfers, tx_data, native_sym, chain_name, times
                     _stable_spent + 1e12,   # dominant: always beats unrelated legs
                     _cand, native_sym, wrapped_native_burned, _stable_spent,
                 )
+                break
+
+    # --- Step 2b2: non-stable ERC-20 → native coin swap detection ---
+    # Handles swaps like STG → POL where the route sells a non-stable ERC-20 token,
+    # the aggregator internally swaps through intermediaries, unwraps WPOL/WETH/etc.
+    # and sends the native coin to the user.  The user's address has only ERC-20 outflows
+    # (the token sold) and zero ERC-20 inflows (they receive native coin, not an ERC-20).
+    # Signal: wrapped-native burned AND candidate sent non-stable ERC-20(s) AND received
+    # no ERC-20 back.  Modelled as a token-for-token swap so _finalize_usd estimates USD.
+    if wrapped_native_burned > 0 and best_token_swap is None:
+        _nontok_candidates = (list(known_wallets) if known_wallets else []) + [tx_from]
+        for _cand in _nontok_candidates:
+            _cd = addr_delta.get(_cand, {})
+            _neg_ns = [(s, -d) for s, d in _cd.items()
+                       if d < 0 and not is_stable.get(s) and not is_wrapped.get(s)]
+            _pos = any(d > 0 for d in _cd.values())
+            if _neg_ns and not _pos:
+                _sold_sym, _sold_qty = max(_neg_ns, key=lambda x: x[1])
+                _usd = (_estimate_usd(_sold_sym, _sold_qty)
+                        or _estimate_usd(native_sym, wrapped_native_burned) or 0)
+                best_token_swap = (
+                    _usd + 1e12,   # dominant score
+                    _cand, native_sym, round(wrapped_native_burned, 10),
+                    _sold_sym, round(_sold_qty, 10),
+                )
+                # Clear pool/intermediate matches so token-swap wins at Step 3
+                best_buyer       = None
+                best_seller      = None
+                best_stable_swap = None
                 break
 
     # --- Step 2c: native ETH/BNB → stablecoin SELL detection ---
