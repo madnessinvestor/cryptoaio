@@ -4654,9 +4654,8 @@ section.hidden { display: none; }
   display: block;
   touch-action: none;
 }
-/* "Cor" pill special style */
+/* "Cor" pill — same style as other pills, only layout tweak */
 .wgt-pill-custom { letter-spacing: 0.01em; display: inline-flex; align-items: center; gap: 5px; }
-.wgt-pill-custom.active { background: linear-gradient(135deg,rgba(255,100,100,0.3),rgba(100,100,255,0.3)); color: #fff; }
 
 .wgt-live-box {
   background: #0f0f14;

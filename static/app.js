@@ -30,7 +30,11 @@ function applyTheme(theme) {
   const panel = document.getElementById("app-color-picker-panel");
   if (panel) {
     panel.style.display = theme === "custom" ? "block" : "none";
-    if (theme === "custom") _appCpInit();
+    if (theme === "custom") {
+      // Bind events once, then always redraw after layout
+      _appCpInit();
+      requestAnimationFrame(_appCpApply);
+    }
   }
 }
 
