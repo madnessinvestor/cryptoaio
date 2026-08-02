@@ -433,10 +433,25 @@
             <button id="btn-lang-en" onclick="setLang('en')" class="settings-toggle-btn lang-btn">EN</button>
           </div>
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-row-col">
           <span class="settings-row-label" data-i18n="set_theme">Tema</span>
-          <div class="settings-toggle-group">
-            <button id="btn-theme" onclick="toggleTheme()" class="settings-toggle-btn"></button>
+          <div class="wgt-pills-group" id="app-theme-pills">
+            <button class="wgt-pill app-theme-pill" data-theme="dark"        onclick="setAppTheme('dark')"        data-i18n="wgt_theme_dark">Escuro</button>
+            <button class="wgt-pill app-theme-pill" data-theme="light"       onclick="setAppTheme('light')"       data-i18n="wgt_theme_light">Claro</button>
+            <button class="wgt-pill app-theme-pill" data-theme="purple-dark" onclick="setAppTheme('purple-dark')" data-i18n="wgt_theme_purple">Purple Dark</button>
+            <button class="wgt-pill wgt-pill-custom app-theme-pill" data-theme="custom" onclick="setAppTheme('custom')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+              <span data-i18n="wgt_theme_custom">Cor</span>
+            </button>
+          </div>
+          <!-- Custom accent color picker — shown only when theme=custom -->
+          <div id="app-color-picker-panel" class="wgt-color-picker-panel" style="display:none">
+            <div class="wgt-cp-preview-row">
+              <div id="app-cp-swatch" class="wgt-cp-swatch"></div>
+              <input id="app-cp-hex" class="wgt-cp-hex-input" type="text" maxlength="7" placeholder="#00e676" />
+            </div>
+            <canvas id="app-cp-sb"  class="wgt-cp-sb"  width="260" height="160"></canvas>
+            <canvas id="app-cp-hue" class="wgt-cp-hue" width="260" height="18"></canvas>
           </div>
         </div>
         <div class="settings-row">

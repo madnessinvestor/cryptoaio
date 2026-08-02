@@ -2,25 +2,176 @@
 
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
-  const btn = document.getElementById("btn-theme");
-  if (btn) btn.innerHTML = theme === "light"
-    ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
-    : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
-  const color = theme === "light" ? "#f4f4f4" : "#0f0f0f";
+
+  // Apply saved custom accent when in custom mode
+  if (theme === "custom") {
+    const accent = localStorage.getItem("app_custom_accent") || "#00e676";
+    document.documentElement.style.setProperty("--app-custom-accent", accent);
+  }
+
+  // Update meta theme-color
+  const metaColor = theme === "light"       ? "#f4f4f4"
+                  : theme === "purple-dark" ? "#0d0d1a"
+                  : "#0f0f0f";
   let meta = document.querySelector('meta[name="theme-color"]');
   if (!meta) {
     meta = document.createElement("meta");
     meta.setAttribute("name", "theme-color");
     document.head.appendChild(meta);
   }
-  meta.setAttribute("content", color);
+  meta.setAttribute("content", metaColor);
+
+  // Sync pill active states (only after DOM is ready)
+  document.querySelectorAll(".app-theme-pill").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.theme === theme);
+  });
+
+  // Show/hide app color picker panel
+  const panel = document.getElementById("app-color-picker-panel");
+  if (panel) {
+    panel.style.display = theme === "custom" ? "block" : "none";
+    if (theme === "custom") _appCpInit();
+  }
 }
 
+function setAppTheme(theme) {
+  localStorage.setItem("theme", theme);
+  applyTheme(theme);
+}
+
+// Kept for backward-compat (any lingering onclick references)
 function toggleTheme() {
+  const order = ["dark", "light", "purple-dark"];
   const current = document.documentElement.getAttribute("data-theme") || "dark";
-  const next = current === "dark" ? "light" : "dark";
-  localStorage.setItem("theme", next);
-  applyTheme(next);
+  const idx = order.indexOf(current);
+  setAppTheme(order[(idx + 1) % order.length]);
+}
+
+// ─── App custom accent color picker ──────────────────────────────────────────
+let _appCpH = 145, _appCpS = 1.0, _appCpB = 0.9;
+let _appCpDraggingSB = false, _appCpDraggingHue = false;
+
+function _appCpHsvToRgb(h, s, v) {
+  const i = Math.floor(h / 60) % 6;
+  const f = h / 60 - Math.floor(h / 60);
+  const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  const m = [[v,t,p],[q,v,p],[p,v,t],[p,q,v],[t,p,v],[v,p,q]][i];
+  return { r: Math.round(m[0]*255), g: Math.round(m[1]*255), b: Math.round(m[2]*255) };
+}
+function _appCpRgbToHex(r, g, b) {
+  return "#" + [r,g,b].map(x => x.toString(16).padStart(2,"0")).join("");
+}
+function _appCpHexToRgb(hex) {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : null;
+}
+function _appCpHexToHsb(hex) {
+  const rgb = _appCpHexToRgb(hex); if (!rgb) return;
+  const r = rgb.r/255, g = rgb.g/255, b = rgb.b/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d) {
+    if (max===r) h = ((g-b)/d + 6) % 6;
+    else if (max===g) h = (b-r)/d + 2;
+    else h = (r-g)/d + 4;
+    h *= 60;
+  }
+  _appCpH = h; _appCpS = max ? d/max : 0; _appCpB = max;
+}
+function _appCpDrawSB() {
+  const c = document.getElementById("app-cp-sb"); if (!c) return;
+  const ctx = c.getContext("2d"), W = c.width, H = c.height;
+  const {r,g,b} = _appCpHsvToRgb(_appCpH, 1, 1);
+  ctx.clearRect(0,0,W,H);
+  const gH = ctx.createLinearGradient(0,0,W,0);
+  gH.addColorStop(0,"#fff"); gH.addColorStop(1,`rgb(${r},${g},${b})`);
+  ctx.fillStyle = gH; ctx.fillRect(0,0,W,H);
+  const gV = ctx.createLinearGradient(0,0,0,H);
+  gV.addColorStop(0,"rgba(0,0,0,0)"); gV.addColorStop(1,"#000");
+  ctx.fillStyle = gV; ctx.fillRect(0,0,W,H);
+  const cx = _appCpS * W, cy = (1 - _appCpB) * H;
+  ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI*2);
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI*2);
+  ctx.strokeStyle = "rgba(0,0,0,0.5)"; ctx.lineWidth = 1; ctx.stroke();
+}
+function _appCpDrawHue() {
+  const c = document.getElementById("app-cp-hue"); if (!c) return;
+  const ctx = c.getContext("2d"), W = c.width, H = c.height;
+  const g = ctx.createLinearGradient(0,0,W,0);
+  for (let i=0; i<=360; i+=30) g.addColorStop(i/360,`hsl(${i},100%,50%)`);
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  const cx = (_appCpH / 360) * W;
+  ctx.beginPath(); ctx.arc(cx, H/2, H/2-1, 0, Math.PI*2);
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, H/2, H/2-3, 0, Math.PI*2);
+  ctx.strokeStyle = "rgba(0,0,0,0.4)"; ctx.lineWidth = 1; ctx.stroke();
+}
+function _appCpApply() {
+  const rgb = _appCpHsvToRgb(_appCpH, _appCpS, _appCpB);
+  const hex = _appCpRgbToHex(rgb.r, rgb.g, rgb.b);
+  localStorage.setItem("app_custom_accent", hex);
+  document.documentElement.style.setProperty("--app-custom-accent", hex);
+  const swatch = document.getElementById("app-cp-swatch");
+  const hexIn  = document.getElementById("app-cp-hex");
+  if (swatch) swatch.style.background = hex;
+  if (hexIn && document.activeElement !== hexIn) hexIn.value = hex;
+  _appCpDrawSB(); _appCpDrawHue();
+}
+function _appCpPosSB(e) {
+  const c = document.getElementById("app-cp-sb"); if (!c) return;
+  const rect = c.getBoundingClientRect();
+  const px = e.touches ? e.touches[0].clientX : e.clientX;
+  const py = e.touches ? e.touches[0].clientY : e.clientY;
+  _appCpS = Math.max(0, Math.min(1, (px - rect.left) / rect.width));
+  _appCpB = Math.max(0, Math.min(1, 1 - (py - rect.top)  / rect.height));
+  _appCpApply();
+}
+function _appCpPosHue(e) {
+  const c = document.getElementById("app-cp-hue"); if (!c) return;
+  const rect = c.getBoundingClientRect();
+  const px = e.touches ? e.touches[0].clientX : e.clientX;
+  _appCpH = Math.max(0, Math.min(360, ((px - rect.left) / rect.width) * 360));
+  _appCpApply();
+}
+function _appCpInit() {
+  const sb  = document.getElementById("app-cp-sb");
+  const hue = document.getElementById("app-cp-hue");
+  if (!sb || !hue || sb._appCpBound) return;
+  sb._appCpBound = true;
+
+  const saved = localStorage.getItem("app_custom_accent");
+  if (saved) _appCpHexToHsb(saved);
+
+  sb.addEventListener("mousedown",  e => { _appCpDraggingSB=true;  _appCpPosSB(e);  e.preventDefault(); });
+  sb.addEventListener("touchstart", e => { _appCpDraggingSB=true;  _appCpPosSB(e);  e.preventDefault(); }, {passive:false});
+  hue.addEventListener("mousedown",  e => { _appCpDraggingHue=true; _appCpPosHue(e); e.preventDefault(); });
+  hue.addEventListener("touchstart", e => { _appCpDraggingHue=true; _appCpPosHue(e); e.preventDefault(); }, {passive:false});
+
+  window.addEventListener("mousemove", e => {
+    if (_appCpDraggingSB)  _appCpPosSB(e);
+    if (_appCpDraggingHue) _appCpPosHue(e);
+  });
+  window.addEventListener("touchmove", e => {
+    if (_appCpDraggingSB)  { _appCpPosSB(e);  e.preventDefault(); }
+    if (_appCpDraggingHue) { _appCpPosHue(e); e.preventDefault(); }
+  }, {passive:false});
+  window.addEventListener("mouseup",  () => { _appCpDraggingSB=false; _appCpDraggingHue=false; });
+  window.addEventListener("touchend", () => { _appCpDraggingSB=false; _appCpDraggingHue=false; });
+
+  const hexIn = document.getElementById("app-cp-hex");
+  if (hexIn) {
+    hexIn.addEventListener("input", () => {
+      const v = hexIn.value.trim();
+      if (/^#[0-9a-f]{6}$/i.test(v)) { _appCpHexToHsb(v); _appCpApply(); }
+    });
+    hexIn.addEventListener("change", () => {
+      let v = hexIn.value.trim();
+      if (/^[0-9a-f]{6}$/i.test(v)) v = "#" + v;
+      if (/^#[0-9a-f]{6}$/i.test(v)) { hexIn.value = v; _appCpHexToHsb(v); _appCpApply(); }
+    });
+  }
+  _appCpApply();
 }
 
 applyTheme(localStorage.getItem("theme") || "dark");

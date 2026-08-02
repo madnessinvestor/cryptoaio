@@ -859,6 +859,23 @@ html { font-size: 114%; }
   --bar-bg: rgba(244,244,244,0.96);
 }
 
+[data-theme="purple-dark"] {
+  --bg: #0d0d1a;
+  --surface: #16162a;
+  --surface2: #0f0f1f;
+  --border: #2a2a4a;
+  --accent: #a855f7;
+  --red: #ff4d6d;
+  --text: #f0e6ff;
+  --muted: #5a4a7a;
+  --muted2: #9070b8;
+  --bar-bg: rgba(13,13,26,0.96);
+}
+
+[data-theme="custom"] {
+  --accent: var(--app-custom-accent, #00e676);
+}
+
 /* ─── Scrollbar global (dark & light) ─────────────────────────────────────── */
 * {
   scrollbar-width: thin;
@@ -1149,6 +1166,22 @@ main {
 [data-theme="light"] .ai-cfg-save-btn.gist-action-btn { color: #111111 !important; border-color: #bbb; }
 [data-theme="light"] .ai-cfg-select option    { background: #ffffff; color: #111; }
 [data-theme="light"] .cfg-prov-select option  { background: #ffffff; color: #111; }
+
+/* ─── Purple-dark theme — button text ───────────────────────────────────── */
+[data-theme="purple-dark"] .btn-primary          { color: #fff; }
+[data-theme="purple-dark"] .btn-confirm          { color: #fff; }
+[data-theme="purple-dark"] .btn-fab              { color: #fff; }
+[data-theme="purple-dark"] .dash-fab-option-icon { color: #fff; }
+[data-theme="purple-dark"] .ai-not-cfg-btn       { color: #fff; }
+[data-theme="purple-dark"] .hash-cat-btn.active  { color: #fff; }
+[data-theme="purple-dark"] .dwm-net-btn.active   { color: #fff; }
+[data-theme="purple-dark"] .btn-portfolio-add    { color: #fff; }
+[data-theme="purple-dark"] .col-btn.active       { color: #fff; }
+[data-theme="purple-dark"] .ai-cfg-save-btn      { color: #fff; }
+
+/* ─── wgt-pill active state per theme ───────────────────────────────────── */
+[data-theme="purple-dark"] .wgt-pill.active { background: rgba(168,85,247,0.15); }
+[data-theme="custom"]      .wgt-pill.active { background: rgba(255,255,255,0.1); }
 
 /* Card */
 .asset-card {
