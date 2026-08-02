@@ -1456,7 +1456,7 @@ header {
   min-width: 0;
 }
 .nav-item.active { color: var(--accent); }
-.nav-item.active .nav-icon-wrap { background: rgba(0,230,118,0.12); }
+.nav-item.active .nav-icon-wrap { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .nav-item:active { opacity: 0.7; }
 
 .nav-icon-wrap {
@@ -1468,7 +1468,7 @@ header {
   border-radius: 12px;
   transition: background 0.15s;
 }
-[data-theme="light"] .nav-item.active .nav-icon-wrap { background: rgba(0,168,84,0.12); }
+[data-theme="light"] .nav-item.active .nav-icon-wrap { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
 /* ─── Settings Panel ─────────────────────────────────────────────────────────── */
 .settings-panel {
