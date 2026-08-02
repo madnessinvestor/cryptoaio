@@ -1,66 +1,51 @@
 # CryptoAIO
 
-A privacy-first, all-in-one asset tracker for Cryptocurrencies, Stocks, and Forex — built with **Flask + Vanilla JavaScript** as a **Progressive Web App (PWA)**.
+An all-in-one cryptocurrency management app built with Python/Flask + Vanilla JS.
 
-## Stack
-- **Backend**: Python 3.12 / Flask 3 (`app.py`)
-- **Frontend**: Vanilla JS, HTML5, CSS3 (under `static/` and `templates/`)
-- **Dependencies**: `flask`, `gunicorn`, `requests` (see `requirements.txt`)
+## How to run
 
-## Running the app
+The app starts automatically via the **Start application** workflow, which runs:
 ```
 python3 app.py
 ```
-Opens at `http://localhost:5000`. The Replit workflow `Start application` handles this automatically.
+It listens on port 5000.
 
-## Environment Variables
-| Variable | Required | Description |
-|---|---|---|
-| `SESSION_SECRET` | ✅ Set in Replit Secrets | Flask session secret key |
-| `GROQ_API_KEY` | Optional | Groq — Whisper transcription + LLaMA chat (Mad AI) |
-| `GOOGLE_AI_API_KEY` | Optional | Google Gemini — Mad AI fallback |
-| `OPENROUTER_API_KEY` | Optional | OpenRouter — Mad AI fallback |
-| `GITHUB_CLIENT_ID` | Optional | GitHub OAuth for one-click Gist auth |
-| `GITHUB_CLIENT_SECRET` | Optional | GitHub OAuth secret |
+For production deployment, Gunicorn is configured:
+```
+gunicorn --bind=0.0.0.0:5000 --reuse-port app:app
+```
 
-Without AI keys, Mad AI is unavailable. All other modules (watchlist, portfolio, stocks, forex, widget) work without any keys.
+## Features
 
-## Data files (local JSON, no DB)
-- `assets.json` — watchlist
-- `alerts.json` — price alert rules
-- `portfolio_data.json` — trade / portfolio entries
-- `dashboard_wallets.json` — on-chain wallet addresses
-- `dashboard_manual.json` — manual dashboard assets
-- `dashboard_history.json` — portfolio value snapshots (used for 24 h chart)
-- `static/icons/tokens/` — cached token icon images (downloaded on demand)
+- **Watchlist** — track crypto, stocks, forex prices in real-time
+- **Dashboard** — on-chain wallet tracking (EVM, Solana, Bitcoin) + manual assets
+- **Trade** — portfolio / trade history and P&L
+- **Mad AI** — AI chat/voice assistant (requires AI provider key configured in Settings)
+- **Alerts** — price high/low browser notifications
+- **Widget** — embeddable ticker widget at `/widget`
+- **Gist Sync** — auto-backup data to GitHub Gist (configure token in Settings → Gist)
+- **PWA** — installable as a Progressive Web App
 
-## Key static files
-| File | Purpose |
-|---|---|
-| `static/style.css` | All styles — dark / light / purple-dark / custom colour themes |
-| `static/app.js` | Core logic — watchlist, prices, currency switching, global refresh |
-| `static/widget.js` | Widget tab — live preview, phone mockup, HSB colour picker, themes |
-| `static/dashboard.js` | Dashboard — wallets, manual assets, 24 h portfolio chart |
-| `static/trade.js` | Trade tab — P&L, win rate, position tracking |
-| `static/madai.js` | Mad AI — chat, voice (Groq Whisper), TTS |
-| `static/alerts.js` | Price alerts |
-| `static/i18n.js` | i18n strings — Portuguese (default) + English |
-| `static/gist.js` | GitHub Gist sync — auto-backup & restore |
-| `static/backup.js` | Local data import / export |
+## Stack
 
-## Widget tab specifics
-- **AO VIVO** preview is wrapped in a phone mockup (green wallpaper, status bar with live clock)
-- **Themes**: Escuro · Claro · Purple Dark · Auto · 🎨 Custom (full HSB colour picker)
-- Custom colour persists via `localStorage` key `w_customBg`
-- Global ↻ refresh also updates widget live data and the phone mockup clock
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.12 + Flask 3 |
+| Frontend | HTML5 · CSS3 · Vanilla JS (ES6+) |
+| Storage | Local JSON files + localStorage |
 
-## Dashboard specifics
-- Portfolio card shows **24 h variation only** — 1D/1W/1M period buttons were removed
-- History snapshots saved to `dashboard_history.json` (one per hour, max configurable)
+## Secrets
 
-## Deployment
-Configured for Replit Autoscale using `gunicorn`.
+| Secret | Purpose | Required? |
+|--------|---------|-----------|
+| `SESSION_SECRET` | Flask session signing key | Yes |
+| `GITHUB_CLIENT_ID` | GitHub OAuth for Gist login flow | Optional |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth for Gist login flow | Optional |
+
+AI provider keys (Groq, Gemini, OpenRouter) are configured per-user in the app's Settings tab — they are not backend secrets.
+
+The GitHub Personal Access Token for Gist sync is also configured per-user in Settings → Gist, not stored server-side.
 
 ## User preferences
 
-- **Git identity — OBRIGATÓRIO**: Todos os commits e pushes DEVEM usar `user.name = madnessinvestor` e `user.email = madness.investor@gmail.com`. NUNCA commitar como "Replit Agent" ou "agent@replit.com". Antes de qualquer `git commit` ou `git push`, SEMPRE executar: `git config user.name "madnessinvestor" && git config user.email "madness.investor@gmail.com"`. Isso se aplica ao agente também — não é opcional.
+- Git identity: `madnessinvestor` / `madness.investor@gmail.com`
