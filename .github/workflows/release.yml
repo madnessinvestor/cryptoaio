@@ -54,6 +54,21 @@ jobs:
           pip install --upgrade pip
           pip install buildozer==1.5.0 python-for-android==2024.1.21 cython==0.29.33
 
+      - name: Pin hostpython3 recipe to Python 3.12.9
+        # Safety net: p4a hostpython3 defaults to 3.14.x whose bundled pip
+        # is incompatible (BuildDependencyInstallError missing). Patch the
+        # installed recipe directly so the venv always uses Python 3.12.9.
+        run: |
+          P4A=$(python3 -c "import pythonforandroid, os; print(os.path.dirname(pythonforandroid.__file__))")
+          echo "p4a path: $P4A"
+          grep "version" "$P4A/recipes/hostpython3/__init__.py" | head -5
+          sed -i "s/version = '[0-9]*\.[0-9]*\.[0-9]*'/version = '3.12.9'/" \
+              "$P4A/recipes/hostpython3/__init__.py" \
+              "$P4A/recipes/python3/__init__.py" || true
+          echo "After patch:"
+          grep "version = " "$P4A/recipes/hostpython3/__init__.py" | head -3
+          grep "version = " "$P4A/recipes/python3/__init__.py" | head -3
+
       - name: Cache Buildozer global directory
         uses: actions/cache@v4
         with:
