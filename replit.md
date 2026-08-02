@@ -1,30 +1,10 @@
 # CryptoAIO
 
-An all-in-one cryptocurrency management app built with Python/Flask + Vanilla JS.
+A Flask + Vanilla JS all-in-one cryptocurrency app — watchlist, portfolio tracking, price alerts, wallet dashboard, AI chat (Mad AI), and an embeddable ticker widget.
 
 ## How to run
 
-The app starts automatically via the **Start application** workflow, which runs:
-```
-python3 app.py
-```
-It listens on port 5000.
-
-For production deployment, Gunicorn is configured:
-```
-gunicorn --bind=0.0.0.0:5000 --reuse-port app:app
-```
-
-## Features
-
-- **Watchlist** — track crypto, stocks, forex prices in real-time
-- **Dashboard** — on-chain wallet tracking (EVM, Solana, Bitcoin) + manual assets
-- **Trade** — portfolio / trade history and P&L
-- **Mad AI** — AI chat/voice assistant (requires AI provider key configured in Settings)
-- **Alerts** — price high/low browser notifications
-- **Widget** — embeddable ticker widget at `/widget`
-- **Gist Sync** — auto-backup data to GitHub Gist (configure token in Settings → Gist)
-- **PWA** — installable as a Progressive Web App
+The **Start application** workflow runs `python3 app.py` on port 5000. Press **Run** or start it from the Workflows panel.
 
 ## Stack
 
@@ -32,20 +12,29 @@ gunicorn --bind=0.0.0.0:5000 --reuse-port app:app
 |-------|-----------|
 | Backend | Python 3.12 + Flask 3 |
 | Frontend | HTML5 · CSS3 · Vanilla JS (ES6+) |
-| Storage | Local JSON files + localStorage |
+| AI | Groq · Gemini · OpenRouter (configured in-app) |
+| Market Data | Hyperliquid, MEXC, KuCoin, Gate.io, OKX, Kraken, Bitfinex, CoinGecko, CoinCap, CryptoCompare, brapi.dev, Frankfurter, Yahoo Finance |
+| Storage | Local JSON files + browser localStorage |
 
 ## Secrets
 
-| Secret | Purpose | Required? |
-|--------|---------|-----------|
-| `SESSION_SECRET` | Flask session signing key | Yes |
-| `GITHUB_CLIENT_ID` | GitHub OAuth for Gist login flow | Optional |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth for Gist login flow | Optional |
+| Secret | Required | Purpose |
+|--------|----------|---------|
+| `SESSION_SECRET` | Yes (set) | Flask session signing |
+| `GITHUB_CLIENT_ID` | Optional | GitHub OAuth for Gist sync |
+| `GITHUB_CLIENT_SECRET` | Optional | GitHub OAuth for Gist sync |
 
-AI provider keys (Groq, Gemini, OpenRouter) are configured per-user in the app's Settings tab — they are not backend secrets.
+> **GitHub Gist sync token** — stored client-side in localStorage, entered via the app's **Config → Gist** settings panel. Generate a PAT with `gist` scope at github.com/settings/tokens and paste it there (not here).
 
-The GitHub Personal Access Token for Gist sync is also configured per-user in Settings → Gist, not stored server-side.
+## Key files
+
+- `app.py` — Flask backend, all API routes and price aggregation
+- `templates/index.html` — main SPA shell
+- `static/app.js` — watchlist + price refresh core
+- `static/madai.js` — AI chat & voice
+- `static/gist.js` — GitHub Gist backup/restore
+- `assets.json`, `alerts.json`, `dashboard_wallets.json`, etc. — persisted data (JSON)
 
 ## User preferences
 
-- Git identity: `madnessinvestor` / `madness.investor@gmail.com`
+- Git identity: madnessinvestor / madness.investor@gmail.com
