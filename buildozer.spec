@@ -74,3 +74,9 @@ android.logcat_filters = *:S python:D
 [buildozer]
 log_level    = 2
 warn_on_root = 1
+
+# Pin p4a to a specific release so buildozer doesn't clone the latest git main.
+# The default "latest main" as of mid-2026 ships Python 3.14 whose bundled pip
+# drops BuildDependencyInstallError, breaking the cross-compile venv.
+# v2024.1.21 ships Python 3.11.5 which works correctly.
+p4a.branch = v2024.1.21
