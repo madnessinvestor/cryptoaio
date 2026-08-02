@@ -872,9 +872,7 @@ html { font-size: 114%; }
   --bar-bg: rgba(13,13,26,0.96);
 }
 
-[data-theme="custom"] {
-  --accent: var(--app-custom-accent, #00e676);
-}
+/* [data-theme="custom"] vars are all set via inline styles by _appCustomThemeApply() in app.js */
 
 /* ─── Scrollbar global (dark & light) ─────────────────────────────────────── */
 * {

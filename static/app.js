@@ -1,17 +1,50 @@
 // ─── Tema ─────────────────────────────────────────────────────────────────────
 
+// CSS vars set inline by custom mode — must be cleared when leaving
+const _APP_CUSTOM_VARS = ['--bg','--surface','--surface2','--border','--accent','--text','--muted','--muted2','--bar-bg'];
+
+function _appCustomThemeClear() {
+  _APP_CUSTOM_VARS.forEach(v => document.documentElement.style.removeProperty(v));
+}
+
+// Build a full dark palette from HSV (hue drives tint, s+b drive accent vividness)
+function _appCustomThemeApply(h, s, b) {
+  const rgb    = _appCpHsvToRgb(h, s, b);
+  const accent = _appCpRgbToHex(rgb.r, rgb.g, rgb.b);
+  const hs     = h.toFixed(1);
+  const root   = document.documentElement;
+  root.style.setProperty('--bg',       `hsl(${hs},18%,7%)`);
+  root.style.setProperty('--surface',  `hsl(${hs},15%,11%)`);
+  root.style.setProperty('--surface2', `hsl(${hs},18%,8%)`);
+  root.style.setProperty('--border',   `hsl(${hs},20%,20%)`);
+  root.style.setProperty('--accent',   accent);
+  root.style.setProperty('--text',     `hsl(${hs},35%,92%)`);
+  root.style.setProperty('--muted',    `hsl(${hs},14%,36%)`);
+  root.style.setProperty('--muted2',   `hsl(${hs},18%,56%)`);
+  root.style.setProperty('--bar-bg',   `hsla(${hs},18%,7%,0.96)`);
+  return accent;
+}
+
 function applyTheme(theme) {
+  // Clear inline custom vars before switching away
+  if (theme !== "custom") _appCustomThemeClear();
+
   document.documentElement.setAttribute("data-theme", theme);
 
-  // Apply saved custom accent when in custom mode
   if (theme === "custom") {
-    const accent = localStorage.getItem("app_custom_accent") || "#00e676";
-    document.documentElement.style.setProperty("--app-custom-accent", accent);
+    // Restore saved hue+accent and regenerate full palette
+    const savedAccent = localStorage.getItem("app_custom_accent") || "#00e676";
+    _appCpHexToHsb(savedAccent);
+    const savedHue = parseFloat(localStorage.getItem("app_custom_hue"));
+    if (!isNaN(savedHue)) _appCpH = savedHue;
+    _appCustomThemeApply(_appCpH, _appCpS, _appCpB);
   }
 
   // Update meta theme-color
   const metaColor = theme === "light"       ? "#f4f4f4"
                   : theme === "purple-dark" ? "#0d0d1a"
+                  : theme === "custom"
+                    ? (document.documentElement.style.getPropertyValue("--bg") || "#0f0f0f")
                   : "#0f0f0f";
   let meta = document.querySelector('meta[name="theme-color"]');
   if (!meta) {
@@ -112,10 +145,10 @@ function _appCpDrawHue() {
   ctx.strokeStyle = "rgba(0,0,0,0.4)"; ctx.lineWidth = 1; ctx.stroke();
 }
 function _appCpApply() {
-  const rgb = _appCpHsvToRgb(_appCpH, _appCpS, _appCpB);
-  const hex = _appCpRgbToHex(rgb.r, rgb.g, rgb.b);
+  // Generate full theme from current HSV, get back the accent hex
+  const hex = _appCustomThemeApply(_appCpH, _appCpS, _appCpB);
   localStorage.setItem("app_custom_accent", hex);
-  document.documentElement.style.setProperty("--app-custom-accent", hex);
+  localStorage.setItem("app_custom_hue", String(_appCpH));
   const swatch = document.getElementById("app-cp-swatch");
   const hexIn  = document.getElementById("app-cp-hex");
   if (swatch) swatch.style.background = hex;
@@ -146,6 +179,9 @@ function _appCpInit() {
 
   const saved = localStorage.getItem("app_custom_accent");
   if (saved) _appCpHexToHsb(saved);
+  // Restore exact hue (more precise than deriving from hex)
+  const savedHue = parseFloat(localStorage.getItem("app_custom_hue"));
+  if (!isNaN(savedHue)) _appCpH = savedHue;
 
   sb.addEventListener("mousedown",  e => { _appCpDraggingSB=true;  _appCpPosSB(e);  e.preventDefault(); });
   sb.addEventListener("touchstart", e => { _appCpDraggingSB=true;  _appCpPosSB(e);  e.preventDefault(); }, {passive:false});
