@@ -4,9 +4,19 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag (e.g. v1.0.1)"
+        required: true
+        default: "v1.0.1"
 
 permissions:
   contents: write
+
+env:
+  # Use the workflow_dispatch input when triggered manually, otherwise use the pushed tag
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
@@ -34,7 +44,7 @@ jobs:
 
       - name: Rename APK with version tag
         run: |
-          TAG="${{ github.ref_name }}"
+          TAG="${{ env.RELEASE_TAG }}"
           APK=$(ls bin/CryptoAIO-*-debug.apk 2>/dev/null | head -1)
           if [ -z "$APK" ]; then
             echo "APK not found. Contents of bin/:" && ls bin/ || echo "(empty)"
@@ -76,7 +86,7 @@ jobs:
 
       - name: Zip dist folder (portable)
         run: |
-          $TAG = "${{ github.ref_name }}"
+          $TAG = "${{ env.RELEASE_TAG }}"
           Compress-Archive -Path dist\CryptoAIO\* -DestinationPath "CryptoAIO-${TAG}-Windows.zip"
           echo "ZIP_FILE=CryptoAIO-${TAG}-Windows.zip" | Out-File -Append $env:GITHUB_ENV
         shell: pwsh
@@ -87,7 +97,7 @@ jobs:
 
       - name: Build Windows installer
         run: |
-          $TAG = "${{ github.ref_name }}"
+          $TAG = "${{ env.RELEASE_TAG }}"
           $env:APP_VERSION = $TAG
           New-Item -ItemType Directory -Force -Path installer | Out-Null
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" CryptoAIO.iss
@@ -142,9 +152,10 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "CryptoAIO ${{ github.ref_name }}"
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "CryptoAIO ${{ env.RELEASE_TAG }}"
           body: |
-            ## 🟢 CryptoAIO ${{ github.ref_name }}
+            ## 🟢 CryptoAIO ${{ env.RELEASE_TAG }}
 
             **CryptoAIO** is an all-in-one, privacy-first cryptocurrency tracker — no wallet connections, no logins, no data sent to third parties.
 
@@ -176,7 +187,7 @@ jobs:
 
             ### ⚙️ Android installation
 
-            1. Download `CryptoAIO-${{ github.ref_name }}-debug.apk`
+            1. Download `CryptoAIO-${{ env.RELEASE_TAG }}-debug.apk`
             2. On your Android device, go to **Settings → Security → Install unknown apps** and allow your browser/file manager
             3. Open the downloaded APK and tap **Install**
 
@@ -186,7 +197,7 @@ jobs:
 
             ### 💻 Windows installation
 
-            1. Download `CryptoAIO-${{ github.ref_name }}-Windows.zip`
+            1. Download `CryptoAIO-${{ env.RELEASE_TAG }}-Windows.zip`
             2. Extract the zip to any folder
             3. Run `CryptoAIO.exe`
 
@@ -203,7 +214,7 @@ jobs:
 
             ---
 
-            **Full changelog**: https://github.com/madnessinvestor/cryptoaio/commits/${{ github.ref_name }}
+            **Full changelog**: https://github.com/madnessinvestor/cryptoaio/commits/${{ env.RELEASE_TAG }}
           files: release-assets/*
           draft: false
           prerelease: false
