@@ -1,0 +1,202 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Android APK — Ubuntu + Buildozer
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            git zip unzip openjdk-17-jdk \
+            python3-pip autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev \
+            build-essential ccache libltdl-dev
+
+      - name: Install Buildozer & Cython
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython
+
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-${{ runner.os }}-
+
+      - name: Build debug APK
+        run: |
+          buildozer android debug 2>&1 | tee build-apk.log
+        env:
+          ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+
+      - name: Rename APK with version tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          APK=$(ls bin/CryptoAIO-*-debug.apk | head -1)
+          mv "$APK" "bin/CryptoAIO-${TAG}-debug.apk"
+          echo "APK_FILE=bin/CryptoAIO-${TAG}-debug.apk" >> $GITHUB_ENV
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: ${{ env.APK_FILE }}
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Windows EXE — Windows runner + PyInstaller
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-exe:
+    name: Build Windows EXE
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install flask requests flask-cors pyinstaller pywebview
+
+      - name: Build EXE with PyInstaller
+        run: |
+          pyinstaller CryptoAIO.spec --clean --noconfirm
+
+      - name: Zip dist folder
+        run: |
+          $TAG = "${{ github.ref_name }}"
+          Compress-Archive -Path dist\CryptoAIO\* -DestinationPath "CryptoAIO-${TAG}-Windows.zip"
+          echo "ZIP_FILE=CryptoAIO-${TAG}-Windows.zip" | Out-File -Append $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exe-zip
+          path: ${{ env.ZIP_FILE }}
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # GitHub Release — cria a release e anexa os dois artefatos
+  # ─────────────────────────────────────────────────────────────────────────────
+  create-release:
+    name: Create GitHub Release
+    needs: [build-apk, build-exe]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: apk
+          path: release-assets/
+
+      - name: Download EXE zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: exe-zip
+          path: release-assets/
+
+      - name: List release assets
+        run: ls -lh release-assets/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "CryptoAIO ${{ github.ref_name }}"
+          body: |
+            ## 🟢 CryptoAIO ${{ github.ref_name }}
+
+            **CryptoAIO** is an all-in-one, privacy-first cryptocurrency tracker — no wallet connections, no logins, no data sent to third parties.
+
+            ---
+
+            ### 📦 Downloads
+
+            | Platform | File | Notes |
+            |---|---|---|
+            | 🤖 Android | `CryptoAIO-*-debug.apk` | Sideload — enable "Unknown sources" in settings |
+            | 💻 Windows | `CryptoAIO-*-Windows.zip` | Extract and run `CryptoAIO.exe` |
+
+            ---
+
+            ### ✨ What's in this release
+
+            - 📊 **Portfolio dashboard** — track wallets on EVM, Solana, Bitcoin and more via public addresses; no login required
+            - ⭐ **Watchlist** — personalized asset list with real-time prices across Hyperliquid, KuCoin, Gate.io, OKX, Kraken, CoinGecko and more
+            - 🔔 **Price alerts** — high/low alerts with instant browser notifications
+            - 📈 **Trade history** — P&L tracking, win rate, position management
+            - 🤖 **Mad AI** — integrated AI assistant (Groq, Gemini, OpenRouter) for portfolio and market analysis, with voice input
+            - 📱 **Embeddable widget** — standalone ticker widget (`/widget`) with custom themes
+            - 🌐 **PWA** — installable directly from the browser, works offline
+            - 🌍 **Multi-currency** — BRL, USD, EUR with live Forex rates
+            - 🔒 **Privacy-first** — all data stored locally (JSON + localStorage)
+
+            ---
+
+            ### ⚙️ Android installation
+
+            1. Download `CryptoAIO-${{ github.ref_name }}-debug.apk`
+            2. On your Android device, go to **Settings → Security → Install unknown apps** and allow your browser/file manager
+            3. Open the downloaded APK and tap **Install**
+
+            > ⚠️ This is a **debug build** signed with a development key. It is not distributed through the Play Store.
+
+            ---
+
+            ### 💻 Windows installation
+
+            1. Download `CryptoAIO-${{ github.ref_name }}-Windows.zip`
+            2. Extract the zip to any folder
+            3. Run `CryptoAIO.exe`
+
+            > No installer required — portable, self-contained.
+
+            ---
+
+            ### 🔑 Optional features
+
+            Some features require external API keys (configured inside the app):
+
+            - **Mad AI**: Groq, Google Gemini, or OpenRouter API key
+            - **Gist sync**: GitHub OAuth (backup/restore watchlist and portfolio)
+
+            ---
+
+            **Full changelog**: https://github.com/madnessinvestor/cryptoaio/commits/${{ github.ref_name }}
+          files: release-assets/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
