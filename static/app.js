@@ -56,7 +56,7 @@ function applyTheme(theme) {
 
   // Sync pill active states (only after DOM is ready)
   document.querySelectorAll(".app-theme-pill").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.theme === theme);
+    btn.classList.toggle("active", btn.dataset.v === theme);
   });
 
   // Show/hide app color picker panel
