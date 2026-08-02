@@ -91,18 +91,37 @@ jobs:
         run: |
           pyinstaller CryptoAIO.spec --clean --noconfirm
 
-      - name: Zip dist folder
+      - name: Zip dist folder (portable)
         run: |
           $TAG = "${{ github.ref_name }}"
           Compress-Archive -Path dist\CryptoAIO\* -DestinationPath "CryptoAIO-${TAG}-Windows.zip"
           echo "ZIP_FILE=CryptoAIO-${TAG}-Windows.zip" | Out-File -Append $env:GITHUB_ENV
         shell: pwsh
 
-      - name: Upload EXE artifact
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+        shell: pwsh
+
+      - name: Build Windows installer
+        run: |
+          $TAG = "${{ github.ref_name }}"
+          $env:APP_VERSION = $TAG
+          New-Item -ItemType Directory -Force -Path installer | Out-Null
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" CryptoAIO.iss
+          echo "SETUP_FILE=installer/CryptoAIO-${TAG}-Setup.exe" | Out-File -Append $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Upload portable zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: exe-zip
           path: ${{ env.ZIP_FILE }}
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exe-setup
+          path: ${{ env.SETUP_FILE }}
 
   # ─────────────────────────────────────────────────────────────────────────────
   # GitHub Release — cria a release e anexa os dois artefatos
@@ -128,6 +147,12 @@ jobs:
           name: exe-zip
           path: release-assets/
 
+      - name: Download Windows installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: exe-setup
+          path: release-assets/
+
       - name: List release assets
         run: ls -lh release-assets/
 
@@ -147,7 +172,8 @@ jobs:
             | Platform | File | Notes |
             |---|---|---|
             | 🤖 Android | `CryptoAIO-*-debug.apk` | Sideload — enable "Unknown sources" in settings |
-            | 💻 Windows | `CryptoAIO-*-Windows.zip` | Extract and run `CryptoAIO.exe` |
+            | 💻 Windows (installer) | `CryptoAIO-*-Setup.exe` | Recommended — installs with desktop shortcut |
+            | 💻 Windows (portable) | `CryptoAIO-*-Windows.zip` | No install needed — extract and run `CryptoAIO.exe` |
 
             ---
 
