@@ -3,3 +3,7 @@ requests
 gunicorn
 flask-cors
 kivy
+flask
+flask-cors
+gunicorn
+requests
