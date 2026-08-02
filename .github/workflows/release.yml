@@ -52,7 +52,7 @@ jobs:
       - name: Install buildozer and dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer==1.5.0 python-for-android==2024.1.21 cython==0.29.33
+          pip install buildozer==1.5.0 python-for-android==2023.09.16 cython==0.29.33
 
       - name: Cache Buildozer global directory
         uses: actions/cache@v4
