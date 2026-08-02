@@ -30,9 +30,7 @@ jobs:
           restore-keys: buildozer-${{ runner.os }}-
 
       - name: Build debug APK
-        run: buildozer -v android debug
-        env:
-          BUILDOZER_ALLOW_RUNNING_AS_ROOT: "1"
+        run: echo "y" | buildozer -v android debug
 
       - name: Rename APK with version tag
         run: |
