@@ -5608,6 +5608,8 @@ def data_reset():
              DASH_MANUAL_FILE, ALERTS_FILE, DASH_HISTORY_FILE]
     for path in files:
         _save_json_file(path, [])
+    # Clear in-memory chart cache so the dashboard shows empty after reset
+    _CHART_CACHE.clear()
     return jsonify({"ok": True})
 
 
