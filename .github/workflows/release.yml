@@ -26,7 +26,9 @@ jobs:
     name: Build Android APK
     runs-on: ubuntu-22.04
     container:
-      image: kivy/buildozer:latest
+      # Pinned to 'stable' to avoid Python 3.14 host in 'latest', which breaks
+      # the pip inside the Android build venv (BuildDependencyInstallError).
+      image: kivy/buildozer:stable
 
     steps:
       - name: Checkout
@@ -38,6 +40,9 @@ jobs:
           path: .buildozer
           key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
+
+      - name: Upgrade python-for-android for pip compatibility
+        run: /home/user/.venv/bin/pip install --upgrade python-for-android
 
       - name: Build debug APK
         run: echo "y" | buildozer -v android debug
