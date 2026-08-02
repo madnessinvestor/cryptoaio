@@ -106,6 +106,18 @@ jobs:
           key: buildozer-local-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-local-${{ runner.os }}-
 
+      - name: Bust cached Python 3.14 venv (force rebuild with 3.12.9)
+        run: |
+          # If the restored .buildozer cache contains a Python 3.14 venv, delete it
+          # so p4a rebuilds with the patched 3.12.9 recipe. The rest of the cache
+          # (NDK, SDK, downloaded sources) is preserved to save time.
+          find .buildozer -path "*/venv/lib/python3.14" -type d 2>/dev/null | while read d; do
+            venv_dir="$(dirname "$(dirname "$d")")"
+            echo "Removing cached Python 3.14 venv: $venv_dir"
+            rm -rf "$venv_dir"
+          done
+          echo "Venv bust complete."
+
       - name: Build debug APK
         run: echo "y" | buildozer -v android debug
 
