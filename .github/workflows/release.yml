@@ -10,41 +10,38 @@ permissions:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
-  # Android APK — Docker Buildozer (ambiente estável e pré-configurado)
+  # Android APK — job roda DENTRO do container oficial kivy/buildozer
   # ─────────────────────────────────────────────────────────────────────────────
   build-apk:
     name: Build Android APK
     runs-on: ubuntu-22.04
+    container:
+      image: kivy/buildozer:latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache Buildozer global directory
+      - name: Cache Buildozer directory
         uses: actions/cache@v4
         with:
           path: .buildozer
           key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
 
-      - name: Build debug APK via Buildozer Docker
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
-        with:
-          command: android debug
-          workdir: .
-          buildozer_version: stable
+      - name: Build debug APK
+        run: buildozer -v android debug
 
       - name: Rename APK with version tag
         run: |
           TAG="${{ github.ref_name }}"
           APK=$(ls bin/CryptoAIO-*-debug.apk 2>/dev/null | head -1)
           if [ -z "$APK" ]; then
-            echo "APK not found in bin/. Contents:" && ls bin/ || true
+            echo "APK not found. Contents of bin/:" && ls bin/ || echo "(empty)"
             exit 1
           fi
           mv "$APK" "bin/CryptoAIO-${TAG}-debug.apk"
-          echo "APK_FILE=bin/CryptoAIO-${TAG}-debug.apk" >> $GITHUB_ENV
+          echo "APK_FILE=bin/CryptoAIO-${TAG}-debug.apk" >> "$GITHUB_ENV"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
