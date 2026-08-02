@@ -17,7 +17,7 @@ entrypoint = android_main.py
 # ── Python / p4a requirements ─────────────────────────────────────────────────
 # flask and its deps are pure-python — p4a bundles them automatically.
 # 'android' and 'jnius' are built-in p4a recipes (no explicit entry needed).
-requirements = python3,kivy,flask,werkzeug,jinja2,itsdangerous,click,blinker,requests,urllib3,plyer
+requirements = python3,kivy,flask,requests,urllib3,plyer
 
 # ── Icons & Splash ────────────────────────────────────────────────────────────
 # 512×512 PNG used for launcher icon and Play Store hi-res icon
