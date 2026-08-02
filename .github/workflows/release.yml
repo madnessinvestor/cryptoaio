@@ -24,25 +24,49 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   build-apk:
     name: Build Android APK
+    # No container — kivy/buildozer:latest ships Python 3.14 which breaks pip
+    # inside the Android build venv. We control the Python version directly.
     runs-on: ubuntu-22.04
-    container:
-      # Pinned to 'stable' to avoid Python 3.14 host in 'latest', which breaks
-      # the pip inside the Android build venv (BuildDependencyInstallError).
-      image: kivy/buildozer:stable
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache Buildozer directory
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            git zip unzip \
+            build-essential ccache \
+            libssl-dev libffi-dev \
+            libsqlite3-dev libbz2-dev libreadline-dev \
+            openjdk-17-jdk \
+            autoconf automake libtool pkg-config \
+            zlib1g-dev libltdl-dev
+
+      - name: Install buildozer and dependencies
+        run: |
+          pip install --upgrade pip
+          pip install buildozer==1.5.0 python-for-android==2024.1.21 cython==0.29.33
+
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-home-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-home-${{ runner.os }}-
+
+      - name: Cache Buildozer local directory
         uses: actions/cache@v4
         with:
           path: .buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: buildozer-${{ runner.os }}-
-
-      - name: Upgrade python-for-android for pip compatibility
-        run: /home/user/.venv/bin/pip install --upgrade python-for-android
+          key: buildozer-local-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-local-${{ runner.os }}-
 
       - name: Build debug APK
         run: echo "y" | buildozer -v android debug
