@@ -1,8 +1,11 @@
 from flask import Flask, render_template, jsonify, request, send_file, session, redirect
+from flask_cors import CORS
 import json, os, uuid, urllib.request, urllib.error, urllib.parse, concurrent.futures, time, threading, time as _time, secrets as _secrets_mod
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-change-me")
+# Allow Flutter (Android/Windows/Web) to call the API from any origin
+CORS(app, resources={r"/api/*": {"origins": "*"}, r"/auth/*": {"origins": "*"}})
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 # ── GitHub OAuth App credentials (set in Replit Secrets) ─────────────────────

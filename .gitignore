@@ -29,3 +29,11 @@ dashboard_wallets.json.*
 
 # Token icon cache (downloaded at runtime)
 static/icons/tokens/
+
+# Flutter
+flutter/.dart_tool/
+flutter/build/
+flutter/.flutter-plugins
+flutter/.flutter-plugins-dependencies
+flutter/.packages
+flutter/pubspec.lock
