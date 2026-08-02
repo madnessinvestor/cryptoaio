@@ -54,20 +54,43 @@ jobs:
           pip install --upgrade pip
           pip install buildozer==1.5.0 python-for-android==2024.1.21 cython==0.29.33
 
-      - name: Pin hostpython3 recipe to Python 3.12.9
-        # Safety net: p4a hostpython3 defaults to 3.14.x whose bundled pip
-        # is incompatible (BuildDependencyInstallError missing). Patch the
-        # installed recipe directly so the venv always uses Python 3.12.9.
+      - name: Pin python3 + hostpython3 recipes to 3.12.9 (avoid broken pip in 3.14)
+        # p4a defaults both recipes to Python 3.14.x whose bundled pip breaks
+        # (BuildDependencyInstallError missing). Patch recipe files, delete .pyc
+        # caches so Python reloads from the patched source, and verify the result.
         run: |
           P4A=$(python3 -c "import pythonforandroid, os; print(os.path.dirname(pythonforandroid.__file__))")
           echo "p4a path: $P4A"
-          grep "version" "$P4A/recipes/hostpython3/__init__.py" | head -5
-          sed -i "s/version = '[0-9]*\.[0-9]*\.[0-9]*'/version = '3.12.9'/" \
-              "$P4A/recipes/hostpython3/__init__.py" \
-              "$P4A/recipes/python3/__init__.py" || true
-          echo "After patch:"
+          echo "--- before ---"
+          grep "version = " "$P4A/recipes/python3/__init__.py"    | head -3
           grep "version = " "$P4A/recipes/hostpython3/__init__.py" | head -3
-          grep "version = " "$P4A/recipes/python3/__init__.py" | head -3
+
+          # Patch every version = 'X.Y.Z' in both recipe files
+          sed -i "s/version = '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'/version = '3.12.9'/g" \
+              "$P4A/recipes/python3/__init__.py"
+          sed -i "s/version = '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*'/version = '3.12.9'/g" \
+              "$P4A/recipes/hostpython3/__init__.py"
+
+          # Delete cached .pyc so Python reloads from patched .py files
+          find "$P4A/recipes/python3"    -name '*.pyc' -delete
+          find "$P4A/recipes/hostpython3" -name '*.pyc' -delete
+          find "$P4A" -path '*/__pycache__/*python3*' -name '*.pyc' -delete 2>/dev/null || true
+
+          echo "--- after ---"
+          grep "version = " "$P4A/recipes/python3/__init__.py"    | head -3
+          grep "version = " "$P4A/recipes/hostpython3/__init__.py" | head -3
+
+          # Confirm p4a runtime sees the new versions
+          python3 -c "
+          from pythonforandroid.recipes.python3 import Python3Recipe
+          from pythonforandroid.recipes.hostpython3 import HostPython3Recipe
+          p = Python3Recipe(); h = HostPython3Recipe()
+          print('python3 version:', p.version)
+          print('hostpython3 version:', h.version)
+          assert p.version == '3.12.9', f'python3 still {p.version}'
+          assert h.version == '3.12.9', f'hostpython3 still {h.version}'
+          print('OK: both pinned to 3.12.9')
+          "
 
       - name: Cache Buildozer global directory
         uses: actions/cache@v4

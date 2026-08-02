@@ -17,11 +17,7 @@ entrypoint = android_main.py
 # ── Python / p4a requirements ─────────────────────────────────────────────────
 # flask and its deps are pure-python — p4a bundles them automatically.
 # 'android' and 'jnius' are built-in p4a recipes (no explicit entry needed).
-# python3==3.12.9: pins both the Android target Python AND hostpython3 (the
-# host build tool venv). p4a hostpython3 inherits the python3 recipe version,
-# so this prevents it from defaulting to Python 3.14 whose bundled pip is
-# incompatible with p4a's pip usage (BuildDependencyInstallError missing).
-requirements = python3==3.12.9,kivy,flask,requests,urllib3,plyer
+requirements = python3,kivy,flask,requests,urllib3,plyer
 
 # ── Icons & Splash ────────────────────────────────────────────────────────────
 # 512×512 PNG used for launcher icon and Play Store hi-res icon
