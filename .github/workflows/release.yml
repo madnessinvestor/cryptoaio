@@ -24,14 +24,16 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   build-apk:
     name: Build Android APK
-    # Run inside a pinned Buildozer container to avoid host Python/pip mismatches
     runs-on: ubuntu-22.04
-    container:
-      image: kivy/buildozer:2023.08
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install system dependencies
         run: |
@@ -47,7 +49,9 @@ jobs:
 
       - name: Install buildozer and dependencies
         run: |
-          pip install --upgrade pip
+          # Pin pip to 23.x — pip 24+ restructured pip._internal.build_env which
+          # breaks p4a 2023.09.16's internal pip invocations inside the Android venv
+          pip install "pip==23.3.2"
           pip install buildozer==1.5.0 python-for-android==2023.09.16 cython==0.29.33
 
       - name: Cache Buildozer global directory
