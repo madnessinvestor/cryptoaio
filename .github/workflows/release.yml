@@ -24,18 +24,14 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   build-apk:
     name: Build Android APK
-    # No container — kivy/buildozer:latest ships Python 3.14 which breaks pip
-    # inside the Android build venv. We control the Python version directly.
+    # Run inside a pinned Buildozer container to avoid host Python/pip mismatches
     runs-on: ubuntu-22.04
+    container:
+      image: kivy/buildozer:2023.08
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
 
       - name: Install system dependencies
         run: |
