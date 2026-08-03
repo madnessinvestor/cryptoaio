@@ -49,9 +49,13 @@ jobs:
 
       - name: Install buildozer and dependencies
         run: |
-          # Pin pip to 23.x — pip 24+ restructured pip._internal.build_env which
-          # breaks p4a 2023.09.16's internal pip invocations inside the Android venv
-          pip install "pip==23.3.2"
+          # Pin pip AND virtualenv to versions compatible with p4a 2023.09.16.
+          # pip 24+ restructured pip._internal.build_env; p4a uses internal pip
+          # APIs that break with the new layout — inside BOTH the host env and the
+          # Android cross-compile venv that virtualenv creates for p4a.
+          # virtualenv >= 20.25 bundles pip 24+, so we cap it at 20.24.x which
+          # bundles pip 23.x, ensuring the Android build venv also gets pip 23.
+          pip install "pip==23.3.2" "virtualenv<20.25.0"
           pip install buildozer==1.5.0 python-for-android==2023.09.16 cython==0.29.33
 
       - name: Cache Buildozer global directory
