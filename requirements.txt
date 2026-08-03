@@ -11,3 +11,7 @@ flask
 flask-cors
 gunicorn
 requests
+flask
+flask-cors
+gunicorn
+requests
